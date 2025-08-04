@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://eohwpqwan48"]
+
+[ext_resource type="Script" path="res://source/states/PlayState3D.gd" id="1_my0t5"]
+[ext_resource type="PackedScene" uid="uid://cv7fv0u83xfr6" path="res://assets/3d/vecinderario/vecinderario.tscn" id="3_lyico"]
+
+[node name="PlayState3D" type="Node"]
+script = ExtResource("1_my0t5")
+
+[node name="vecinderario" parent="." instance=ExtResource("3_lyico")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.493983, 0, 1.15332)

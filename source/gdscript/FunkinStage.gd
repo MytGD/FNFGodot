@@ -1,0 +1,219 @@
+const DANCE_ANIMATIONS = ['danceLeft','danceRight','idle']
+
+static var charactersGroup: Dictionary = {}
+static var dance_sprites: Array = []
+static var danced: bool = false
+
+static var _beat_connect: bool = false
+static var json: Dictionary = getStageBase()
+##Load Sprites from the stage json.[br]
+##[b]OBS:[/b] Is recommended to [u]call this function after the characters group are added in PlayState.[/u][br][codeblock]
+##loadSprites(
+##{"props":
+##	   [
+##       {
+##         "zIndex": 10,
+##         "danceEvery": 0,
+##         "position": [-220, -80],
+##         "scale": [0.9, 0.9],
+##         "name": "limoSunset",
+##         "animType": "sparrow",
+##         "isPixel": false,
+##         "scroll": [0.1, 0.1],
+##         "assetPath": "limo/erect/limoSunset",
+##         "animations": []
+##       }
+##    ]
+##)[/codeblock]
+##[b]Tip:[/b] The sprites created using this function can be acessed by his [param name] from functions like 
+##[method FunkinGD.getProperty] and [method FunkinGD.setProperty].
+
+
+static func loadSprites(stage_json: Dictionary = json) -> void:
+	if !stage_json: return
+	var sprites: Array = []
+	for data in stage_json.get('props',[]):
+		var name = data.get('name','')
+		var image = data.get('assetPath')
+		var position = data.get('position',[0,0])
+		var scale = data.get('scale',[1,1])
+		var scroll = data.get('scroll',[1,1])
+		
+		
+		var sprite: Sprite
+		if image.begins_with("#"):
+			sprite = FunkinGD.makeSprite(name)
+			sprite.image.set_graphic_color(Color(image))
+		
+		elif data.get('animations'):
+			sprite = FunkinGD.makeAnimatedSprite(name,image,position[0],position[1])
+			
+			for anim in data.animations:
+				var anim_name = anim.get('name','')
+				sprite.animation.addAnimByPrefix(
+					anim_name,
+					anim.get('prefix',''),
+					anim.get('frameRate',24),
+					anim.get('looped',false),
+					anim.get('frameIndices',[])
+				)
+				
+				sprite.addAnimOffset(anim_name,anim.get('offsets',Vector2.ZERO))
+			
+			if data.has('startingAnimation'):
+				sprite.animation.play(data.startingAnimation)
+			
+			
+			if data.get('danceEvery'):
+				dance_sprites.append(
+					[
+						data.danceEvery,
+						sprite,
+						sprite.animation.has_any_animations(['danceLeft','danceRight'])
+					]
+				)
+				if !_beat_connect:
+					Conductor.beat_hit.connect(onBeatHit)
+					_beat_connect = true
+		else:
+			sprite = FunkinGD.makeSprite(name,image,position[0],position[1])
+		
+		if sprite is Sprite:
+			sprite.setGraphicScale(Vector2(scale[0],scale[1]))
+			sprite.antialiasing = !data.get('isPixel',false)
+			sprite.scrollFactor = Vector2(scroll[0],scroll[1])
+		else: sprite.scale = Vector2(scale[0],scale[1])
+		#print(sprite.pivot_offset)
+		
+		sprite.modulate.a = data.get('alpha',1.0)
+		sprites.append([data.get('zIndex',0),sprite])
+	
+	var front_index: int = NAN
+	var got_first_index: bool = false
+	
+	for chars in stage_json.get('characters',{}):
+		if !charactersGroup.has(chars): continue
+		
+		var index = stage_json.characters[chars].get('zIndex',1)
+		
+		if !got_first_index:
+			front_index = index
+			got_first_index = true
+		else:
+			front_index = mini(index,front_index)
+		sprites.append([index,charactersGroup[chars]])
+	
+	if !sprites: return
+	
+	sprites.sort_custom(ArrayHelper.sort_array_from_first_index)
+	
+	for i in sprites:
+		FunkinGD.addSprite(i[1],i[0] >= front_index)
+	
+static func onBeatHit() -> void:
+	danced = !danced
+	var anim = DANCE_ANIMATIONS[int(danced)]
+	for i in dance_sprites:
+		var sprite = i[1]
+		if sprite and fmod(Conductor.beat,i[0]) == 0:
+			sprite.animation.play(anim if i[2] else DANCE_ANIMATIONS[2])
+
+static func loadStage(stage: String, load_sprites: bool = false) -> Dictionary:
+	var stage_path = Paths.stage(stage)
+	json = getStageBase()
+	json.merge(convert_old_to_new(Paths.loadJson(stage_path)),true)
+	
+	#Remove ".json" from the end of the string
+	stage_path = stage_path.left(-5)
+	
+	Paths.extraDirectory = json.get('directory','')
+	json.path = stage
+	return json
+
+
+static func convert_old_to_new(json: Dictionary):
+	var new_json: Dictionary = getStageBase()
+	
+	for i in json:
+		if new_json.has(i):
+			new_json[i] = json[i]
+	
+	
+	if json.has('camera_girlfriend'):
+		new_json.characters.gf.cameraOffsets = json.camera_girlfriend
+
+	if json.has('camera_boyfriend'):
+		new_json.characters.bf.cameraOffsets = json.camera_boyfriend
+	else:
+		new_json.characters.bf.cameraOffsets[0] += 100
+		new_json.characters.bf.cameraOffsets[1] += 100
+		
+	if json.has('camera_opponent'):
+		new_json.characters.dad.cameraOffsets = json.camera_opponent
+	else:
+		new_json.characters.dad.cameraOffsets[0] -= 150
+		new_json.characters.dad.cameraOffsets[1] += 100
+	
+	
+	for i in new_json.characters.values():
+		i.position[0] -= 180
+		i.position[1] -= 750
+	
+	new_json.cameraZoom = json.get('defaultZoom',new_json.cameraZoom)
+	new_json.cameraSpeed = json.get('camera_speed',new_json.cameraSpeed)
+	new_json.characters.bf.position = json.get('boyfriend',new_json.characters.bf.position)
+	new_json.characters.dad.position = json.get('opponent',new_json.characters.dad.position)
+	new_json.characters.gf.position = json.get('girlfriend',new_json.characters.gf.position)
+	return new_json
+
+static func clear():
+	danced = false
+	dance_sprites.clear()
+	charactersGroup.clear()
+	if _beat_connect:
+		Conductor.beat_hit.disconnect(onBeatHit)
+	
+static func getPsychStageBase() -> Dictionary:
+	return {
+		"directory": "",
+		"isPixelStage": false,
+		"hide_girlfriend": false,
+		"defaultZoom": 1.0,
+		"camera_speed": 1.0,
+		"boyfriend": [770.0,100.0],
+		"opponent": [100.0,100.0],
+		"girlfriend": [0.0,90.0],
+		"camera_boyfriend": [0.0,0.0],
+		"camera_opponent": [0.0,0.0],
+		"camera_girlfriend": [0.0,0.0],
+		'path': ''
+	}
+
+static func getStageBase() -> Dictionary:
+	return {
+		"cameraZoom": 1.0,
+		"cameraSpeed": 1.0,
+		"props": [],
+		"hide_girlfriend": false,
+		"isPixelStage": false,
+		"characters": {
+			"bf": {
+				"zIndex": 2,
+				"position": [1297.5, 871],
+				"cameraOffsets": [-100, -100]
+				},
+				
+			"gf": { 
+				"zIndex": 0, 
+				"position": [808.5, 854], 
+				"cameraOffsets": [0, 0]
+				},
+				
+			"dad": {
+				"zIndex": 1,
+				"position": [290.5, 869],
+				"cameraOffsets": [150, -100]
+				}
+		},
+		"directory": ""
+	}

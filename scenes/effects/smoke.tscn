@@ -1,0 +1,38 @@
+[gd_scene load_steps=7 format=3 uid="uid://cproj0w72ysi"]
+
+[ext_resource type="Shader" uid="uid://bckrib34ee58y" path="res://assets/shaders/Smoke.gdshader" id="1_8prmg"]
+[ext_resource type="Script" uid="uid://bxr6f0xx82cwd" path="res://scenes/effects/smoke.gd" id="2_v4g5g"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_v4g5g"]
+shader = ExtResource("1_8prmg")
+shader_parameter/smoke_speed = 0.5
+shader_parameter/smoke_alpha = 0.8
+shader_parameter/limit_top = 1.0
+shader_parameter/limit_bottom = 1.0
+shader_parameter/limit_left = 0.0
+shader_parameter/limit_right = 1.0
+shader_parameter/fade_margin = 0.5
+shader_parameter/move_x = true
+shader_parameter/move_y = false
+
+[sub_resource type="Gradient" id="Gradient_8prmg"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_gtfxk"]
+frequency = 0.001
+fractal_octaves = 10
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_jahxy"]
+width = 1
+height = 720
+generate_mipmaps = false
+seamless = true
+seamless_blend_skirt = 1.0
+normalize = false
+color_ramp = SubResource("Gradient_8prmg")
+noise = SubResource("FastNoiseLite_gtfxk")
+
+[node name="Smoke" type="Sprite2D"]
+material = SubResource("ShaderMaterial_v4g5g")
+texture = SubResource("NoiseTexture2D_jahxy")
+centered = false
+script = ExtResource("2_v4g5g")

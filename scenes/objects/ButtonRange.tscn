@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3 uid="uid://b1a3jlb7iu130"]
+
+[ext_resource type="Script" uid="uid://oag071n6bini" path="res://scenes/objects/ButtonRange.gd" id="1_238s7"]
+
+[node name="ButtonRange" type="Label"]
+custom_minimum_size = Vector2(160, 40)
+offset_right = 160.0
+offset_bottom = 40.0
+vertical_alignment = 1
+script = ExtResource("1_238s7")
+
+[node name="ButtonUp" type="Button" parent="."]
+custom_minimum_size = Vector2(39, 39)
+layout_mode = 0
+offset_left = 94.0
+offset_right = 133.0
+offset_bottom = 39.0
+focus_mode = 0
+text = "^"
+
+[node name="ButtonDown" type="Button" parent="."]
+custom_minimum_size = Vector2(39, 39)
+layout_mode = 0
+offset_left = 136.0
+offset_right = 175.0
+offset_bottom = 39.0
+rotation = 3.14159
+pivot_offset = Vector2(19.5, 19.5)
+focus_mode = 0
+text = "^"
+
+[node name="Value" type="LineEdit" parent="."]
+custom_minimum_size = Vector2(88, 40)
+layout_mode = 0
+offset_right = 88.0
+offset_bottom = 40.0
+focus_mode = 1
+text = "0.0"
+virtual_keyboard_type = 2
+
+[connection signal="minimum_size_changed" from="." to="." method="_on_minimum_size_changed"]
+[connection signal="button_down" from="ButtonUp" to="." method="addValue"]
+[connection signal="button_down" from="ButtonDown" to="." method="subValue"]
+[connection signal="text_submitted" from="Value" to="." method="_on_value_text_submitted"]

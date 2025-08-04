@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dt22jxhamkhei"]
+
+[ext_resource type="Script" uid="uid://byyeq5lcwpbyq" path="res://source/states/Freeplay.gd" id="1_rst3y"]
+
+[node name="Freeplay" type="Node"]
+script = ExtResource("1_rst3y")

@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://c0dtf3f43ohlv"]
+
+[ext_resource type="Script" path="res://scenes/states/PlayState.gd" id="1_qr75d"]
+[ext_resource type="AudioStream" uid="uid://dkyipmsibn158" path="res://assets/songs/reactor/Inst.ogg" id="5_ltbv3"]
+[ext_resource type="AudioStream" uid="uid://bfecjmijgvlvr" path="res://assets/songs/reactor/Voices.ogg" id="6_blo87"]
+
+[node name="PlayState" type="Node2D"]
+script = ExtResource("1_qr75d")
+
+[node name="Inst" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_ltbv3")
+
+[node name="Voices" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_blo87")
+
+[node name="camGame" type="CanvasLayer" parent="."]
+
+[node name="Camera2D" type="Camera2D" parent="camGame"]
+
+[node name="camHUD" type="CanvasLayer" parent="."]

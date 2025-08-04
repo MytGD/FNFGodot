@@ -1,0 +1,89 @@
+extends Node
+const TRANSITION = preload("res://source/general/Transition.gd")
+
+signal onSwapTree
+
+
+
+static var scene: Node
+
+
+var gd = FunkinGD
+
+var is_transiting: bool = false
+
+var current_transition: TRANSITION
+
+var error_prints: Array[Label]
+	
+func _ready() -> void:
+	scene = get_parent()
+##Swap the Tree for a new [Node]. [br][br]
+##[param newTree] can be a [Node], [PackedScene] or [GDScript].
+func swapTree(newTree: Variant, transition: bool = true, remove_current_scene: bool = true) -> void:
+	if !newTree:
+		push_error('swapTree(): Paramter "newTree" is null.')
+		return
+	
+	if transition:
+		if !is_transiting:
+			is_transiting = true
+			doTransition().finished.connect(
+				func():
+					current_transition.removeTrans()
+					swapTree(newTree,false)
+					scene.move_child(current_transition,-1)
+			)
+		return
+	is_transiting = false
+	if newTree is GDScript:
+		newTree = newTree.new()
+	elif newTree is PackedScene:
+		newTree = newTree.instantiate()
+	
+	onSwapTree.emit()
+	if !newTree.is_inside_tree():
+		scene.add_child(newTree)
+	var tree = get_tree()
+	
+	if remove_current_scene and tree.current_scene:
+		tree.current_scene.queue_free()
+	tree.current_scene = newTree
+	
+func doTransition() -> TRANSITION:
+	current_transition = TRANSITION.new()
+	scene.add_child(current_transition)
+	current_transition.startTrans()
+	return current_transition
+	
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == 45:
+			AudioServer.set_bus_volume_db(0,maxf(-80.0,AudioServer.get_bus_volume_db(0) - 2.0))
+		elif event.keycode == 61:
+			AudioServer.set_bus_volume_db(0,maxf(-80.0,AudioServer.get_bus_volume_db(0) + 2.0))
+		elif event.keycode == 48:
+			AudioServer.set_bus_mute(0,not AudioServer.is_bus_mute(0))
+
+func show_label_error(text: String, time: float = 2.0) -> Label:
+	for i in error_prints:
+		i.position.y += 20
+	var label = Label.new()
+	label.text = text
+	var timer = Timer.new()
+	label.add_child(timer)
+	add_child(label)
+	timer.start(time)
+	timer.timeout.connect(func():
+		label.create_tween().tween_property(label,'modulate:a',0,2).finished.connect(func():
+			error_prints.erase(label)
+			label.queue_free()
+		)
+	)
+	label.position.x = ScreenUtils.screenCenter.x - label.get_minimum_size().x/2.0
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	label.z_index = 1
+	error_prints.append(label)
+	return label
+		

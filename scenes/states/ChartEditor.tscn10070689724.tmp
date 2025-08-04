@@ -1,0 +1,405 @@
+[gd_scene load_steps=3 format=3 uid="uid://eonsf5cks44n"]
+
+[ext_resource type="Script" uid="uid://cigpxll0rg8br" path="res://scenes/states/ChartEditor.gd" id="1_twph6"]
+[ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="2_p8wo6"]
+
+[node name="Charter" type="Node"]
+script = ExtResource("1_twph6")
+song_json = &"dlow"
+difficulty = &"hard"
+
+[node name="SongInfo" type="Label" parent="."]
+offset_left = 742.0
+offset_top = 2.0
+offset_right = 948.0
+offset_bottom = 163.0
+
+[node name="TabContainer" type="TabContainer" parent="."]
+offset_left = 737.0
+offset_top = 231.0
+offset_right = 1279.0
+offset_bottom = 720.0
+current_tab = 3
+clip_tabs = false
+tab_focus_mode = 0
+
+[node name="Section Data" type="Panel" parent="TabContainer"]
+visible = false
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="HitSection" type="CheckBox" parent="TabContainer/Section Data"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 39.0
+offset_right = 160.0
+offset_bottom = 70.0
+focus_mode = 0
+mouse_filter = 1
+text = "Must Hit Section"
+
+[node name="GFSection" type="CheckBox" parent="TabContainer/Section Data"]
+layout_mode = 0
+offset_left = 165.0
+offset_top = 40.0
+offset_right = 274.0
+offset_bottom = 71.0
+focus_mode = 0
+text = "GF Section"
+
+[node name="Text" type="Label" parent="TabContainer/Section Data"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 187.0
+offset_bottom = 209.0
+text = "------FOCUS------
+
+
+-----Section Options------
+
+Selected Section:"
+
+[node name="Copy This Section" type="Button" parent="TabContainer/Section Data"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 326.0
+offset_right = 150.0
+offset_bottom = 357.0
+focus_mode = 0
+text = "Copy This Section"
+
+[node name="Paste Section" type="Button" parent="TabContainer/Section Data"]
+layout_mode = 0
+offset_left = 155.0
+offset_top = 326.0
+offset_right = 267.0
+offset_bottom = 357.0
+focus_mode = 0
+text = "Paste Section"
+
+[node name="Erase Section" type="Button" parent="TabContainer/Section Data"]
+layout_mode = 0
+offset_left = 275.0
+offset_top = 326.0
+offset_right = 386.0
+offset_bottom = 357.0
+focus_mode = 0
+text = "Erase Section"
+
+[node name="ButtonRange" parent="TabContainer/Section Data" instance=ExtResource("2_p8wo6")]
+layout_mode = 0
+offset_left = 139.0
+offset_top = 131.0
+offset_right = 316.0
+offset_bottom = 180.0
+
+[node name="Button" type="Button" parent="TabContainer/Section Data"]
+layout_mode = 0
+offset_left = 324.0
+offset_top = 142.0
+offset_right = 432.0
+offset_bottom = 173.0
+text = "Copy Section"
+
+[node name="Note Data" type="Panel" parent="TabContainer"]
+visible = false
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Text" type="Label" parent="TabContainer/Note Data"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 149.0
+offset_bottom = 187.0
+text = "------Note Data------
+
+Strum Time:
+
+Sustain Length:
+
+Note Type:"
+
+[node name="NoteType" type="MenuButton" parent="TabContainer/Note Data"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 160.0
+offset_right = 263.0
+offset_bottom = 193.0
+text = "None"
+flat = false
+
+[node name="StrumTime" type="LineEdit" parent="TabContainer/Note Data"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 55.0
+offset_right = 277.0
+offset_bottom = 86.0
+
+[node name="SustainLength" parent="TabContainer/Note Data" instance=ExtResource("2_p8wo6")]
+layout_mode = 0
+offset_left = 134.0
+offset_top = 98.0
+offset_right = 311.0
+offset_bottom = 147.0
+
+[node name="Event Data" type="Panel" parent="TabContainer"]
+visible = false
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Info" type="Label" parent="TabContainer/Event Data"]
+layout_mode = 2
+offset_left = 6.0
+offset_top = 20.0
+offset_right = 140.0
+offset_bottom = 392.0
+text = "Event: 
+
+
+------Variables------
+
+
+
+
+
+
+------DESCRIPTION-----"
+
+[node name="Events" type="MenuButton" parent="TabContainer/Event Data"]
+layout_mode = 0
+offset_left = 59.0
+offset_top = 17.0
+offset_right = 199.0
+offset_bottom = 48.0
+flat = false
+
+[node name="VariablesContainer" type="ScrollContainer" parent="TabContainer/Event Data"]
+custom_minimum_size = Vector2(540, 93)
+layout_mode = 0
+offset_left = -3.0
+offset_top = 152.0
+offset_right = 537.0
+offset_bottom = 245.0
+
+[node name="Control" type="Control" parent="TabContainer/Event Data/VariablesContainer"]
+layout_mode = 2
+
+[node name="EventDescription" type="RichTextLabel" parent="TabContainer/Event Data"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 312.0
+offset_right = 542.0
+offset_bottom = 458.0
+mouse_force_pass_scroll_events = false
+
+[node name="SelectEventText" type="Label" parent="TabContainer/Event Data"]
+visible = false
+top_level = true
+layout_mode = 2
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 834.0
+offset_top = 441.0
+offset_right = -213.0
+offset_bottom = -256.0
+scale = Vector2(1.725, 1.725)
+text = "SELECT/CREATE A EVENT FIRST"
+
+[node name="AddEvent" type="Button" parent="TabContainer/Event Data"]
+layout_mode = 0
+offset_left = 383.0
+offset_top = 15.0
+offset_right = 511.0
+offset_bottom = 46.0
+text = "Add Event"
+
+[node name="RemoveEvent" type="Button" parent="TabContainer/Event Data"]
+layout_mode = 0
+offset_left = 383.0
+offset_top = 55.0
+offset_right = 513.0
+offset_bottom = 86.0
+text = "Remove Event"
+
+[node name="Song Data" type="Panel" parent="TabContainer"]
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="ArrowSkin" type="LineEdit" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 316.0
+offset_right = 346.0
+offset_bottom = 347.0
+placeholder_text = "noteSkins/NOTE_assets"
+
+[node name="Label" type="Label" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 111.0
+offset_bottom = 394.0
+text = "------Data------
+
+SONG:
+
+BPM:
+
+------Characters------
+
+bf:                                     gf:                                 dad:
+
+------Skins------
+
+Arrow Skin:
+
+Splash Skin:"
+
+[node name="SplashSkin" type="LineEdit" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 104.0
+offset_top = 368.0
+offset_right = 353.0
+offset_bottom = 399.0
+placeholder_text = "noteSplashes/noteSplashes"
+
+[node name="BPM" parent="TabContainer/Song Data" instance=ExtResource("2_p8wo6")]
+layout_mode = 0
+offset_left = 52.0
+offset_top = 96.0
+offset_right = 229.0
+offset_bottom = 145.0
+
+[node name="Song" type="LineEdit" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 54.0
+offset_right = 238.0
+offset_bottom = 85.0
+
+[node name="LoadSongFromFile" type="Button" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 253.0
+offset_top = 54.0
+offset_right = 372.0
+offset_bottom = 85.0
+text = "Load from Chart"
+
+[node name="ReloadChart" type="Button" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 396.0
+offset_top = 55.0
+offset_right = 457.0
+offset_bottom = 86.0
+text = "Reload Chart"
+
+[node name="bfCharacters" type="MenuButton" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 37.0
+offset_top = 214.0
+offset_right = 163.0
+offset_bottom = 245.0
+flat = false
+
+[node name="dadCharacters" type="MenuButton" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 380.0
+offset_top = 214.0
+offset_right = 506.0
+offset_bottom = 245.0
+flat = false
+
+[node name="gfCharacters" type="MenuButton" parent="TabContainer/Song Data"]
+layout_mode = 0
+offset_left = 205.0
+offset_top = 213.0
+offset_right = 331.0
+offset_bottom = 244.0
+flat = false
+
+[node name="Editor Data" type="Panel" parent="TabContainer"]
+visible = false
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="Text" type="Label" parent="TabContainer/Editor Data"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 544.0
+offset_bottom = 395.0
+text = "------Options-------
+
+Auto Change Section:
+
+------AUDIO------
+
+Player Voice:                                        Instrumental:
+
+Opponent Voice:
+
+------ASSETS------
+
+Load assets from:"
+
+[node name="MenuButton" type="MenuButton" parent="TabContainer/Editor Data"]
+layout_mode = 0
+offset_left = 144.0
+offset_top = 318.0
+offset_right = 355.0
+offset_bottom = 345.0
+flat = false
+
+[node name="OponnentVoice" type="HSlider" parent="TabContainer/Editor Data"]
+layout_mode = 0
+offset_left = 142.0
+offset_top = 223.0
+offset_right = 254.0
+offset_bottom = 239.0
+focus_mode = 0
+max_value = 1.0
+step = 0.1
+value = 1.0
+
+[node name="PlayerVoice" type="HSlider" parent="TabContainer/Editor Data"]
+layout_mode = 0
+offset_left = 385.0
+offset_top = 168.0
+offset_right = 499.0
+offset_bottom = 184.0
+focus_mode = 0
+max_value = 1.0
+step = 0.1
+value = 1.0
+
+[node name="AutoChangeSection" type="CheckBox" parent="TabContainer/Editor Data"]
+layout_mode = 0
+offset_left = 169.0
+offset_top = 57.0
+offset_right = 193.0
+offset_bottom = 81.0
+scale = Vector2(1.4, 1.4)
+button_pressed = true
+
+[node name="Instrumental" type="HSlider" parent="TabContainer/Editor Data"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 168.0
+offset_right = 231.0
+offset_bottom = 184.0
+max_value = 1.0
+step = 0.1
+value = 1.0
+
+[connection signal="toggled" from="TabContainer/Section Data/HitSection" to="." method="_on_hit_section_toggled"]
+[connection signal="value_changed" from="TabContainer/Note Data/SustainLength" to="." method="_on_sustain_length_value_changed"]
+[connection signal="button_down" from="TabContainer/Event Data/AddEvent" to="." method="_on_add_event_button_down"]
+[connection signal="button_up" from="TabContainer/Song Data/ReloadChart" to="." method="_on_reload_chart_button_up"]
+[connection signal="toggled" from="TabContainer/Editor Data/AutoChangeSection" to="." method="_on_auto_change_section_toggled"]

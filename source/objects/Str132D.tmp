@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3 uid="uid://cueo2s25ut32u"]
+
+[ext_resource type="Script" path="res://scenes/Objects/StrumNote.gd" id="1_lw344"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_xg6mj"]
+animations = [{
+"frames": [],
+"loop": false,
+"name": &"confirm",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": false,
+"name": &"pressed",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"static",
+"speed": 5.0
+}]
+
+[node name="StrumNote" type="Node2D"]
+script = ExtResource("1_lw344")
+
+[node name="StrumNote" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_xg6mj")
+animation = &"confirm"

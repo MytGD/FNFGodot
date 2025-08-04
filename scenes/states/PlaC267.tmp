@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://c0dtf3f43ohlv"]
+
+[ext_resource type="Script" path="res://scenes/states/PlayState.gd" id="1_qr75d"]
+[ext_resource type="PackedScene" uid="uid://cvtb7ssm4xxu7" path="res://scenes/global/Camera.tscn" id="4_ltv7o"]
+[ext_resource type="Shader" path="res://mods/shaders/MirrorRepeatEffect.gdshader" id="5_fneob"]
+
+[node name="PlayState" type="Node2D"]
+script = ExtResource("1_qr75d")
+
+[node name="camGame" parent="." instance=ExtResource("4_ltv7o")]
+shader = ExtResource("5_fneob")
+
+[node name="camHUD" parent="." instance=ExtResource("4_ltv7o")]
+follow_viewport_scale = 1.2

@@ -1,0 +1,525 @@
+[gd_scene load_steps=3 format=3 uid="uid://droixhbemd0xd"]
+
+[ext_resource type="Script" uid="uid://dkyvojm86n535" path="res://source/states/Character Editor/CharacterEditor.gd" id="1_o1kg5"]
+[ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="2_m3xwo"]
+
+[node name="Character Editor" type="Node"]
+script = ExtResource("1_o1kg5")
+
+[node name="BG_Image" type="Sprite2D" parent="."]
+modulate = Color(0.270222, 0.270222, 0.270222, 1)
+texture_filter = 3
+texture_repeat = 1
+centered = false
+
+[node name="BG" type="Node2D" parent="."]
+position = Vector2(-443, 0)
+scale = Vector2(0.8, 0.8)
+
+[node name="Marker_Camera" type="Node2D" parent="BG"]
+z_index = 1
+position = Vector2(568.75, 5.00002)
+
+[node name="ColorRect" type="ColorRect" parent="BG/Marker_Camera"]
+offset_right = 5.0
+offset_bottom = 36.0
+mouse_filter = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="ColorRect2" type="ColorRect" parent="BG/Marker_Camera"]
+offset_left = -15.0
+offset_top = 16.0
+offset_right = 20.0
+offset_bottom = 21.0
+mouse_filter = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="Marker_Origin" type="Node2D" parent="BG"]
+z_index = 1
+position = Vector2(611.25, 5.00002)
+
+[node name="ColorRect" type="ColorRect" parent="BG/Marker_Origin"]
+offset_right = 5.0
+offset_bottom = 36.0
+mouse_filter = 2
+color = Color(1, 0, 0, 1)
+metadata/_edit_use_anchors_ = true
+
+[node name="ColorRect2" type="ColorRect" parent="BG/Marker_Origin"]
+offset_left = -15.0
+offset_top = 16.0
+offset_right = 20.0
+offset_bottom = 21.0
+mouse_filter = 2
+color = Color(0, 1, 0, 1)
+metadata/_edit_use_anchors_ = true
+
+[node name="Ground" type="Sprite2D" parent="BG"]
+position = Vector2(-600, -850)
+scale = Vector2(2.5, 2.5)
+centered = false
+
+[node name="TabContainer" type="TabContainer" parent="."]
+offset_left = 667.0
+offset_top = 269.0
+offset_right = 1280.0
+offset_bottom = 720.0
+current_tab = 0
+tab_focus_mode = 0
+
+[node name="Animation Data" type="Panel" parent="TabContainer"]
+self_modulate = Color(1, 1, 1, 0.694118)
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="Label" type="Label" parent="TabContainer/Animation Data"]
+layout_mode = 2
+offset_left = 6.0
+offset_right = 610.0
+offset_bottom = 422.0
+text = "======OFFSET DATA======
+
+======ANIMATION DATA======
+Cur Animation:                                    Asset Path:
+
+Indices:
+
+Preffix:
+
+
+
+
+
+=====ADD ANIMATION======
+Name:"
+autowrap_mode = 3
+
+[node name="anim_offset_x" parent="TabContainer/Animation Data" instance=ExtResource("2_m3xwo")]
+custom_minimum_size = Vector2(257, 43)
+layout_mode = 2
+offset_left = 2.0
+offset_top = 229.0
+offset_right = 257.0
+offset_bottom = 272.0
+text = "Offset X:"
+shift_value = 10.0
+
+[node name="anim_offset_y" parent="TabContainer/Animation Data" instance=ExtResource("2_m3xwo")]
+custom_minimum_size = Vector2(255, 43)
+layout_mode = 2
+offset_left = 3.0
+offset_top = 267.0
+offset_right = 262.0
+offset_bottom = 310.0
+text = "Offset y:"
+shift_value = 10.0
+
+[node name="AnimationList" type="MenuButton" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 127.0
+offset_top = 78.0
+offset_right = 260.0
+offset_bottom = 105.0
+flat = false
+
+[node name="Add Animation" type="Button" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 219.0
+offset_top = 362.0
+offset_right = 343.0
+offset_bottom = 393.0
+focus_mode = 0
+text = "Add Animation"
+
+[node name="Remove Animation" type="Button" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 360.0
+offset_top = 362.0
+offset_right = 515.0
+offset_bottom = 393.0
+focus_mode = 0
+text = "Remove Animation"
+
+[node name="Replay Animation" type="Button" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 524.0
+offset_top = 362.0
+offset_right = 605.0
+offset_bottom = 393.0
+focus_mode = 0
+text = "Replay"
+
+[node name="Looped" type="CheckBox" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 287.0
+offset_top = 130.0
+offset_right = 373.0
+offset_bottom = 161.0
+focus_mode = 0
+text = "Loop"
+
+[node name="FrameRate" parent="TabContainer/Animation Data" instance=ExtResource("2_m3xwo")]
+custom_minimum_size = Vector2(222, 0)
+layout_mode = 0
+offset_left = 367.0
+offset_top = 128.0
+offset_right = 589.0
+offset_bottom = 168.0
+text = "FPS:"
+shift_value = 10.0
+
+[node name="Preffix" type="LineEdit" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 66.0
+offset_top = 181.0
+offset_right = 277.0
+offset_bottom = 212.0
+focus_mode = 1
+clear_button_enabled = true
+draw_control_chars = true
+
+[node name="Indices" type="LineEdit" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 70.0
+offset_top = 129.0
+offset_right = 278.0
+offset_bottom = 160.0
+focus_mode = 1
+mouse_filter = 1
+mouse_force_pass_scroll_events = false
+clear_button_enabled = true
+shortcut_keys_enabled = false
+deselect_on_focus_loss_enabled = false
+drag_and_drop_selection_enabled = false
+
+[node name="Offset Follow Flip" type="CheckBox" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 24.0
+offset_right = 168.0
+offset_bottom = 55.0
+tooltip_text = "If the character is flipped, the offset will be inverted."
+focus_mode = 0
+text = "Offset follows flip"
+
+[node name="Offset Follow Scale" type="CheckBox" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 178.0
+offset_top = 25.0
+offset_right = 300.0
+offset_bottom = 56.0
+tooltip_text = "The animation offset will follow the character's scale."
+focus_mode = 0
+text = "Follow Scale"
+
+[node name="AnimationGhost" type="MenuButton" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 385.0
+offset_top = 179.0
+offset_right = 527.0
+offset_bottom = 210.0
+text = "Animation Ghost"
+flat = false
+
+[node name="Insert Animation Name" type="LineEdit" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 61.0
+offset_top = 363.0
+offset_right = 214.0
+offset_bottom = 394.0
+placeholder_text = "Animation Name"
+
+[node name="PreffixList" type="MenuButton" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 282.0
+offset_top = 181.0
+offset_right = 373.0
+offset_bottom = 212.0
+text = "Preffix List"
+flat = false
+
+[node name="Sing Animation Follow Flip" type="CheckBox" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 312.0
+offset_top = 25.0
+offset_right = 492.0
+offset_bottom = 56.0
+tooltip_text = "If the character is flipped horizontally, \"singLEFT\" and \"singRIGHT\" animation will be reversed."
+focus_mode = 0
+text = "Sing Animation Follow Flip"
+
+[node name="AssetPath" type="LineEdit" parent="TabContainer/Animation Data"]
+layout_mode = 0
+offset_left = 363.0
+offset_top = 75.0
+offset_right = 562.0
+offset_bottom = 106.0
+
+[node name="Json Data" type="Panel" parent="TabContainer"]
+visible = false
+self_modulate = Color(1, 1, 1, 0.0705882)
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="image_file_text" type="Label" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 10.0
+offset_right = 471.0
+offset_bottom = 271.0
+text = "Image File:"
+
+[node name="scale" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+custom_minimum_size = Vector2(235, 0)
+layout_mode = 2
+offset_left = 6.0
+offset_top = 47.0
+offset_right = 396.0
+offset_bottom = 99.0
+text = "Scale:"
+value_to_add = 0.1
+
+[node name="antialiasing" type="CheckBox" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = 321.0
+offset_top = 60.0
+offset_right = 440.0
+offset_bottom = 91.0
+focus_mode = 0
+text = "Antialiasing"
+
+[node name="FlipX" type="CheckBox" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = 240.0
+offset_top = 59.0
+offset_right = 310.0
+offset_bottom = 90.0
+focus_mode = 0
+text = "Flip X"
+
+[node name="image_file" type="LineEdit" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = 106.0
+offset_top = 10.0
+offset_right = 338.0
+offset_bottom = 41.0
+focus_mode = 1
+keep_editing_on_text_submit = true
+selecting_enabled = false
+
+[node name="Load Image" type="Button" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = 351.0
+offset_top = 8.0
+offset_right = 449.0
+offset_bottom = 39.0
+focus_mode = 0
+text = "Load Image"
+
+[node name="Position Array" type="Label" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = -1.0
+offset_top = 110.0
+offset_right = 610.0
+offset_bottom = 255.0
+text = "Position Array:                         Camera Position:                     Origin Offset:"
+
+[node name="position_x" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+custom_minimum_size = Vector2(208, 0)
+layout_mode = 0
+offset_left = 1.0
+offset_top = 137.0
+offset_right = 209.0
+offset_bottom = 186.0
+text = "x: "
+shift_value = 10.0
+
+[node name="position_y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+custom_minimum_size = Vector2(208, 0)
+layout_mode = 0
+offset_top = 203.0
+offset_right = 208.0
+offset_bottom = 252.0
+text = "y: "
+shift_value = 10.0
+
+[node name="Camera X" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+layout_mode = 0
+offset_left = 207.0
+offset_top = 136.0
+offset_right = 397.0
+offset_bottom = 185.0
+shift_value = 10.0
+
+[node name="Camera Y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+layout_mode = 0
+offset_left = 208.0
+offset_top = 207.0
+offset_right = 398.0
+offset_bottom = 256.0
+shift_value = 10.0
+
+[node name="Origin X" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+layout_mode = 0
+offset_left = 425.0
+offset_top = 138.0
+offset_right = 615.0
+offset_bottom = 187.0
+shift_value = 10.0
+
+[node name="Origin Y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+layout_mode = 0
+offset_left = 425.0
+offset_top = 205.0
+offset_right = 615.0
+offset_bottom = 254.0
+shift_value = 10.0
+
+[node name="HealthBar" type="Label" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 247.0
+offset_right = 603.0
+offset_bottom = 332.0
+text = "====Health Bar====
+
+Color:"
+
+[node name="HealthColor" type="ColorPickerButton" parent="TabContainer/Json Data/HealthBar"]
+layout_mode = 0
+offset_left = 48.0
+offset_top = 49.0
+offset_right = 159.0
+offset_bottom = 81.0
+text = "Color:"
+
+[node name="Icon" type="Label" parent="TabContainer/Json Data/HealthBar"]
+layout_mode = 0
+offset_left = 175.0
+offset_top = 53.0
+offset_right = 215.0
+offset_bottom = 76.0
+text = "Icon:"
+
+[node name="HealthIcon" type="LineEdit" parent="TabContainer/Json Data/HealthBar/Icon"]
+layout_mode = 0
+offset_left = 47.0
+offset_top = -5.0
+offset_right = 213.0
+offset_bottom = 26.0
+focus_mode = 1
+keep_editing_on_text_submit = true
+drag_and_drop_selection_enabled = false
+
+[node name="isPixelIcon" type="CheckBox" parent="TabContainer/Json Data"]
+layout_mode = 0
+offset_left = 399.0
+offset_top = 296.0
+offset_right = 518.0
+offset_bottom = 327.0
+text = "is Pixel Icon"
+
+[node name="CharacterData" type="Panel" parent="."]
+self_modulate = Color(1, 1, 1, 0.541176)
+offset_left = 762.0
+offset_top = -3.0
+offset_right = 1280.0
+offset_bottom = 154.0
+
+[node name="CharacterList" type="MenuButton" parent="CharacterData"]
+clip_contents = true
+layout_mode = 0
+offset_left = 308.0
+offset_top = 51.0
+offset_right = 448.0
+offset_bottom = 82.0
+shortcut_feedback = false
+shortcut_in_tooltip = false
+text = "Load Character"
+flat = false
+
+[node name="Character Text" type="Label" parent="CharacterData"]
+layout_mode = 0
+offset_left = 13.0
+offset_top = 5.0
+offset_right = 94.0
+offset_bottom = 28.0
+text = "Character:"
+
+[node name="Save Character" type="Button" parent="CharacterData"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 52.0
+offset_right = 148.0
+offset_bottom = 83.0
+focus_mode = 0
+text = "Save Character"
+
+[node name="Reload Character" type="Button" parent="CharacterData"]
+layout_mode = 0
+offset_left = 309.0
+offset_top = 92.0
+offset_right = 451.0
+offset_bottom = 123.0
+focus_mode = 0
+text = "Reload Character"
+
+[node name="New Character" type="Button" parent="CharacterData"]
+layout_mode = 0
+offset_left = 309.0
+offset_top = 8.0
+offset_right = 450.0
+offset_bottom = 39.0
+focus_mode = 0
+text = "New Character"
+
+[node name="Load Character From File" type="Button" parent="CharacterData"]
+layout_mode = 0
+offset_left = 164.0
+offset_top = 52.0
+offset_right = 283.0
+offset_bottom = 83.0
+focus_mode = 0
+text = "Load from File"
+
+[node name="Playable Character" type="CheckBox" parent="CharacterData"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 108.0
+offset_right = 257.0
+offset_bottom = 139.0
+focus_mode = 0
+button_pressed = true
+text = "Playable Character"
+
+[connection signal="value_changed" from="TabContainer/Animation Data/anim_offset_x" to="." method="_on_anim_offset_x_value_changed"]
+[connection signal="value_changed" from="TabContainer/Animation Data/anim_offset_y" to="." method="_on_anim_offset_y_value_changed"]
+[connection signal="button_up" from="TabContainer/Animation Data/Add Animation" to="." method="_on_add_animation_button_up"]
+[connection signal="button_up" from="TabContainer/Animation Data/Remove Animation" to="." method="_on_remove_animation_button_up"]
+[connection signal="button_up" from="TabContainer/Animation Data/Replay Animation" to="." method="_on_replay_animation_button_up"]
+[connection signal="toggled" from="TabContainer/Animation Data/Looped" to="." method="_on_looped_toggled"]
+[connection signal="value_changed" from="TabContainer/Animation Data/FrameRate" to="." method="_on_frame_rate_value_changed"]
+[connection signal="text_submitted" from="TabContainer/Animation Data/Preffix" to="." method="setAnimationPreffix"]
+[connection signal="text_submitted" from="TabContainer/Animation Data/Indices" to="." method="_on_indices_text_submitted"]
+[connection signal="toggled" from="TabContainer/Animation Data/Offset Follow Flip" to="." method="_on_offset_follow_flip_toggled"]
+[connection signal="toggled" from="TabContainer/Animation Data/Offset Follow Scale" to="." method="_on_offset_follow_scale_toggled"]
+[connection signal="toggled" from="TabContainer/Animation Data/Sing Animation Follow Flip" to="." method="_on_flip_sing_direction_toggled"]
+[connection signal="text_submitted" from="TabContainer/Animation Data/AssetPath" to="." method="_on_asset_path_text_submitted"]
+[connection signal="value_changed" from="TabContainer/Json Data/scale" to="." method="_on_scale_value_changed"]
+[connection signal="toggled" from="TabContainer/Json Data/antialiasing" to="." method="_on_antialiasing_toggled"]
+[connection signal="toggled" from="TabContainer/Json Data/FlipX" to="." method="_on_flip_x_toggled"]
+[connection signal="text_submitted" from="TabContainer/Json Data/image_file" to="." method="_on_image_file_text_submitted"]
+[connection signal="button_down" from="TabContainer/Json Data/Load Image" to="." method="_on_load_image_button_down"]
+[connection signal="value_changed" from="TabContainer/Json Data/position_x" to="." method="_on_position_x_value_changed"]
+[connection signal="value_changed" from="TabContainer/Json Data/position_y" to="." method="_on_position_y_value_changed"]
+[connection signal="value_changed" from="TabContainer/Json Data/Camera X" to="." method="_on_camera_x_value_changed"]
+[connection signal="value_changed" from="TabContainer/Json Data/Camera Y" to="." method="_on_camera_y_value_changed"]
+[connection signal="value_changed" from="TabContainer/Json Data/Origin X" to="." method="_on_origin_x_value_changed"]
+[connection signal="value_changed" from="TabContainer/Json Data/Origin Y" to="." method="_on_origin_y_value_changed"]
+[connection signal="color_changed" from="TabContainer/Json Data/HealthBar/HealthColor" to="." method="_on_health_color_color_changed"]
+[connection signal="text_submitted" from="TabContainer/Json Data/HealthBar/Icon/HealthIcon" to="." method="_on_health_icon_text_submitted"]
+[connection signal="toggled" from="TabContainer/Json Data/isPixelIcon" to="." method="_on_is_pixel_icon_toggled"]
+[connection signal="button_up" from="CharacterData/Save Character" to="." method="_on_save_character_button_up"]
+[connection signal="button_up" from="CharacterData/Reload Character" to="." method="_on_reload_character_button_up"]
+[connection signal="button_up" from="CharacterData/Load Character From File" to="." method="_on_load_character_from_file_button_up"]
+[connection signal="toggled" from="CharacterData/Playable Character" to="." method="_on_playable_character_toggled"]

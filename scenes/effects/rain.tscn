@@ -1,0 +1,55 @@
+[gd_scene load_steps=10 format=3 uid="uid://cvfswoadadekj"]
+
+[ext_resource type="Shader" uid="uid://b2qxmgdog6ro5" path="res://assets/shaders/Rain.gdshader" id="1_pb0jo"]
+[ext_resource type="Texture2D" uid="uid://1mw81wl3squt" path="res://assets/images/effects/rain.png" id="2_pb0jo"]
+[ext_resource type="Script" uid="uid://bca73y5o8yhr" path="res://scenes/effects/rain.gd" id="3_ipjee"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_57qji"]
+shader = ExtResource("1_pb0jo")
+shader_parameter/rain_constrast = Color(0.0823529, 0.0941176, 0.0862745, 1)
+
+[sub_resource type="Curve" id="Curve_57qji"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0]
+point_count = 1
+
+[sub_resource type="Curve" id="Curve_pb0jo"]
+_limits = [1.0, 8.0, 0.0, 0.01]
+_data = [Vector2(0, 8), 0.0, 0.0, 0, 0]
+point_count = 1
+
+[sub_resource type="Curve" id="Curve_ipjee"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveXYZTexture" id="CurveXYZTexture_ki0cu"]
+curve_x = SubResource("Curve_57qji")
+curve_y = SubResource("Curve_pb0jo")
+curve_z = SubResource("Curve_ipjee")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_pb0jo"]
+particle_flag_disable_z = true
+emission_shape_offset = Vector3(640, -200, 0)
+emission_shape = 3
+emission_box_extents = Vector3(1280, 0, 0)
+angle_min = -9.99999
+angle_max = -9.99999
+gravity = Vector3(-600, 3000, 0)
+linear_accel_min = 800.0
+linear_accel_max = 800.0
+scale_curve = SubResource("CurveXYZTexture_ki0cu")
+scale_over_velocity_min = 1.0
+scale_over_velocity_max = 10.0
+
+[node name="Rain" type="GPUParticles2D"]
+material = SubResource("ShaderMaterial_57qji")
+amount = 150
+texture = ExtResource("2_pb0jo")
+lifetime = 0.75
+preprocess = 10.0
+speed_scale = 3.0
+fixed_fps = 0
+collision_base_size = 0.0
+visibility_rect = Rect2(0, 0, 1280, 720)
+process_material = SubResource("ParticleProcessMaterial_pb0jo")
+script = ExtResource("3_ipjee")
+width = 1280.0

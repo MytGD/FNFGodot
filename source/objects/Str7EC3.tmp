@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://cueo2s25ut32u"]
+
+[ext_resource type="Script" path="res://scenes/Objects/StrumNote.gd" id="1_lw344"]
+
+[node name="StrumNote" type="Node2D"]
+script = ExtResource("1_lw344")
+
+[node name="StrumSprite" type="Sprite2D" parent="."]

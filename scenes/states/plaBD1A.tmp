@@ -1,0 +1,39 @@
+[gd_scene load_steps=7 format=3 uid="uid://eohwpqwan48"]
+
+[ext_resource type="Script" path="res://source/states/PlayState3D.gd" id="1_my0t5"]
+[ext_resource type="PackedScene" uid="uid://cpy6wuade4ecp" path="res://assets/3d/bf-eteled.glb" id="2_igrof"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_h2msh"]
+sky_top_color = Color(1, 1, 1, 1)
+
+[sub_resource type="Sky" id="Sky_5lybx"]
+sky_material = SubResource("ProceduralSkyMaterial_h2msh")
+
+[sub_resource type="Environment" id="Environment_3pcnt"]
+background_mode = 1
+background_color = Color(1, 1, 1, 1)
+sky = SubResource("Sky_5lybx")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_sh6rp"]
+
+[node name="PlayState" type="Node2D"]
+script = ExtResource("1_my0t5")
+songFolder = null
+songJson = null
+difficulty = null
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.92615, 5.51911)
+current = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_3pcnt")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.08697, 0)
+mesh = SubResource("BoxMesh_sh6rp")
+
+[node name="bf-eteled" parent="." instance=ExtResource("2_igrof")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0576177, 0, 1.60681)

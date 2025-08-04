@@ -1,0 +1,466 @@
+extends Node
+const AlphabetText = preload("res://source/objects/AlphabetText/AlphabetText.gd")
+const SpriteAnimated = preload("res://source/objects/Sprite/SpriteAnimated.gd")
+const BarSize = 70
+const ModInfoScale = Vector2(0.45,0.45)
+const Icon: GDScript = preload('res://source/objects/UI/Icon.gd')
+
+const UNSELECT_COLOR = Color.DIM_GRAY
+const SELECT_COLOR = Color.WHITE
+
+const SongsOffset = 180
+
+var PlayState: GDScript = preload("res://source/states/PlayState.gd")
+var ModeSelect: GDScript = preload("res://source/states/Menu/ModeSelect.gd")
+
+static var curMod: int = 0
+static var curSongIndex: int = 0
+static var curDifficulty: int = 0
+
+var weekList: Dictionary = {}
+
+var tweenStarted: bool = false
+var difficulty: String = ''
+
+var menuSong: AudioStreamPlayer = AudioStreamPlayer.new()
+
+@onready var difficultySprite: SpriteAnimated = SpriteAnimated.new()
+@onready var diffiSelectLeft: SpriteAnimated = SpriteAnimated.new()
+@onready var diffiSelectRight: SpriteAnimated = SpriteAnimated.new()
+
+@onready var modSelectLeft: SpriteAnimated = SpriteAnimated.new()
+@onready var modSelectRight: SpriteAnimated = SpriteAnimated.new()
+
+var diffiTween: Tween
+var weeks: Array = []
+
+var cur_song: StringName = ''
+
+static var mods: Array = []
+
+var bar_top = ColorRect.new()
+var bar_bottom = ColorRect.new()
+
+@onready var bar_tween = create_tween()
+
+var cur_week_node: Node2D
+
+@onready var cur_mod_text: AlphabetText = AlphabetText.new()
+@onready var cur_mod_image: Sprite2D = Sprite2D.new()
+
+var cur_mod_data: Array
+var cur_song_data: Array
+var cur_song_difficulties: Array
+var cur_song_difficulties_data: Dictionary
+
+
+var isSettingDifficulty: bool = false
+
+var scroll_index: float = curSongIndex
+var click_select_song: bool = false
+var is_scrolling: bool = false
+signal exiting
+
+func _ready():
+	name = 'Freeplay'
+	#var bg = Sprite2D.new()
+	#bg.centered = false
+	#bg.texture = Paths.imageTexture('menuBG')
+	#bg.name = 'bg'
+	#bg.modulate = Color.GRAY
+	#add_child(bg)
+	
+	add_child(bar_top)
+	add_child(bar_bottom)
+	
+	add_child(difficultySprite)
+	
+	difficultySprite.modulate.a = 0.0
+	
+	for i in [diffiSelectLeft,diffiSelectRight,modSelectLeft,modSelectRight]:
+		i.image.texture = Paths.imageTexture('freeplay/freeplaySelector')
+		i.animation.addAnimByPrefix('anim','arrow pointer loop',24,true)
+	
+	diffiSelectLeft.position = Vector2(-80,-20)
+	difficultySprite.add_child(diffiSelectLeft)
+	
+	cur_mod_image.add_child(modSelectLeft)
+	modSelectLeft.scale = Vector2(1.7,1.7)
+	modSelectRight.scale = Vector2(1.7,1.7)
+	modSelectRight.flipX = true
+	cur_mod_image.add_child(modSelectRight)
+	
+	modSelectLeft.position.x = -100
+	diffiSelectRight.position.y = -20
+	diffiSelectRight.flipX = true
+	difficultySprite.add_child(diffiSelectRight)
+	difficultySprite.position.x = ScreenUtils.screenWidth
+	bar_top.add_child(cur_mod_image)
+	cur_mod_image.add_child(cur_mod_text)
+	
+	cur_mod_text.scale = ModInfoScale + Vector2.ONE
+	cur_mod_text.position.y = 20
+	cur_mod_image.centered = false
+	cur_mod_image.position.x = 50
+	cur_mod_image.scale = ModInfoScale
+	
+	bar_top.size = Vector2(ScreenUtils.screenWidth,BarSize)
+	bar_top.position.y = -BarSize
+	bar_top.color = Color.BLACK
+	
+	bar_bottom.size = Vector2(ScreenUtils.screenWidth,BarSize)
+	bar_bottom.position.y = ScreenUtils.screenHeight
+	bar_bottom.color = Color.BLACK
+	
+	Paths.clearFiles()
+	menuSong = FunkinGD.playSound(Paths.music('freakyMenu'),1.0,'freakyMenu',false,true)
+	
+	loadWeeks()
+	
+	var old_selected = curSongIndex
+	setModSelected(curMod)
+	setSongSelected(old_selected,false)
+	exiting.connect(func():
+		if cur_week_node:
+			remove_children()
+		queue_free()
+	)
+	Global.onSwapTree.connect(func():
+		exiting.emit()
+		menuSong.queue_free()
+	)
+	
+	
+	
+	bar_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	bar_tween.parallel().tween_property(bar_top,"position:y",0,1)
+	bar_tween.parallel().tween_property(bar_bottom,"position:y",ScreenUtils.screenHeight-BarSize,1)
+	
+	if cur_week_node:
+		cur_week_node.position.x = -ScreenUtils.screenWidth
+		bar_tween.parallel().tween_property(cur_week_node,"position:x",0,1)
+		
+func loadWeekFrom(path: String):
+	var mod = Paths.getModFolder(path)
+	if !mod:
+		mod = Paths.game_name
+	#Check if mod is already loaded
+	for i in mods:
+		if i[0] == mod:
+			return
+	
+
+	var weekFolder = Paths.exePath+'/'+path
+	var weeksFounded: Array = []
+	if DirAccess.dir_exists_absolute(weekFolder):
+		if FileAccess.file_exists(weekFolder+'/weekList.txt'):
+			for split in FileAccess.get_file_as_string(weekFolder+'/weekList.txt').split('\n'):
+				if FileAccess.file_exists(weekFolder+'/'+split+'.json'):
+					weeksFounded.append(split)
+			
+		for week in DirAccess.get_files_at(weekFolder):
+			if not week.replace('.json','') in weeksFounded and week.ends_with(".json"):
+				weeksFounded.append(week)
+	
+	var mod_node = Node2D.new()
+	var songs_nodes = []
+	Paths.curMod = mod
+	
+	var mod_array = [mod,mod_node,Paths.imageTexture('pack',false),songs_nodes,{}]
+	for week in weeksFounded:
+		var songArray: Dictionary = Paths.loadJson(weekFolder+'/'+week)
+		
+		var data = loadWeekProperties(songArray)
+		mod_array[4][week] = data
+		songs_nodes.append_array(data.songs)
+		
+	
+	var index: int = 0
+	for i in songs_nodes:
+		var text = i[0]
+		var icon = i[1]
+		icon._position.y = SongsOffset * index
+		text.position = Vector2(icon.pivot_offset.x*2,icon.pivot_offset.y - 20 + icon.position.y)
+		mod_node.add_child(icon)
+		mod_node.add_child(text)
+		index += 1
+	mods.append(mod_array)
+	
+func loadWeekProperties(week_data: Dictionary) -> Dictionary:
+	var dif: String = week_data.get('difficulties','')
+	if !dif:
+		dif = 'easy, normal, hard'
+		
+	var dif_split: Array = StringHelper.split_no_space(dif,',')
+	var data: Dictionary = {
+		'songs': [],
+		'difficulties': dif
+	}
+	
+	for song in week_data.get('songs',[]):
+		var alphabet = AlphabetText.new(song[0])
+		var icon = Icon.new(song[1])
+		var bg_color = song[2]
+		var difficuty_data = {}
+		
+		for i in dif_split: difficuty_data[i] = []
+		
+		if song.size() >= 4 and song[3] is Dictionary:
+			difficuty_data.merge(song[3],true)
+		var song_data = [alphabet, icon, bg_color, difficuty_data]
+		data.songs.append(song_data)
+	return data
+	
+func loadWeeks():
+	loadWeekFrom('assets/weeks')
+	for i in Paths.getModsEnabled():
+		loadWeekFrom('mods/'+i+'/weeks')
+	#loadSongs(mod)
+	
+func setSongSelected(selected: int = 0, play_sound: bool = true):
+	var song_list = cur_mod_data[3]
+	
+	if selected < 0: 
+		selected = song_list.size()-1
+		scroll_index = selected
+	elif selected > song_list.size()-1:
+		selected = 0
+		scroll_index = 0
+	
+	curSongIndex = selected
+	
+	
+	if cur_song_data:
+		cur_song_data[0].modulate = UNSELECT_COLOR
+		cur_song_data[1].modulate = UNSELECT_COLOR
+	
+	if song_list:
+		cur_song_data = song_list[selected]
+		
+		cur_song_data[0].modulate = SELECT_COLOR
+		cur_song_data[1].modulate = SELECT_COLOR
+		
+		cur_song_difficulties_data = cur_song_data[3]
+		cur_song_difficulties = cur_song_difficulties_data.keys()
+	
+	if play_sound: FunkinGD.playSound(Paths.sound('scrollMenu'))
+	
+func load_game(song_name: StringName, difficulty: StringName, songFolder: StringName = '', json_name: StringName = '', audio_suffix: StringName = ''):
+	Conductor.audioSuffix = audio_suffix
+	Global.swapTree(PlayState.new(song_name,difficulty),true)
+	tweenStarted = true
+	if !songFolder: return
+	Conductor.songs_dir[song_name] = {
+		difficulty: {
+			'folder': songFolder,
+			'json': json_name,
+			'audio_suffix': audio_suffix
+		}
+	}
+
+	
+func exit():
+	set_process_input(false)
+	bar_tween.kill()
+	bar_tween = create_tween().set_trans(Tween.TRANS_CUBIC)
+	bar_tween.parallel().tween_property(cur_week_node,'position:x',-ScreenUtils.screenWidth,0.5)
+	bar_tween.parallel().tween_property(bar_top,'position:y',-BarSize,0.5)
+	bar_tween.parallel().tween_property(bar_bottom,'position:y',ScreenUtils.screenHeight,0.5)
+	bar_tween.finished.connect(func(): exiting.emit())
+	
+
+func setModSelected(banner_id: int = 0):
+	FunkinGD.playSound(Paths.sound('scrollMenu'))
+	if cur_week_node: remove_child(cur_week_node)
+	
+	if banner_id < 0: banner_id = mods.size()-1
+	elif banner_id >= mods.size(): banner_id = 0
+	cur_mod_data = mods[banner_id]
+	
+	Paths.curMod = cur_mod_data[0]
+	
+	cur_mod_text.text = cur_mod_data[0]
+	
+	cur_week_node = cur_mod_data[1]
+	cur_week_node.modulate = Color.WHITE
+	cur_week_node.position = Vector2.ZERO
+	
+	
+	for i in cur_mod_data[3]:
+		i[0].modulate = UNSELECT_COLOR
+		i[1].modulate = UNSELECT_COLOR
+	
+	add_child(cur_week_node)
+	move_child(cur_week_node,bar_top.get_index())
+	
+	var mod_image = cur_mod_data[2]
+	cur_mod_image.texture = mod_image
+	
+	var image_size = mod_image.get_size().x
+	cur_mod_text.position.x = image_size + 50
+	modSelectRight.position.x = image_size
+	setSongSelected(0,false)
+	
+	curMod = banner_id
+	
+	#Paths.curMod = banners[banner_id][1]
+
+func createDifficulty():
+	isSettingDifficulty = true
+	if diffiTween: diffiTween.kill()
+	diffiTween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	diffiTween.tween_property(difficultySprite,'modulate:a',1.0,0.5)
+	diffiTween.parallel().tween_property(cur_week_node,'modulate',Color.DARK_GRAY,0.5)
+	
+	
+func setDifficulty(id: int = curDifficulty):
+	if !cur_song_data: return
+	if !isSettingDifficulty:  createDifficulty()
+	
+	if id < 0:
+		id = cur_song_difficulties.size()-1
+	elif id >= cur_song_difficulties.size():
+		id = 0
+	
+	difficulty = cur_song_difficulties[id]
+	curDifficulty = id
+	
+	difficultySprite.animation.clearLibrary()
+	
+	var path = Paths.imagePath('menudifficulties/'+difficulty.to_lower())
+	
+	if !path: difficultySprite.image.texture = null; return
+	
+	if FileAccess.file_exists(path.get_basename()+'.xml'):
+		difficultySprite.is_animated = true
+		difficultySprite.image.texture = Paths.imageTexture(path)
+		difficultySprite.animation.addAnimByPrefix('anim','idle',24,true)
+		difficultySprite.animation.play('anim')
+	else:
+		difficultySprite.is_animated = false
+		difficultySprite.image.texture = Paths.imageTexture(path)
+	
+	var difWidth = difficultySprite.pivot_offset.x*2
+	
+	diffiSelectRight.position.x = difWidth + 30
+	difficultySprite.position.x = ScreenUtils.screenWidth - difWidth - 100
+	difficultySprite.position.y = 50
+
+
+func exitDifficulty():
+	if diffiTween: diffiTween.kill()
+	diffiTween = create_tween().parallel().set_ease(Tween.EASE_IN)
+	diffiTween.tween_property(difficultySprite,'modulate:a',0,0.5)
+	diffiTween.parallel().tween_property(cur_week_node,'modulate',Color.WHITE,0.4)
+	isSettingDifficulty = false
+	
+
+func _process(_delta):
+	if cur_song_data:
+		var node = cur_song_data[1]
+		cur_week_node.position = cur_week_node.position.lerp(Vector2(-node.position.x,-node.position.y + 320),0.15)
+	
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		if !event.pressed: return
+		var jump_index: int = 5 if Input.is_key_pressed(KEY_SHIFT) else 1
+		
+		if !isSettingDifficulty:
+			match event.keycode:
+				KEY_LEFT: setModSelected(curMod - 1)
+				KEY_DOWN: setSongSelected(curSongIndex + jump_index)
+				KEY_UP: setSongSelected(curSongIndex - jump_index)
+				KEY_RIGHT: setModSelected(curMod + 1)
+				KEY_ENTER: setDifficulty();
+				KEY_BACKSPACE: exit()
+		else:
+			match event.keycode:
+				KEY_LEFT: setDifficulty(curDifficulty - 1)
+				KEY_RIGHT: setDifficulty(curDifficulty + 1)
+				KEY_ENTER: startSong()
+				KEY_BACKSPACE: exitDifficulty()
+			
+	elif event is InputEventMouseButton:
+		if event.button_index == 1:
+			if !isSettingDifficulty and event.position.y > 120:
+				is_scrolling = event.pressed
+				scroll_index = -1
+				
+				if not event.pressed and click_select_song: setDifficulty()
+				else: click_select_song = true
+				return
+			if !event.pressed: return
+			
+			if difficultySprite.image.texture:
+				if MathHelper.is_pos_in_area(
+					event.position, 
+					difficultySprite.global_position,
+					difficultySprite.image.texture.get_size()): 
+						startSong();
+						return
+			
+			if MathHelper.is_pos_in_area(
+				event.position, 
+				modSelectRight.global_position,
+				modSelectRight.image.region_rect.size*modSelectRight.global_scale): 
+					setModSelected(curMod+1);
+			
+			elif MathHelper.is_pos_in_area(
+				event.position, 
+				diffiSelectLeft.global_position,
+				diffiSelectLeft.image.region_rect.size*diffiSelectLeft.global_scale): 
+					setDifficulty(curDifficulty-1)
+				
+			elif MathHelper.is_pos_in_area(
+				event.position, 
+				diffiSelectRight.global_position,
+				diffiSelectRight.image.region_rect.size*diffiSelectRight.global_scale): 
+					setDifficulty(curDifficulty+1);
+			
+			elif MathHelper.is_pos_in_area(
+				event.position, 
+				modSelectLeft.global_position,
+				modSelectLeft.image.region_rect.size*modSelectLeft.global_scale): 
+					setModSelected(curMod-1);
+			else:
+				click_select_song = false 
+				exitDifficulty()
+			return
+		elif !event.pressed: return
+		match event.button_index:
+			4: setSongSelected(curSongIndex-1)
+			5: setSongSelected(curSongIndex+1)
+		
+	elif event is InputEventMouseMotion:
+		if !is_scrolling: return
+		if scroll_index == -1: scroll_index = curSongIndex
+		else: scroll_index -= event.relative.y/100
+		
+		if int(scroll_index) != curSongIndex:
+			click_select_song = false
+			setSongSelected(scroll_index)
+	
+func startSong():
+	var song_name = cur_song_data[0].text
+	var songJson = song_name
+	var songFolder: String = ''
+	var audio_suffix: String = ''
+	
+	var songData
+	if cur_song_difficulties_data.get(difficulty):
+		var data = cur_song_difficulties_data[difficulty]
+		songJson = data[0]
+		songFolder = ArrayHelper.get_array_index(data,1,'')
+		audio_suffix = ArrayHelper.get_array_index(data,2,'')
+		
+		songData = Paths.data(songJson,'',songFolder)
+	else:
+		songData = Paths.data(songJson,difficulty,songFolder)
+	
+	if songData: load_game(song_name,difficulty,songFolder,songJson,audio_suffix)
+
+func remove_children():
+	for i in get_children():
+		remove_child(i)

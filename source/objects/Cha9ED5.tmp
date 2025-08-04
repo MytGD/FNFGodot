@@ -1,0 +1,67 @@
+[gd_scene load_steps=6 format=3 uid="uid://di5mq8awroru7"]
+
+[ext_resource type="Script" path="res://scenes/objects/Character.gd" id="1_nfysi"]
+[ext_resource type="Texture2D" uid="uid://betp4tmdr1xmk" path="res://assets/shared/images/characters/BOYFRIEND.png" id="2_rxrql"]
+
+[sub_resource type="Animation" id="Animation_kq8jk"]
+step = 0.0416667
+
+[sub_resource type="Animation" id="Animation_elfjl"]
+resource_name = "idle"
+step = 0.0416667
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("imageFile:region_rect")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.0833333, 0.166667, 0.25, 0.291667),
+"transitions": PackedFloat32Array(1e-05, 1e-05, 1e-05, 1e-05, 1e-05),
+"update": 1,
+"values": [Rect2(3189, 868, 411, 392), Rect2(3596, 868, 411, 393), Rect2(2, 1311, 408, 393), Rect2(409, 1311, 410, 411), Rect2(821, 1311, 408, 412)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("imageFile:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.0833333, 0.166667, 0.25, 0.291667),
+"transitions": PackedFloat32Array(1e-05, 1e-05, 1e-05, 1e-05, 1e-05),
+"update": 1,
+"values": [Vector2(0, 20), Vector2(-1, 19), Vector2(-3, 14), Vector2(0, 0), Vector2(-2, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_xveje"]
+_data = {
+"RESET": SubResource("Animation_kq8jk"),
+"idle": SubResource("Animation_elfjl")
+}
+
+[node name="Character" type="Node2D"]
+position = Vector2(468, 249)
+script = ExtResource("1_nfysi")
+
+[node name="imageFile" type="NinePatchRect" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -2.0
+offset_top = -10.0
+offset_right = 409.0
+offset_bottom = 382.0
+grow_horizontal = 2
+size_flags_stretch_ratio = 0.0
+auto_translate = false
+localize_numeral_system = false
+texture = ExtResource("2_rxrql")
+region_rect = Rect2(3187, 867, 410, 392)
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[node name="Animation" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_xveje")
+}

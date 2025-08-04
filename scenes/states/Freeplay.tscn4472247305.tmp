@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://dt22jxhamkhei"]
+
+[ext_resource type="Script" uid="uid://byyeq5lcwpbyq" path="res://source/states/Freeplay.gd" id="1_rst3y"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1k37m"]
+
+[node name="Freeplay" type="Node2D"]
+material = SubResource("ShaderMaterial_1k37m")
+script = ExtResource("1_rst3y")

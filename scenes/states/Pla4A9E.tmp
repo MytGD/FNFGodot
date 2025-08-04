@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://c0dtf3f43ohlv"]
+
+[ext_resource type="Script" path="res://scenes/states/PlayState.gd" id="1_qr75d"]
+[ext_resource type="PackedScene" uid="uid://cvtb7ssm4xxu7" path="res://scenes/global/Camera.tscn" id="4_ltv7o"]
+[ext_resource type="Shader" path="res://mods/shaders/MirrorRepeatEffect.gdshader" id="5_fneob"]
+
+[node name="PlayState" type="Node2D"]
+script = ExtResource("1_qr75d")
+
+[node name="camGame" parent="." instance=ExtResource("4_ltv7o")]
+shader = ExtResource("5_fneob")
+
+[node name="camHUD" parent="." instance=ExtResource("4_ltv7o")]
+follow_viewport_scale = 1.2
+
+[node name="NinePatchRect" type="NinePatchRect" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_right = 40.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+auto_translate = false
+localize_numeral_system = false

@@ -1,0 +1,183 @@
+{
+	"antialiasing": true,
+	"arrowSkin": "noteSkins/NOTE_assets",
+	"badOffset": 150.0,
+	"botPlay": false,
+	"camZooms": true,
+	"comboOffset": [
+		700,
+		-250,
+		-500,
+		-200
+	],
+	"comboStacking": true,
+	"downscroll": false,
+	"fixImageBorders": false,
+	"flashingLights": true,
+	"fps": 120,
+	"goodOffset": 130.0,
+	"hideHud": false,
+	"lowQuality": false,
+	"middlescroll": false,
+	"miraculousOffset": 25.0,
+	"miraculousRating": false,
+	"modsEnabled": {
+		"Archaios Theos": true,
+		"Doki Doki Takeover": true,
+		"Eteled": true,
+		"Fnif3": true,
+		"Funkin.Avi": true,
+		"Godsent Gaslit": true,
+		"Impostor V4": true,
+		"Incident 012f": true,
+		"Indie Cross": true,
+		"Last Determined": true,
+		"MadVan": true,
+		"Mario Madness V2 - Lua Port": true,
+		"Mods": true,
+		"Ok Friday": true,
+		"Psych Mods Compatible": true,
+		"Sonic.exe - Unresponsive": true,
+		"Sonic.exe 2.5": true,
+		"StarlightMayhem": true,
+		"Super Funkin' Galaxy Demo v2.1.0": true,
+		"System Overload": true,
+		"Unknown Suffering - AlexStep8": true,
+		"Voiid Chronicles": true,
+		"Vs Neon": true,
+		"Vs QT - Mods Folder": true,
+		"Vs QT Rewired": true,
+		"Vs Wednesday's Infidelity - Mods Folder": true,
+		"Wii Space": true,
+		"YOURSELF": true,
+		"base_mod": true,
+		"kapi port": true,
+		"soff": true
+	},
+	"modsOrder": [],
+	"notHitSustainWhenMiss": false,
+	"noteSkin": "Default",
+	"note_keys": {
+		"1": [
+			[
+				68,
+				4194319
+			]
+		],
+		"2": [
+			[
+				70,
+				4194322
+			],
+			[
+				74,
+				4194320
+			]
+		],
+		"3": [
+			[
+				68,
+				4194319
+			],
+			[
+				32,
+				4194322
+			],
+			[
+				75,
+				4194321
+			]
+		],
+		"4": [
+			[
+				68,
+				4194319
+			],
+			[
+				70,
+				4194322
+			],
+			[
+				74,
+				4194320
+			],
+			[
+				75,
+				4194321
+			]
+		],
+		"5": [
+			[
+				68,
+				4194319
+			],
+			[
+				70,
+				4194322
+			],
+			[
+				32
+			],
+			[
+				74,
+				4194320
+			],
+			[
+				75,
+				4194321
+			]
+		],
+		"6": [
+			[
+				83
+			],
+			[
+				68
+			],
+			[
+				70
+			],
+			[
+				74
+			],
+			[
+				75
+			],
+			[
+				76
+			]
+		],
+		"7": [
+			[
+				83
+			],
+			[
+				68
+			],
+			[
+				70
+			],
+			[
+				32
+			],
+			[
+				74
+			],
+			[
+				75
+			],
+			[
+				76
+			]
+		]
+	},
+	"opponentSplashes": false,
+	"playAsOpponent": false,
+	"shadersEnabled": true,
+	"sickOffset": 45.0,
+	"songOffset": 0,
+	"splashAlpha": 0.8,
+	"splashSkin": "noteSplashes/noteSplashes",
+	"splashesEnabled": true,
+	"timeBarType": "Disabled"
+}

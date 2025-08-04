@@ -1,0 +1,24 @@
+[gd_scene load_steps=4 format=3 uid="uid://dt22jxhamkhei"]
+
+[ext_resource type="Script" path="res://source/states/Freeplay.gd" id="1_rst3y"]
+[ext_resource type="Material" uid="uid://w46fqh62lqvh" path="res://assets/shaders/RGBPalette.material" id="2_1wnxe"]
+[ext_resource type="Texture2D" uid="uid://bjda0a682q0o8" path="res://icon.svg" id="3_1yf1r"]
+
+[node name="Freeplay" type="Node2D"]
+light_mask = 2
+visibility_layer = 2
+script = ExtResource("1_rst3y")
+
+[node name="Control" type="Control" parent="."]
+modulate = Color(1, 1, 1, 0.619608)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 728.0
+offset_bottom = 490.0
+
+[node name="Icon" type="Sprite2D" parent="Control"]
+modulate = Color(1, 1, 1, 0.396078)
+self_modulate = Color(1, 1, 1, 0.54902)
+material = ExtResource("2_1wnxe")
+position = Vector2(257, 212)
+texture = ExtResource("3_1yf1r")

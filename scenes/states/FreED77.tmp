@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://dt22jxhamkhei"]
+
+[ext_resource type="Script" path="res://source/states/Freeplay.gd" id="1_rst3y"]
+
+[node name="Freeplay" type="Node2D"]
+light_mask = 2
+visibility_layer = 2
+texture_repeat = 1
+script = ExtResource("1_rst3y")

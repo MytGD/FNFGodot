@@ -1,0 +1,31 @@
+[gd_scene load_steps=7 format=3 uid="uid://c0dtf3f43ohlv"]
+
+[ext_resource type="Script" path="res://scenes/states/PlayState.gd" id="1_qr75d"]
+[ext_resource type="PackedScene" uid="uid://cueo2s25ut32u" path="res://scenes/objects/StrumNote.tscn" id="2_ji7hf"]
+[ext_resource type="PackedScene" uid="uid://di5mq8awroru7" path="res://scenes/objects/Character.tscn" id="3_8oi05"]
+[ext_resource type="PackedScene" uid="uid://cgxfj5buxt2k2" path="res://scenes/objects/Note.tscn" id="4_ae2na"]
+[ext_resource type="AudioStream" uid="uid://dkyipmsibn158" path="res://assets/songs/reactor/Inst.ogg" id="5_ltbv3"]
+[ext_resource type="AudioStream" uid="uid://bfecjmijgvlvr" path="res://assets/songs/reactor/Voices.ogg" id="6_blo87"]
+
+[node name="PlayState" type="Node2D"]
+script = ExtResource("1_qr75d")
+
+[node name="StrumNote" parent="." instance=ExtResource("2_ji7hf")]
+position = Vector2(363, 56)
+
+[node name="Character" parent="." instance=ExtResource("3_8oi05")]
+position = Vector2(796, 371)
+
+[node name="StrumNote2" parent="." instance=ExtResource("2_ji7hf")]
+position = Vector2(484, 55)
+
+[node name="Note" parent="." instance=ExtResource("4_ae2na")]
+position = Vector2(241, 238)
+noteData = 1
+strumTime = 2000
+
+[node name="Inst" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_ltbv3")
+
+[node name="Voices" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_blo87")

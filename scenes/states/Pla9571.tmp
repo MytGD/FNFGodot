@@ -1,0 +1,23 @@
+[gd_scene load_steps=6 format=3 uid="uid://c0dtf3f43ohlv"]
+
+[ext_resource type="Script" path="res://scenes/states/PlayState.gd" id="1_qr75d"]
+[ext_resource type="PackedScene" uid="uid://cvtb7ssm4xxu7" path="res://scenes/global/Camera.tscn" id="4_ltv7o"]
+[ext_resource type="Shader" path="res://mods/shaders/MirrorRepeatEffect.gdshader" id="5_fneob"]
+[ext_resource type="AudioStream" uid="uid://dkyipmsibn158" path="res://mods/songs/reactor/Inst.ogg" id="5_ltbv3"]
+[ext_resource type="AudioStream" uid="uid://bfecjmijgvlvr" path="res://mods/songs/reactor/Voices.ogg" id="6_blo87"]
+
+[node name="PlayState" type="Node2D"]
+script = ExtResource("1_qr75d")
+
+[node name="Inst" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_ltbv3")
+
+[node name="Voices" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_blo87")
+
+[node name="camGame" parent="." instance=ExtResource("4_ltv7o")]
+layer = 0
+shader = ExtResource("5_fneob")
+
+[node name="camHUD" parent="." instance=ExtResource("4_ltv7o")]
+follow_viewport_scale = 1.2

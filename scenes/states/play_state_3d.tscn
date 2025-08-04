@@ -1,0 +1,29 @@
+[gd_scene load_steps=6 format=3 uid="uid://eohwpqwan48"]
+
+[ext_resource type="Script" uid="uid://cbkrff2c37tt" path="res://source/states/PlayState3D.gd" id="1_my0t5"]
+[ext_resource type="Script" uid="uid://d36d81mp85pxe" path="res://source/general/Camera3DCustom.gd" id="3_h2p51"]
+
+[sub_resource type="Environment" id="Environment_sr88b"]
+background_mode = 1
+background_color = Color(1, 1, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_q8d6i"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_n8mjy"]
+
+[node name="PlayState3D" type="Node"]
+script = ExtResource("1_my0t5")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_sr88b")
+
+[node name="dad" type="MeshInstance3D" parent="WorldEnvironment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+mesh = SubResource("BoxMesh_q8d6i")
+
+[node name="dad2" type="MeshInstance3D" parent="WorldEnvironment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+mesh = SubResource("BoxMesh_n8mjy")
+
+[node name="Camera3DCustom" type="Camera3D" parent="."]
+script = ExtResource("3_h2p51")

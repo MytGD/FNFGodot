@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://c0dtf3f43ohlv"]
+
+[ext_resource type="Script" path="res://scenes/states/PlayState.gd" id="1_qr75d"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_niq0g"]
+
+[node name="PlayState" type="Node2D"]
+material = SubResource("ShaderMaterial_niq0g")
+script = ExtResource("1_qr75d")

@@ -1,0 +1,596 @@
+extends Node
+const Character = preload("res://source/objects/Sprite/Character.gd")
+const Bar = preload("res://source/objects/UI/Bar.gd")
+const Icon = preload("res://source/objects/UI/Icon.gd")
+const AnimClass = preload("res://source/general/animation/AnimationService.gd")
+var back_to: Variant
+
+var characterData: Dictionary = Character.getCharacterBaseData()
+var animData: Dictionary = Character.getAnimBaseData()
+
+var isMovingCamera: bool = false
+
+static var curCharacter: String
+
+var character_node: Character = Character.new()
+
+var character_ghost: Character
+
+var cur_anim: StringName: set = selectAnim
+var cur_offset: Vector2 = Vector2.ZERO:
+	set(value):
+		cur_offset = value
+		animation_offset[0].set_value_no_signal(value.x)
+		animation_offset[1].set_value_no_signal(value.y)
+		character_node.set_offset_from_anim(cur_anim)
+
+var cur_indices: String = ''
+var cur_scale: float = 1.0:
+	set(value):
+		cur_scale = value
+		json_scale.value = value
+		if character_node:
+			character_node.scale = Vector2(value,value)
+			charJson.scale = value
+
+var cur_frame_rate: float = 24.0
+var cur_looped: bool = false
+
+var charJson: Dictionary
+
+
+var cur_image: StringName = '': set = setCharacterImage
+const singAnimations = ['singLEFT','singDOWN','singUP','singRIGHT']
+const keys = [KEY_D,KEY_F,KEY_J,KEY_K]
+var _last_save_folder = Paths.exePath+'/'
+
+@onready var bar = Bar.new('healthBar')
+@onready var icon = Icon.new()
+
+@onready var characterList := $CharacterData/CharacterList
+@onready var animationList := $"TabContainer/Animation Data/Container/Label/AnimationList"
+@onready var animationGhost := $"CharacterData/AnimationGhost"
+@onready var prefixList := $"TabContainer/Animation Data/Container/Label/PrefixList"
+@onready var prefixListPop: PopupMenu = prefixList.get_popup()
+
+#Animation Data
+@onready var animation_asset := $"TabContainer/Animation Data/Container/Label/AssetPath"
+
+@onready var animation_offset = [
+	$"TabContainer/Animation Data/Container/Label/anim_offset_x",
+	$"TabContainer/Animation Data/Container/Label/anim_offset_y"
+]
+@onready var new_character_tab = $"CharacterData/New Character Tab"
+@onready var new_character_image := $"CharacterData/New Character Tab/Panel/Image"
+@onready var new_character_animation_type := $"CharacterData/New Character Tab/Panel/AnimationType"
+@onready var new_character_name = $"CharacterData/New Character Tab/Panel/CharacterName"
+
+@onready var animation_prefix := $"TabContainer/Animation Data/Container/Label/Prefix"
+@onready var animation_indices := $"TabContainer/Animation Data/Container/Label/Indices"
+@onready var animation_loop := $"TabContainer/Animation Data/Container/Label/Looped"
+@onready var animation_fps := $"TabContainer/Animation Data/Container/Label/FrameRate"
+@onready var animation_insert_name := $"TabContainer/Animation Data/Container/Label/Insert Animation Name"
+
+@onready var animation_follow_flip := $"TabContainer/Animation Data/Container/Label/Offset Follow Flip"
+@onready var animation_follow_scale := $"TabContainer/Animation Data/Container/Label/Offset Follow Scale"
+@onready var animation_sing_follow_flip := $"TabContainer/Animation Data/Container/Label/Sing Animation Follow Flip"
+
+@onready var animationGhostPop: PopupMenu = animationGhost.get_popup()
+@onready var animationListPop: PopupMenu = animationList.get_popup()
+@onready var characterPop: PopupMenu = characterList.get_popup()
+@onready var prefixPop: PopupMenu = prefixList.get_popup()
+
+@onready var camera := $BG
+var camera_zoom: float = 1.0
+var camera_y_limit = -120
+
+#Json Data
+@onready var json_scale := $"TabContainer/Json Data/scale"
+@onready var playable_character := $"CharacterData/Playable Character"
+@onready var json_flip := $"TabContainer/Json Data/FlipX"
+@onready var json_antialiasing := $"TabContainer/Json Data/antialiasing"
+@onready var json_image_file := $"TabContainer/Json Data/image_file"
+
+@onready var json_position = [$"TabContainer/Json Data/position_x",$"TabContainer/Json Data/position_y"]
+@onready var json_origin_offset = [$"TabContainer/Json Data/Origin X",$"TabContainer/Json Data/Origin Y"]
+
+#Gameplay Options
+@onready var gameplay_healtbar_color := $"TabContainer/Json Data/HealthBar/HealthColor"
+
+@onready var gameplay_camera = [$"TabContainer/Json Data/Camera X", $"TabContainer/Json Data/Camera Y"]
+@onready var gameplay_icon := $"TabContainer/Json Data/HealthBar/HealthIcon"
+@onready var gameplay_is_pixel_icon := $"TabContainer/Json Data/isPixelIcon"
+@onready var gameplay_can_scale_icon := $"TabContainer/Json Data/scaleIcon"
+
+func _ready():
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	character_node.loadCharacter(curCharacter)
+	charJson = character_node.json
+	insertCharToEditor(character_node)
+	updateCharacterData()
+	
+	add_child(bar)
+	add_child(icon)
+	
+	bar.position = Vector2(50,670)
+	bar.progress = 1
+	icon._position = Vector2(20,600)
+	
+	
+	characterPop.index_pressed.connect(func(i):
+		var character = characterPop.get_item_text(i)
+		if character == curCharacter: return
+		character_node.loadCharacter(character)
+		updateCharacterData()
+	)
+	
+	animationListPop.index_pressed.connect(func(i): cur_anim = animationListPop.get_item_text(i))
+	
+	animationGhostPop.index_pressed.connect(func(i): 
+		var anim = animationGhostPop.get_item_text(i)
+		createGhost(anim)
+		animationGhost.text = anim
+	)
+	
+	#Character List
+	characterPop.min_size = Vector2(250,0)
+	var last_mod = ''
+	for i in Paths.getFilesAtDirectory('characters',true,'.json'):
+		var mod = Paths.getModFolder(i)
+		if !mod: mod = Paths.game_name
+		if last_mod != mod:
+			characterPop.add_separator(mod)
+			last_mod = mod
+		characterPop.add_item(i.get_file())
+	
+	prefixPop.index_pressed.connect(func(i):setAnimationPrefix(prefixPop.get_item_text(i)))
+	
+	$BG_Image.texture = Paths.imageTexture('editors/character_editor/bg')
+	$BG/Ground.texture =  Paths.imageTexture('editors/character_editor/ground')
+	camera_y_limit = $BG/Ground.texture.get_size().y*$BG/Ground.scale.y
+	
+
+func exit():
+	if !back_to: return
+	Global.doTransition().finished.connect(Global.swapTree.bind(back_to,false))
+	
+
+func createGhost(animation: StringName):
+	if character_ghost: character_ghost.queue_free()
+	if !animation: return
+	
+	character_ghost = Character.new()
+	character_ghost.loadCharacterFromJson(charJson)
+	character_ghost._position = character_node._position
+	insertCharToEditor(character_ghost)
+	camera.move_child(character_ghost,character_node.get_index())
+	character_ghost.modulate.a = 0.5
+	character_ghost.animation.play(animation,true)
+	
+	
+func loadCharacter(json: StringName, isPlayer: bool = json.begins_with('bf')) -> Character:
+	var character: Character = Character.new(json,isPlayer)
+	insertCharToEditor(character)
+	return character
+
+func insertCharToEditor(char):
+	char.returnDance = false
+	char.animation.auto_loop = false
+	camera.add_child(char)
+	
+#region Animatiom Methods
+func selectAnim(anim_name: String):
+	cur_anim = anim_name
+	character_node.animation.play(cur_anim)
+	for i in charJson.animations:
+		if !i.name == anim_name: continue
+		animData = i
+		break
+	animationList.text = cur_anim
+	animation_insert_name.placeholder_text = cur_anim
+	animation_asset.text = animData.get('assetPath','')
+	updateAnimData()
+	
+func addCharacterAnimation(anim):
+	if character_node.animationsArray.has(anim): return
+	var animData = Character.getAnimBaseData()
+	animData.anim = anim
+	charJson.animations.append(animData)
+	animationListPop.add_item(anim)
+	animationGhostPop.add_item(anim)
+	cur_anim = anim
+	
+func add_anim_offset():
+	if character_node: 
+		character_node.addAnimOffset(cur_anim,cur_offset.x,cur_offset.y)
+	
+func setAnimationPrefix(new_text: String) -> void:
+	animation_prefix.text = new_text
+	reloadCharacterAnim()
+
+func get_animation_indices_str(indices = animData.get('frameIndices',[])):
+	var string = ''
+	for i in indices: string += str(int(i))+', '
+	return string.left(-2)	
+
+func updateAnimData():
+	animationList.text = cur_anim
+	cur_offset = character_node._animOffsets.get(cur_anim,Vector2.ZERO)
+	cur_indices = get_animation_indices_str()
+	cur_looped = animData.get('loop',false)
+	animation_prefix.text = animData.get('prefix','')
+	animation_indices.text = cur_indices
+	animation_indices.placeholder_text = get_animation_indices_str(range(character_node.animation.curAnim.maxFrames))
+	animation_fps.set_value_no_signal(animData.get('fps',24.0))
+	animation_loop.button_pressed = cur_looped
+
+func updatePrefixList():
+	prefixListPop.clear()
+	if !character_node._images: return
+	
+	if character_node._images.size() == 1:
+		prints('Anim File:',character_node.animation._animFile)
+		for i in AnimClass.getPrefixList(character_node.animation._animFile): 
+			prefixListPop.add_item(i)
+	else:
+		for i in character_node._images:
+			var prefix_list = AnimClass.getPrefixList(AnimClass.findAnimFile(i))
+			if !prefix_list: continue
+			prefixListPop.add_separator(i.get_file())
+			for p in prefix_list: prefixListPop.add_item(p)
+
+func updateCharacterData():
+	character_node._position = Vector2(640,0) + character_node.positionArray
+	curCharacter = character_node.curCharacter
+	character_node.isPlayer = curCharacter.begins_with('bf')
+	characterList.text = curCharacter
+	animation_asset.placeholder_text = charJson.assetPath
+	playable_character.set_pressed_no_signal(character_node.name.begins_with('bf'))
+	updatePrefixList()
+	updateDataInfo()
+	updateAnimationList()
+	cur_anim = character_node.animation.current_animation
+	
+func updateDataInfo():
+	icon.reloadIconFromCharacterJson(charJson)
+	
+	cur_scale = charJson.scale
+	updateAnimationList()
+	updateCameraPosition()
+	
+	animation_follow_flip.set_pressed_no_signal(character_node.offset_follow_flip)
+	animation_follow_scale.set_pressed_no_signal(character_node.offset_follow_scale)
+	animation_sing_follow_flip.set_pressed_no_signal(charJson.sing_follow_flip)
+	
+	json_flip.set_pressed_no_signal(charJson.flipX)
+	
+	json_antialiasing.set_pressed_no_signal(character_node.antialiasing)
+	json_image_file.text = charJson.assetPath
+	
+	json_position[0].set_value_no_signal(charJson.offsets[0])
+	json_position[1].set_value_no_signal(charJson.offsets[1])
+	
+	json_origin_offset[0].value = 0
+	json_origin_offset[1].value = 0
+	
+	gameplay_healtbar_color.color.r = character_node.healthBarColors[0]/255.0
+	gameplay_healtbar_color.color.g = character_node.healthBarColors[1]/255.0
+	gameplay_healtbar_color.color.b = character_node.healthBarColors[2]/255.0
+	updateBarColor()
+	
+	gameplay_camera[0].value = character_node.cameraPosition[0]
+	gameplay_camera[1].value = character_node.cameraPosition[1]
+	
+	var iconData = charJson.get('healthIcon',{})
+	gameplay_icon.text = character_node.healthIcon
+	gameplay_is_pixel_icon.set_pressed_no_signal(iconData.get('isPixel',false))
+
+	gameplay_can_scale_icon.set_pressed_no_signal(iconData.get('canScale',false))
+
+func updateBarColor(): bar.set_colors(character_node.healthBarColors)
+	
+func updateCameraPosition():
+	$BG/Marker_Camera.position = character_node.getCameraPosition()
+	$BG/Marker_Origin.position = character_node.getMidpoint()
+	
+func zoomBg(add: float):
+	camera_zoom = clamp(camera_zoom+add,0.45,2)
+	camera.scale = Vector2(camera_zoom,camera_zoom)
+	updateBgPosition()
+	
+func updateBgPosition():
+	camera.scale = camera.scale.clamp(Vector2(0.45,0.45),Vector2(2,2))
+	var limit = -200+(camera.scale.y-1.0)/2.0*(-camera_y_limit)
+	camera.position.y = maxf(camera.position.y,limit)
+	
+	
+func reloadCharacterAnim():
+	character_node.addCharacterAnimation(
+		cur_anim,
+		animation_prefix.text,
+		cur_frame_rate,
+		character_node.animation.curAnim.looped,
+		cur_indices
+	)
+
+func replayCharAnim():
+	if character_node: character_node.animation.play(cur_anim,true)
+
+
+
+func _input(event):
+	if isMovingCamera and event is InputEventMouseMotion and event.button_mask == 1:
+		camera.position += event.relative
+		updateBgPosition()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		if event.pressed:
+			for i in range(keys.size()):
+				if event.keycode == keys[i]:
+					character_node.animation.play(singAnimations[i],true)
+					character_node.holdTimer = 0.0
+					return
+			
+			match event.keycode:
+				KEY_ESCAPE: exit()
+				KEY_SPACE: replayCharAnim()
+				KEY_LEFT: animation_offset[0].addValue()
+				KEY_UP: animation_offset[1].addValue()
+				KEY_DOWN: animation_offset[1].subValue()
+				KEY_RIGHT: animation_offset[0].subValue()
+
+func _unhandled_input(event):
+	if !event is InputEventMouseButton: return
+	if event.button_index == 1: isMovingCamera = event.pressed;
+	if !event.pressed: return
+
+	match event.button_index:
+		5: zoomBg(-0.05)
+		4: zoomBg(0.05)
+				
+				
+func updateAnimationList():
+	animationListPop.clear()
+	animationGhostPop.clear()
+	animationGhostPop.add_item('')
+	for i in charJson.animations:
+		animationListPop.add_item(i.name)
+		animationGhostPop.add_item(i.name)
+	
+#region Animation Signals
+func _on_anim_offset_x_value_changed(value: float) -> void:
+	cur_offset.x = value
+	animData.offsets[0] = value
+	add_anim_offset()
+	
+func _on_anim_offset_y_value_changed(value: float) -> void:
+	cur_offset.y = value
+	animData.offsets[1] = value
+	add_anim_offset()
+
+
+func _on_reload_character_button_up() -> void:
+	character_node.loadCharacterFromJson(Paths.character(curCharacter))
+	
+func _on_flip_sing_direction_toggled(toggled_on: bool) -> void:
+	charJson.set('sing_follow_flip',toggled_on)
+	character_node.reloadAnims()
+	character_node.animation.play(cur_anim)
+
+func _on_save_character_button_up() -> void:
+	var folders = Paths.get_dialog(_last_save_folder)
+	folders.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	folders.current_file = character_node.curCharacter+'.json'
+	folders.add_filter('*.json')
+	folders.visible = true
+	add_child(folders)
+	folders.file_selected.connect(func(dir):
+		_last_save_folder = dir.get_base_dir()
+		Paths.saveFile(charJson,dir)
+		folders.queue_free()
+	)
+
+
+func _on_load_character_from_file_button_up() -> void:
+	var dialog = Paths.get_dialog(_last_save_folder)
+	dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	dialog.add_filter('*.json')
+	dialog.visible = true
+	dialog.title = 'Load Character ( Must be in a "characters" folder! )'
+	add_child(dialog)
+	dialog.file_selected.connect(func(file):
+		Paths.curMod = Paths.getModFolder(file)
+		character_node.loadCharacter(file.get_file())
+		updateCharacterData()
+		_last_save_folder = file.get_base_dir()
+	)
+	
+func _on_frame_rate_value_changed(value) -> void:
+	animData.fps = value
+	character_node.animation.curAnim.frameRate = value
+	character_node.animationsArray[cur_anim].fps = value
+
+
+func _on_looped_toggled(toggled_on: bool) -> void:
+	character_node.animationsArray.get(cur_anim).looped = toggled_on
+	replayCharAnim()
+	character_node.animation.curAnim.looped = toggled_on
+
+
+func _on_indices_text_submitted(new_text: String) -> void:
+	cur_indices = new_text
+	animData.frameIndices = character_node.animation.get_indices_by_str(new_text)
+	reloadCharacterAnim()
+
+
+func _on_loop_indices_text_submitted(new_text: String) -> void:
+	cur_indices = new_text
+	animData.loopIndices = character_node.animation.get_indices_by_str(new_text)
+	if cur_looped: reloadCharacterAnim()
+
+func _on_loop_from_value_changed(value: float) -> void:
+	animData.loop_frame = value
+	character_node.animation.getAnimData(cur_anim).loop_frame = value
+	character_node.animation.curAnim.loop_frame = value
+
+func _on_offset_follow_flip_toggled(toggled_on: bool) -> void:
+	charJson.offset_follow_flip = toggled_on
+	character_node.offset_follow_flip = toggled_on
+	replayCharAnim()
+
+
+func _on_offset_follow_scale_toggled(toggled_on: bool) -> void:
+	charJson.offset_follow_scale = toggled_on
+	character_node.offset_follow_scale = toggled_on
+	replayCharAnim()
+
+
+func _on_health_color_color_changed(color: Color) -> void:
+	character_node.healthBarColors = [color.r*255.0,color.g*255.0,color.b*255.0]
+	charJson.healthbar_colors = character_node.healthBarColors
+	updateBarColor()
+	
+func _on_health_icon_text_submitted(new_text: String) -> void:
+	gameplay_icon.release_focus()
+	if charJson.healthIcon.id == new_text: return
+	
+	charJson.healthIcon.id = new_text
+	charJson.healthIcon.isPixel = new_text.ends_with('-pixel')
+	character_node.healthIcon = new_text
+	icon.reloadIcon(new_text)
+
+func _on_is_pixel_icon_toggled(toggled_on: bool) -> void:
+	charJson.healthIcon.isPixel = toggled_on
+	icon.set_pixel(toggled_on, charJson.healthIcon.canScale)
+
+
+func _on_scale_icon_toggled(toggled_on: bool) -> void:
+	charJson.healthIcon.canScale = toggled_on
+	icon.set_pixel(charJson.healthIcon.isPixel,toggled_on)
+
+func _on_asset_path_text_submitted(new_text: String) -> void:
+	animation_asset.release_focus()
+	if new_text == animData.get('assetPath',''): return
+	animData.assetPath = new_text
+	reloadCharacterAnim()
+	
+func _on_add_animation_button_up() -> void:
+	addCharacterAnimation(animation_insert_name.text)
+
+func _on_remove_animation_button_up() -> void:
+	character_node.animation.removeAnimation(cur_anim)
+	for i in charJson.animations:
+		if i.name == cur_anim: charJson.animations.erase(i); break
+	if !animationGhostPop.item_count: cur_anim = ''
+	else: cur_anim = animationGhostPop.get_item_text(1)
+	updateAnimationList()
+
+#endregion
+
+#region Json Data Signals
+
+func _on_scale_value_changed(value) -> void:
+	if !character_node: return
+	character_node.scale = Vector2(value,value)
+	character_node.midpoint_scale = character_node.scale
+	charJson.scale = value
+	updateCameraPosition()
+	
+func _on_antialiasing_toggled(toggled_on: bool) -> void:
+	charJson.isPixel = !toggled_on
+	character_node.antialiasing = toggled_on
+
+func setCharacterImage(new_image: String):
+	character_node.setCharacterImage(new_image)
+	cur_image = charJson.assetPath
+	json_image_file.release_focus()
+	updatePrefixList()
+	updateDataInfo()
+	
+func _on_load_image_button_down() -> void:
+	var folder = Paths.get_dialog()
+	folder.add_filter("*.png")
+	folder.add_filter("*.jpg")
+	folder.file_mode = FileDialog.FILE_MODE_OPEN_FILES
+	add_child(folder)
+	folder.visible = true
+	folder.file_selected.connect(func(dir): cur_image = dir)
+	folder.files_selected.connect(func(dir: PackedStringArray):
+		var image = dir[0]
+		dir.remove_at(0)
+		for i in dir: image += '/'+i
+		cur_image = image
+	)
+func _on_position_x_value_changed(value: float) -> void:
+	character_node._position.x += value - charJson.offsets[0]
+	charJson.offsets[0] = value
+	updateCameraPosition()
+	
+func _on_position_y_value_changed(value: float) -> void:
+	character_node._position.y += value - charJson.offsets[1]
+	charJson.offsets[1] = value
+	updateCameraPosition()
+
+func _on_camera_x_value_changed(value: float) -> void:
+	charJson.camera_position[0] = value
+	character_node.cameraPosition[0] = value
+	updateCameraPosition()
+
+func _on_camera_y_value_changed(value: float) -> void:
+	charJson.camera_position[1] = value
+	character_node.cameraPosition[1] = value
+	updateCameraPosition()
+
+func _on_playable_character_toggled(toggled_on: bool) -> void:
+	character_node.isPlayer = toggled_on
+	updateCameraPosition()
+	replayCharAnim() 
+	
+func _on_flip_x_toggled(toggled_on: bool) -> void:
+	character_node.flipX = toggled_on != character_node.isPlayer
+	charJson.flipX = toggled_on
+	
+	if animation_sing_follow_flip.button_pressed: character_node.reloadAnims()
+	else: replayCharAnim()
+	
+func _on_origin_x_value_changed(value: float) -> void:
+	character_node.pivot_offset.x += value - charJson.origin_offset[0]
+	charJson.origin_offset[0] = value
+	updateCameraPosition()
+
+func _on_origin_y_value_changed(value: float) -> void:
+	character_node.pivot_offset.y += value - charJson.origin_offset[1]
+	charJson.origin_offset[1] = value
+	updateCameraPosition()
+#endregion
+
+
+func _on_create_new_character_button_down() -> void:
+	var json = Character.getCharacterBaseData()
+	
+	json.assetPath = new_character_image.text
+	characterList.text = new_character_name.text
+	
+	Paths.curMod = Paths.getModFolder(new_character_image.text)
+	character_node.loadCharacterFromJson(json)
+	charJson = json
+	updateCharacterData()
+	
+	new_character_tab.visible = false
+
+func _on_select_new_character_image_from_file_button_down() -> void:
+	var dialog = Paths.get_dialog()
+	match new_character_animation_type.text:
+		'Sprite Map': dialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
+		_:
+			dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE 
+			dialog.add_filter('*.png')
+			dialog.add_filter('*.jpg')
+	dialog.file_selected.connect(func(file): new_character_image.text = Paths.getPath(file))
+	dialog.dir_selected.connect(func(dir): new_character_image.text = Paths.getPath(dir))
+	add_child(dialog)
+
+
+func _on_new_character_tab_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == 1 and event.pressed: new_character_tab.hide()
