@@ -1,5 +1,5 @@
-static var atlas_loaded: Dictionary[StringName,Dictionary]
-static func loadAtlas(file: StringName) -> Dictionary:
+static var atlas_loaded: Dictionary[String,Dictionary]
+static func loadAtlas(file: String) -> Dictionary[String, Array]:
 	if !file.ends_with('.txt'): file += '.txt'
 	
 	if atlas_loaded.get(file): return atlas_loaded[file]
@@ -33,7 +33,9 @@ static func loadAtlas(file: StringName) -> Dictionary:
 				float(anim_data[3])
 		)
 		if anim_frames.size() < frame+1: anim_frames.resize(frame+1)
-		anim_frames[frame] = {'region_rect': rect, 'size': rect.size}
+		
+		var anim_dict: Dictionary[StringName,Variant] = {'region_rect': rect, 'size': rect.size}
+		anim_frames[frame] = anim_dict
 		
 	atlas_loaded[file] = data
 	return data

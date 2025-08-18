@@ -25,7 +25,7 @@ var event_selected: Array = ['',{}]:
 				'value1': value[1],
 				'value2': ''
 			}
-			if value.size() >= 2:
+			if value.size() > 2:
 				dictionary.value2 = value[2]
 				value.remove_at(2)
 			value[1] = dictionary
@@ -61,15 +61,11 @@ func addEvent(event_name: String = '', variables: Dictionary = {},at: int = -1) 
 	
 	#Set the default value to event
 	for vars in event_default_vars:
-		event_vars[vars] = event_default_vars[vars].default_value
-	
-	event_vars.merge(variables,true)
+		event_vars[vars] = variables.get(vars,event_default_vars[vars].default_value)
 	
 	at = clamp(at,0,events.size())
-	if at < events.size()-1:
-		events.insert(at,event_data)
-	else:
-		events.append(event_data)
+	if at < events.size()-1: events.insert(at,event_data)
+	else: events.append(event_data)
 	
 	event_selected = event_data
 	update_json()

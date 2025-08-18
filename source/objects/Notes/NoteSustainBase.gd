@@ -7,7 +7,7 @@ var isBeingDestroyed: bool = false
 var hit_action: String: 
 	get(): return noteParent.hit_action if noteParent else ''
 		
-var isEndSustain: bool = false
+
 var noteParent: NoteHit ##Sustain's Note Parent
 
 func _init(data: int, length: float = 0) -> void:
@@ -78,8 +78,9 @@ func followStrum(strum: StrumNote = strumNote) -> void:
 
 func _load_data() -> void:
 	super._load_data()
-	noteSplashData.texture = 'noteSplashes/hold/holdCover'+noteColor
-	noteSplashData.prefix = 'holdCoverEnd'+noteColor
+	noteSplashData.style = 'holdNoteSplashes'
+	noteSplashData.type = 'holdNoteCover'
+	noteSplashData.prefix = directions[noteData]
 				
 static func getNoteTexture(_texture: String, is_pixel: bool = false) -> String:
 	var tex = super.getNoteTexture(_texture,is_pixel)

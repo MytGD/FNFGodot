@@ -42,7 +42,7 @@ func _init():
 	add_child(image)
 	_update_image()
 	if is_animated: _create_animation()
-
+	
 func _ready():
 	if Engine.is_editor_hint():
 		owner = EditorInterface.get_edited_scene_root()
@@ -68,9 +68,6 @@ func _notification(what: int) -> void:
 			animation.curAnim.start_process()
 
 func _update_texture():
-	image.rotation = 0
-	image.position = Vector2.ZERO
-	
 	if is_animated:  animation.clearLibrary()
 	elif image.texture: 
 		var size = image.texture.get_size()
@@ -87,6 +84,11 @@ func set_pivot_offset(value: Vector2) -> void: #Replaced in several scripts.
 func _create_animation() -> void: #Used also in source/objects/Sprite.gd
 	if animation: return
 	animation = Anim.new()
+	animation.image_animation_enabled.connect(func(enabled): 
+		autoUpdateImage = !enabled
+	)
+	animation.image_parent = self
+	
 	_update_animation_image()
 	image.region_rect = Rect2(0,0,0,0)
 

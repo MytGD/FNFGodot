@@ -1,7 +1,7 @@
 extends Node
 const AlphabetText = preload("res://source/objects/AlphabetText/AlphabetText.gd")
-const NumberRange = preload("res://source/states/Menu/NumberRange.gd")
-const NumberRangeKeys = preload("res://source/states/Menu/NumberRangeKeys.gd")
+const NumberRange = preload("res://source/substates/Options/NumberRange.gd")
+const NumberRangeKeys = preload("res://source/substates/Options/NumberRangeKeys.gd")
 
 var back_to: GDScript
 var bg: Sprite2D = Sprite2D.new()
@@ -18,17 +18,7 @@ var options = {
 	'Visual Options': {
 		'hideHud': [ClientPrefs.data, 'hideHud'],
 		'lowQuality': [ClientPrefs.data, 'lowQuality'],
-		'frameRate': [Engine, 'max_fps', [50,360,1]],
-		'Window Mode': [
-			DisplayServer,
-			'window_set_mode',
-			{
-				DisplayServer.WINDOW_MODE_WINDOWED: "Windowed",
-				DisplayServer.WINDOW_MODE_FULLSCREEN: "Full Screen",
-				DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN: "Full Exclusive"
-			},
-			['window_get_mode']
-		]
+		'frameRate': [Engine, 'max_fps', [50,360,1]]
 	}
 }
 

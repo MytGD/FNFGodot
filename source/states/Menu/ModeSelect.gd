@@ -1,7 +1,8 @@
 extends Node2D
 
+const StoryMenu = preload("res://source/states/StoryMenu/StoryMenu.gd")
 const Freeplay = preload("res://source/states/Freeplay.gd")
-const Options = preload("res://source/substates/Options.gd")
+const Options = preload("res://source/substates/Options/Options.gd")
 
 const menu_options_name: PackedStringArray = ['story_mode','freeplay','mods','options']
 
@@ -103,14 +104,13 @@ func _process(delta: float) -> void:
 		-camera_limit_y*(float(curOptionIndex)/menu_options_name.size()),
 		10*delta
 	)
+	
 func set_option(index: int = curOptionIndex):
 	if not canSwap:
 		return
 	var optionSize = options.size()-1
-	if index > optionSize:
-		index = 0
-	elif index < 0:
-		index = optionSize
+	if index > optionSize: index = 0
+	elif index < 0:index = optionSize
 	curOptionIndex = index
 	option_node = options[curOptionIndex]
 	FunkinGD.playSound('scrollMenu')
@@ -124,6 +124,10 @@ func selectOption(node: Node = option_node):
 
 func exitTo(option: String):
 	match option:
+		'story_mode':
+			var story_menu = StoryMenu.new()
+			story_menu.back_to = get_script()
+			Global.swapTree(story_menu,true)
 		'freeplay':
 			freeplay_node = Freeplay.new()
 			freeplay_node.exiting.connect(spawn)

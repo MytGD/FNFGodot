@@ -26,33 +26,35 @@ static func getPrefixList(file: String) -> Dictionary[String,Array]:
 ##It will return the data and the [Animation] in [[Array][[Rect2]],[Animation]]
 static func getAnimFrames(prefix: String,file: String = '') -> Array:
 	var fileFounded: Dictionary[String,Array] = getPrefixList(file)
-	if !fileFounded:
-		return []
+	if !fileFounded: return []
 	
 	if fileFounded.has(prefix): return fileFounded[prefix]
-	var data: Array = []
+	var data: Array[Dictionary] = []
 	for anims in fileFounded:
 		if (anims+'0000').begins_with(prefix): 
 			data.append_array(fileFounded[anims])
 	return data
 
-static func getAnim(preffix: String, file: StringName, indices: PackedInt32Array = []) -> Array:
+static func getAnim(prefix: String, file: String, indices: PackedInt32Array = []) -> Array:
 	var _animData: Dictionary = _anims_created.get_or_add(file,{})
 	
 	var tracks: Array
+	
+	
 	#Save anim if don't have indices set.
-	if _animData.has(preffix):
-		tracks = _anims_created[file][preffix]
-		if !indices:
-			return tracks
-	
-	tracks = getAnimFrames(preffix,file)
-	if !tracks:
-		return []
-	
+	var already_exists = _animData.has(prefix)
+	if already_exists:
+		tracks = _anims_created[file][prefix]
+		if !indices: return tracks
+	else: 
+		tracks = getAnimFrames(prefix,file)
+		if !tracks: return []
+
 	var frames: Array = []
+	
+	
 	if !indices:
-		_animData[preffix] = frames
+		if !already_exists: _anims_created[file][prefix] = frames
 		indices = PackedInt32Array(range(tracks.size()))
 	
 	var length = tracks.size()-1

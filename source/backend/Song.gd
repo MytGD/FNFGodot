@@ -6,10 +6,8 @@ static func loadJson(json_path: String, difficulty: String = '') -> Dictionary:
 		json = json.song
 	
 	#Check if the chart is from the fnf
-	var is_new_chart = false
 	var meta_data_path = json_path.replace('-chart','-metadata')
 	if json.get('notes') is Dictionary:
-		is_new_chart = true
 		var meta_data = Paths.loadJson(meta_data_path)
 		meta_data.songDifficulty = difficulty.to_lower()
 		json = _convert_new_to_old(json,meta_data,difficulty)
@@ -125,8 +123,7 @@ static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, di
 	
 static func sort_song_notes(song_notes: Array) -> void:
 	for i in song_notes:
-		if !i.sectionNotes:
-			continue
+		if !i.sectionNotes: continue
 		i.sectionNotes.sort_custom(ArrayHelper.sort_array_from_first_index)
 
 static func getSectionBase() -> Dictionary:

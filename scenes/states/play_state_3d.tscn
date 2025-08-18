@@ -5,14 +5,16 @@
 
 [sub_resource type="Environment" id="Environment_sr88b"]
 background_mode = 1
-background_color = Color(1, 1, 1, 1)
+background_color = Color(0.621524, 0.621524, 0.621524, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_q8d6i"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_n8mjy"]
 
-[node name="PlayState3D" type="Node"]
+[node name="PlayState3D" type="Node" node_paths=PackedStringArray("boyfriend", "dad")]
 script = ExtResource("1_my0t5")
+boyfriend = NodePath("WorldEnvironment/boyfriend")
+dad = NodePath("WorldEnvironment/dad")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_sr88b")
@@ -21,9 +23,10 @@ environment = SubResource("Environment_sr88b")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
 mesh = SubResource("BoxMesh_q8d6i")
 
-[node name="dad2" type="MeshInstance3D" parent="WorldEnvironment"]
+[node name="boyfriend" type="MeshInstance3D" parent="WorldEnvironment"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
 mesh = SubResource("BoxMesh_n8mjy")
 
 [node name="Camera3DCustom" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.23455, 0.383468, -2.39695)
 script = ExtResource("3_h2p51")

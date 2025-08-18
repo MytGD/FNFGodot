@@ -4,7 +4,11 @@ const ModeSelect = preload("res://source/states/Menu/ModeSelect.gd")
 const AlphabetText = preload("res://source/objects/AlphabetText/AlphabetText.gd")
 
 
-var introText: Array[String] = ['A Engine made on \n#Godot','Total Credits to \nFNF Team','Special Thanks for \nShadow Mario']
+var introText: PackedStringArray = [
+	'A Engine made on \n#Godot',
+	'Total Credits to \nFNF Team',
+	'Special Thanks for \nShadow Mario'
+]
 
 var curIntroText: int = 0
 
@@ -33,6 +37,10 @@ func _ready():
 	FunkinGD.playSound(Paths.music('freakyMenu'),1,'freakyMenu',false,true)
 	flash.size = Vector2(ScreenUtils.screenWidth,ScreenUtils.screenHeight)
 	flash.modulate.a = 0
+	
+	alphaText.position = ScreenUtils.screenCenter
+	alphaText.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	alphaText.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(alphaText)
 	
 	logoBomping.animation.addAnimByPrefix('logo','logo bumpin')
@@ -73,8 +81,7 @@ func changeState(state: int = 0):
 	menuState = state
 	
 func set_beat(newBeat: int):
-	if beat == newBeat:
-		return
+	if beat == newBeat: return
 	beat = newBeat
 	if newBeat % 2 == 1:gfBeating.animation.play('danceRight')
 	else: gfBeating.animation.play('danceLeft')
@@ -85,13 +92,16 @@ func _process(delta: float) -> void:
 	introTime += delta
 	match menuState:
 		0:
-			if introTime - curIntroText > 1:
-				curIntroText += 1
-				if curIntroText >= introText.size(): changeState(1)
-				else:
-					var text = introText[curIntroText]
-					if introTime - curIntroText < 0.5: alphaText.text = text.substr(0,text.find('\n'))
-					else: alphaText.text = text.substr(0,text.find('\n'))
+			if introTime < 1: return
+			curIntroText = int(introTime)
+			if curIntroText >= introText.size(): 
+				changeState(1)
+			else:
+				var text = introText[curIntroText]
+				
+				if introTime - curIntroText < 0.5: 
+					alphaText.text = text.substr(0,text.find('\n'))
+				else: alphaText.text = text
 
 func _input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton and event.button_index == 1 or event is InputEventKey and event.keycode == KEY_ENTER)\

@@ -3,15 +3,11 @@ extends Node2D
 var bg: Sprite = Sprite.new()
 
 var x: float:
-	set(value):
-		position.x = value
-	get():
-		return position.x
+	set(value): position.x = value
+	get(): return position.x
 var y: float:
-	set(value):
-		position.y = value
-	get():
-		return position.y
+	set(value):position.y = value
+	get():return position.y
 
 var angle: float:
 	set(value):
@@ -19,14 +15,18 @@ var angle: float:
 	get():
 		return rotation_degrees
 
+var margin_offset_left: float = 4.0
+var margin_offset_right: float = 4.0
+var margin_offset_top: float = 4.0
+var margin_offset_bottom: float = 4.0
+
 var leftBar: CanvasItem = _get_fill_bar(null,true)
 var rightBar: CanvasItem = _get_fill_bar(null,true)
 
 var progress: float = 0.5: 
 	set(value):
-		if progress == value:
-			return
-		value = clamp(value,0,1.0)
+		if progress == value: return
+		value = clampf(value,0,1.0)
 		progress = value
 		_update_bar()
 
@@ -44,13 +44,11 @@ var alpha: float:
 	set(value):
 		alpha = value
 		modulate.a = value
-	get():
-		return modulate.a
+	get(): return modulate.a
 
 var _right_bar_is_color: bool = true:
 	set(is_color):
-		if is_color == _right_bar_is_color:
-			return
+		if is_color == _right_bar_is_color: return
 		_right_bar_is_color = is_color
 		rightBar = _get_fill_bar(rightBar,is_color)
 		add_child(rightBar)
@@ -60,8 +58,7 @@ var _right_bar_is_color: bool = true:
 
 var _left_bar_is_color: bool = true:
 	set(is_color):
-		if is_color == _left_bar_is_color:
-			return
+		if is_color == _left_bar_is_color:return
 		_left_bar_is_color = is_color
 		leftBar = _get_fill_bar(leftBar,is_color)
 		add_child(leftBar)
@@ -152,30 +149,31 @@ func set_colors(left: Variant = null, right: Variant = null) -> void:
 		rightBar.modulate = right if right is Color else Color(right[0]/255.0,right[1]/255.0,right[2]/255.0)
 
 func _update_bar() -> void:
-	if _left_bar_is_color:
-		leftBar.size = Vector2(fill_bars_size.x*progress,fill_bars_size.y)
-	else:
-		leftBar.region_rect.size = Vector2(fill_bars_size.x*progress,fill_bars_size.y)
+	var bar_size = Vector2(fill_bars_size.x*progress,fill_bars_size.y)
 	
-	if _right_bar_is_color:
-		rightBar.size = fill_bars_size
-	else:
-		rightBar.region_rect.size = fill_bars_size
+	leftBar.position = Vector2(margin_offset_left,margin_offset_top)
+	rightBar.position = leftBar.position
+	
+	if _left_bar_is_color: leftBar.size = bar_size
+	else: leftBar.region_rect.size = bar_size
+	
+	if _right_bar_is_color: rightBar.size = fill_bars_size
+	else: rightBar.region_rect.size = fill_bars_size
 		
 	progress_position = get_process_position()
 
 func _update_bar_fill_size():
-	fill_bars_size = bg.imageSize - Vector2(3,3)
+	fill_bars_size = bg.imageSize - Vector2(
+		margin_offset_left + margin_offset_right,
+		margin_offset_top + margin_offset_bottom
+	)
 	_update_bar()
 
 func get_process_position(process: float = progress):
 	var _process = Vector2(bg.imageSize.x*process,0.0)*scale
-	if rotation:
-		return _process.rotated(rotation)
+	if rotation: return _process.rotated(rotation)
 	return _process
 	
 func screenCenter(pos: String = 'xy') -> void:
-	if pos.begins_with('x'):
-		x = ScreenUtils.screenWidth/2.0 - bg.width/2.0
-	if pos.ends_with('y'):
-		y = ScreenUtils.screenHeight/2.0 - bg.height/2.0
+	if pos.begins_with('x'): x = ScreenUtils.screenCenter.x - bg.width/2.0
+	if pos.ends_with('y'):y = ScreenUtils.screenCenter.y - bg.height/2.0

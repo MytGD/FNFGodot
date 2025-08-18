@@ -132,15 +132,11 @@ static var songPosition: float
 var keyCount: int = 4
 
 var stepCrochet: float:
-	get():
-		return Conductor.stepCrochet
+	get(): return Conductor.stepCrochet
 
 var bpm: float:
-	set(value):
-		if SONG:
-			SONG.bpm = value
-	get():
-		return SONG.get('bpm',0)
+	set(value): SONG.bpm = value
+	get(): return SONG.get('bpm',0)
 
 @onready var song_name := $"TabContainer/Song/Song"
 @onready var song_bpm :=$"TabContainer/Song/BPM"
@@ -159,10 +155,8 @@ var bpm: float:
 
 var song_playing: bool:
 	set(play):
-		if play:
-			Conductor.resumeSongs()
-		else:
-			Conductor.pauseSongs()
+		if play: Conductor.resumeSongs()
+		else: Conductor.pauseSongs()
 		song_playing = play
 
 #endregion
@@ -191,11 +185,9 @@ var icons: Array[Icon] = [iconP1,iconP2]
 
 var player1: String = '':
 	set(c):
-		if player1 == c:
-			return
+		if player1 == c: return
 		player1 = c
-		if bfCharacters:
-			bfCharacters.text = c
+		if bfCharacters: bfCharacters.text = c
 		
 		SONG.set('player1',player1)
 		
@@ -204,11 +196,9 @@ var player1: String = '':
 
 var player2: String = '':
 	set(c):
-		if player2 == c:
-			return
+		if player2 == c: return
 		player2 = c
-		if dadCharacters:
-			dadCharacters.text = c
+		if dadCharacters: dadCharacters.text = c
 		
 		SONG.set('player2',player2)
 		
@@ -217,9 +207,9 @@ var player2: String = '':
 
 var gf: StringName = '':
 	set(g):
+		if g == gf: return
 		gf = g
-		if gfCharacters:
-			gfCharacters.text = g
+		if gfCharacters:gfCharacters.text = g
 		SONG.set('gfVersion',gf)
 #endregion
 
@@ -253,8 +243,7 @@ func _ready():
 	Note_Chart.chess_rect_size = CHESS_REAL_SIZE
 	
 	Conductor.section_hit_once.connect(func():
-		if autoSwapSection:
-			set_section(Conductor.section)
+		if autoSwapSection: set_section(Conductor.section)
 	)
 	Conductor.beat_hit.connect(icon_beat)
 	Conductor.bpm_changes.connect(updateBpm)
@@ -342,7 +331,7 @@ func _ready():
 	
 	#Add connections to Popup's
 	#Load Note Types
-	loadPopus(Paths.getFilesAtDirectory('custom_notetypes',true,'.gd'),note_type_popup)
+	loadPopus(Paths.getFilesAt('custom_notetypes',true,'.gd'),note_type_popup)
 	note_type_popup.index_pressed.connect(func(i):
 		var type = note_type_popup.get_item_text(i)
 		note_type_menu.text = type
@@ -351,7 +340,7 @@ func _ready():
 	)
 	
 	#Load Events
-	_load_events()
+	_load_events_popus()
 	events_popup.index_pressed.connect(func(i):
 		var event_name = events_popup.get_item_text(i)
 		setEvent(event_name)
@@ -369,10 +358,9 @@ func _ready():
 	
 	#Load Characters
 	var character_pops: Array[PopupMenu] = [bfCharactersPop,dadCharactersPop,gfCharactersPop]
-	var char_files = Paths.getFilesAtDirectory('characters',true,'.json')
+	var char_files = Paths.getFilesAt('characters',true,'.json')
 	
-	for i in character_pops:
-		loadPopus(char_files,i)
+	for i in character_pops: loadPopus(char_files,i)
 	
 	dadCharactersPop.index_pressed.connect(func(i):
 		player2 = dadCharactersPop.get_item_text(i)
@@ -389,11 +377,10 @@ func _ready():
 	
 	
 	#Load Stages
-	loadPopus(Paths.getFilesAtDirectory('stages',true,'.json'),stagePop)
+	loadPopus(Paths.getFilesAt('stages',true,'.json'),stagePop)
 	stagePop.index_pressed.connect(func(i):
 		SONG.set('stage',stagePop.get_item_text(i))
 	)
-	unselectEvent()
 	
 	if !SONG: _load_song_data()
 	
@@ -406,8 +393,7 @@ func loadPopus(files: Array, popup: PopupMenu):
 	var last_mod = ''
 	for i in files:
 		var mod = Paths.getModFolder(i)
-		if mod == '':
-			mod = Paths.game_name
+		if !mod: mod = Paths.game_name
 		
 		if last_mod != mod:
 			popup.add_separator(mod)
@@ -442,8 +428,7 @@ func createChart() -> void:
 	_update_song_data()
 	eraseNotes()
 	
-	for i in _events_created:
-		i.queue_free()
+	for i in _events_created: i.queue_free()
 	_events_created.clear()
 	
 	set_section(0)
@@ -546,9 +531,8 @@ func getCharData(character: StringName) -> Dictionary:
 	if characters_data.has(character):
 		return characters_data[character]
 	
-	var file = Paths.loadJson('characters/'+character+'.json')
-	if !file:
-		file = Character.getCharacterBaseData()
+	var file = Paths.character(character+'.json')
+	if !file: file = Character.getCharacterBaseData()
 	characters_data[character] = file
 	return file
 
@@ -984,29 +968,22 @@ func _create_notes_section(from: int = curSection):
 #region Event methods
 func _create_events_section():
 	if _events_created:
-		for i in _events_created:
-			i.queue_free()
+		for i in _events_created: i.queue_free()
 		_events_created.clear()
 	
-	if !events_data:
-		return
+	if !events_data: return
 	
 	var start_index: int = current_event_section_index
-	
-	while start_index > 0 and curSectionTime <= events_data[start_index-1][0]:
-		start_index -= 1
-	
-	
-	if start_index == -1:
-		current_event_section_index = 0
-		return
+	while start_index > 0 and curSectionTime < events_data[start_index-1][0]: start_index -= 1
+		
+	var events_length = events_data.size()
+	if start_index == -1 or start_index == events_length: 
+		current_event_section_index = 0; return
 		
 	var end_index: int = start_index
-	prints(curSectionTime,curSectionEndTime)
-	while end_index < events_data.size() and events_data[end_index-1][0] < curSectionEndTime:
-		end_index += 1
+	while end_index < events_length and events_data[end_index][0] < curSectionEndTime: end_index += 1
 	
-	#prints('\nLast Event:',events_data[end_index],end_section_time,'\nFirst Event:',events_data[start_index])
+	
 	current_event_section_index = end_index
 	
 	while start_index < end_index:
@@ -1256,15 +1233,14 @@ func unselectEvent():
 	event_selected.modulate = Color.WHITE
 	event_selected = null
 	
-func _load_events():
+func _load_events_popus():
 	events_popup.clear()
 	var last_mod = ''
 	
 	var events_loaded: PackedStringArray = []
-	for i in Paths.getFilesAtDirectory('custom_events',true,['txt','json']):
+	for i in Paths.getFilesAt('custom_events',true,['txt','json']):
 		var file = i.get_file()
-		if file in events_loaded:
-			continue
+		if file in events_loaded: continue
 		var mod = Paths.getModFolder(i)
 		if !mod:
 			mod = Paths.game_name

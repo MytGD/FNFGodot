@@ -23,18 +23,24 @@ func _init() -> void:
 	region_enabled = true
 	centered = false
 	use_parent_material = true
-	
-func _update_offset() -> void:
-	if pivot_offset == Vector2.ZERO: position = _frame_offset; return
-	position = _frame_offset - (pivot_offset*scale - pivot_offset)
+	texture_changed.connect(_update_texture)
 
-func set_graphic_color(color: Color):
+func _update_offset() -> void:
+	position = _frame_offset - (pivot_offset*scale - pivot_offset)
+	
+func set_graphic_color(color: Color) -> void:
 	if texture: texture = null
 	if !is_solid:
 		is_solid = true
 		centered = true
+	graphic_color = color
 	pivot_offset = Vector2.ZERO
 	queue_redraw()
 
-func _draw():
+func _update_texture() -> void:
+	_frame_offset = Vector2.ZERO
+	_frame_angle = 0
+	pass
+
+func _draw() -> void:
 	if is_solid: draw_rect(Rect2(0,0,1,1),graphic_color)

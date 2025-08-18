@@ -126,9 +126,10 @@ var camera: Node:
 	set(newCamera):
 		if camera == newCamera: return
 
+		var is_in_scene: bool =is_inside_tree()
 		if camera and camera is CameraCanvas: camera.remove(self)
 		camera = newCamera
-		if !is_inside_tree(): return
+		if !is_in_scene: return
 		
 		if newCamera is CameraCanvas: newCamera.add(self)
 		else: reparent(newCamera)
@@ -146,6 +147,8 @@ func _init(image_file: Variant = null, animated: bool = false):
 	super._init()
 	is_animated = animated
 	
+	set_notify_local_transform(true)
+	set_notify_transform(true)
 	if image_file:
 		if image_file is Texture2D: image.texture = image_file
 		elif image_file is String:
@@ -154,33 +157,28 @@ func _init(image_file: Variant = null, animated: bool = false):
 		
 		if image.texture: _update_texture()
 
-func screenCenter(type: StringName = 'xy') -> void: ##Move the sprite to the center of the screen
+ ##Move the sprite to the center of the screen
+func screenCenter(type: StringName = 'xy') -> void:
 	var midScreen: Vector2 = ScreenUtils.screenSize/2.0
 	match type:
 		'xy': set_pos(midScreen.x - (pivot_offset.x * scale.x),midScreen.y - (pivot_offset.y * scale.y))
 		'x': x = midScreen.x - (pivot_offset.x * scale.x)
 		'y': y = midScreen.y - (pivot_offset.y * scale.y)
-	
-func getMidpoint() -> Vector2: ##Get the [u]center[/u] position of the sprite in the scene.
-	return _position + _scroll_offset + pivot_offset
+
+##Get the [u]center[/u] position of the sprite in the scene.
+func getMidpoint() -> Vector2:return _position + _scroll_offset + pivot_offset
 
 func _process(delta: float) -> void:
-	if scrollFactor != Vector2.ONE:
-		if camera:
-			var pos = camera._position if camera.get('_position') else camera.get('position')
-			if pos: _scroll_offset = -pos*(Vector2.ONE-scrollFactor)
-		
-		else: _scroll_offset = Vector2.ZERO
-	
 	#Add velocity
 	if acceleration != Vector2.ZERO: velocity += acceleration * delta
-	
 	if velocity != Vector2.ZERO: _position += clamp(velocity,-maxVelocity,maxVelocity) * delta
 	
-	if _last_rotation != rotation or _last_scale != scale:
-		_last_rotation = rotation
-		_last_scale = scale
-		_recalculate_pivot_offset()
+	if scrollFactor != Vector2.ONE and camera:
+		var pos = camera.get('_position')
+		if !pos: pos = camera.get('position')
+		if pos: _scroll_offset = -pos*(Vector2.ONE-scrollFactor)
+	else: _scroll_offset = Vector2.ZERO
+
 	_updatePos()
 
 func centerOrigin():
@@ -199,8 +197,7 @@ func set_pos(pos_x: Variant, pos_y: float = 0.0) -> void:
 
 ##Create a Rect
 func makeGraphic(graphicWidth: float = 30.0, graphicHeight: float = 30.0, graphicColor: Color = Color.BLACK):
-	if animation:
-		animation.clearLibrary()
+	if animation:animation.clearLibrary()
 	image.texture = null
 	var color = ColorRect.new()
 	color.color = graphicColor
@@ -229,7 +226,7 @@ func join(front: bool = false):
 
 ##Remove the Sprite from the game, still can be accesed.
 func kill() -> void:
-	if is_inside_tree(): get_parent().remove_child(self)
+	if get_parent(): get_parent().remove_child(self)
 	
 	
 func removeFromGroups() -> void:
@@ -292,3 +289,15 @@ func set_offset_from_anim(anim: String) -> void:
 	if offset_follow_scale: off *= scale
 	if offset_follow_flip: off *= image.scale
 	offset = off
+
+func check_scroll_factor():
+	pass
+func _notification(what: int) -> void:
+	super._notification(what)
+	match what:
+		NOTIFICATION_LOCAL_TRANSFORM_CHANGED:
+			if _last_rotation != rotation or _last_scale != scale:
+				_last_rotation = rotation
+				_last_scale = scale
+				_recalculate_pivot_offset()
+				_updatePos()

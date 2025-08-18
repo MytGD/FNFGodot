@@ -114,7 +114,7 @@ static var data: Dictionary = {
 
 static func _static_init() -> void:
 	var options = JSON.parse_string(FileAccess.get_file_as_string("res://data/options.json"))
-	DictionaryHelper.merge_existing(data,options)
+	if options: DictionaryHelper.merge_existing(data,options)
 
 static func disableMod(mod_name: String):
 	data.modsEnabled[mod_name] = false

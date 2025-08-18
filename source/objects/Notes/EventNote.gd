@@ -2,52 +2,44 @@
 static var eventsFounded: PackedStringArray = []
 
 static func convert_events(events: Array) -> Array:
-	var events_variables: Dictionary[StringName,Dictionary] = {}
 	var new_events: Array = []
+	
 	
 	for event_data in events:
 		var events_array: Array = [event_data[0],[]]
 		for event in event_data[1]:
-			#Detect if the event have a txt file
 			var event_name = event[0]
 			var vars = event[1]
-			var default_values = get_event_variables(event_name)
-			if !event_name in events_variables:
-				events_variables[event_name] = default_values
+			var properties = get_event_variables(event_name)
 			
-			var event_properties: Dictionary = events_variables[event_name]
-			
-			if not vars is Dictionary:
-				var keys = event_properties.keys()
+			if !vars is Dictionary:
+				var keys = properties.keys()
 				vars = {keys[0]: vars}
-				if keys.size() > 1 and ArrayHelper.array_has_index(event,2):
-					vars[keys[1]] = event[2]
+				if keys.size() > 1 and ArrayHelper.array_has_index(event,2): vars[keys[1]] = event[2]
 			
-			#Insert variables not set
-			for i in default_values:
-				if not vars.has(i):
-					vars[i] = default_values[i].default_value
-			
-			#Convert value to type declared in event.txt
-			for values in vars:
-				vars[values] = convert_event_type(vars[values],events_variables[event_name][values].type)
+			for i in properties:
+				var default_value = properties[i].default_value
+				if vars.has(i): vars[i] = convert_event_type(vars[i],properties[i].type,default_value)
+				else: vars[i] = default_value
 			
 			events_array[1].append([event_name,vars])
 		new_events.append(events_array)
 	return new_events
 
-static func convert_event_type(value: Variant, type: Variant.Type):
+static func convert_event_type(value: Variant, type: Variant.Type, default_value: Variant = null):
 	if value == null: return MathHelper.get_new_value(type)
+	var value_type = typeof(value)
 	match type:
 		TYPE_NIL: return value
-		TYPE_COLOR: if typeof(value) == TYPE_STRING: return value
+		TYPE_FLOAT,TYPE_INT:
+			if value_type == TYPE_STRING and !value and default_value: return default_value
 	return type_convert(value,type)
+	
 static func loadEvents(chart: Array = []) -> Array[Dictionary]:
 	eventsFounded.clear()
 	var events: Array[Dictionary] = []
 	var event_data = convert_events(chart)
 	for i in event_data:
-		
 		for data in i[1]:
 			var event = data[0]
 			events.append(
@@ -57,8 +49,7 @@ static func loadEvents(chart: Array = []) -> Array[Dictionary]:
 					'variables': data[1]
 				}
 			)
-			if not event in eventsFounded:
-				eventsFounded.append(event)
+			if not event in eventsFounded: eventsFounded.append(event)
 			
 	events.sort_custom(func(a,b):
 		return a.strumTime < b.strumTime
@@ -84,37 +75,42 @@ static func _static_init() -> void:
 	for i in TweenHelper.transitions:
 		i = StringHelper.first_letter_upper(i)
 		easing_types.append("#"+i)
-		if i == 'Linear':
-			easing_types.append("Linear")
-			continue
+		if i == 'Linear': easing_types.append("Linear"); continue
 		for e in TweenHelper.easings: easing_types.append(i+e)
+
 ##Return the variables of the a custom_event using "@vars" in his text.[br]
 ##The function returns a [Dictionary] that contains an [Array] with its type and its default value.[br][br]
 ##[b]Example:[/b] [code]{"value1": [TYPE_STRING,''], "value2": [TYPE_FLOAT,0.0]}[/code]
 static func get_event_variables(event_name: String) -> Dictionary:
 	if event_name in event_variables: return event_variables[event_name]
 	var event_data = Paths.loadJson('custom_events/'+event_name+'.json')
-	if !event_data: return default_variables
+	if !event_data or !event_data.has('variables'): return default_variables
 	
 	var variables: Dictionary = {}
-	for i in event_data.get('variables',{}):
-		variables[i] = _get_value_data(event_data.variables[i])
+	for i in event_data.variables: variables[i] = _get_value_data(event_data.variables[i])
 	event_variables[event_name] = variables
 	return variables
 
 static func _get_value_data(value: Dictionary):
 	var type = value.get('type','String')
-	
-	var type_int = MathHelper.type_via_string(type)
-	var data = {
-		'type': type_int,
-		'default_value': value.get('default_value',MathHelper.get_new_value(type_int))
-	}
-	
+
+	var value_type: int
 	var options: Array = value.get('options',[])
-	if type == 'EasingType':
-		options.append_array(easing_types)
-		data.type = TYPE_STRING
+	match type:
+		'EasingType':
+			options.append_array(easing_types)
+			value_type = TYPE_STRING
+		_: value_type = MathHelper.type_via_string(type)
+		
+	var default_value: Variant = value.get('default_value')
+	if !default_value or typeof(default_value) != value_type:
+		default_value = MathHelper.get_new_value(value_type)
+	
+	var data = {
+		'type': value_type,
+		'default_value': default_value
+	}
+
 	var look_at = value.get('look_at')
 	
 	if look_at and look_at.get('directory'):
@@ -122,7 +118,7 @@ static func _get_value_data(value: Dictionary):
 		if value.look_at.get('separate_mods'):
 			var files_founded = []
 			var last_mod: String = ''
-			for i in Paths.getFilesAtDirectory(look_at.directory,true,extension):
+			for i in Paths.getFilesAt(look_at.directory,true,extension):
 				var file = i.get_file()
 				if file in files_founded:
 					continue
@@ -133,7 +129,7 @@ static func _get_value_data(value: Dictionary):
 				files_founded.append(file)
 				options.append(file)
 		else:
-			options.append_array(Paths.getFilesAtDirectory(look_at.directory,false,extension))
+			options.append_array(Paths.getFilesAt(look_at.directory,false,extension))
 	
 	if options:
 		data.options = options
@@ -152,7 +148,7 @@ static func _replace_look_at_to_enum(string: String) -> String:
 	for i in look_at_created:
 		var data = look_at_created[i]
 		var extension = data[1] if data.size() > 1 else ''
-		var files = Paths.getFilesAtDirectory(data[0],true,extension)
+		var files = Paths.getFilesAt(data[0],true,extension)
 		
 		var func_data: String = ''
 		

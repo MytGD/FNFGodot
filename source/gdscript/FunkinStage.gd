@@ -42,9 +42,9 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 		
 		var sprite: Sprite
 		if image.begins_with("#"):
-			sprite = FunkinGD.makeSprite(name)
+			sprite = FunkinGD.makeSprite(name,null,position[0],position[1])
 			sprite.image.set_graphic_color(Color(image))
-		
+			
 		elif data.get('animations'):
 			sprite = FunkinGD.makeAnimatedSprite(name,image,position[0],position[1])
 			
@@ -105,7 +105,7 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 	
 	if !sprites: return
 	
-	sprites.sort_custom(ArrayHelper.sort_array_from_first_index)
+	sprites.sort_custom(func(a,b): return a[0] <= b[0])
 	
 	for i in sprites:
 		FunkinGD.addSprite(i[1],i[0] >= front_index)
@@ -178,6 +178,8 @@ static func getPsychStageBase() -> Dictionary:
 		"directory": "",
 		"isPixelStage": false,
 		"hide_girlfriend": false,
+		"hide_boyfriend": false,
+		"hide_opponent": false,
 		"defaultZoom": 1.0,
 		"camera_speed": 1.0,
 		"boyfriend": [770.0,100.0],

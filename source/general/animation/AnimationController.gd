@@ -33,6 +33,7 @@ extends Resource
 ##[/codeblock][br]
 
 
+static var node_paths: Dictionary[StringName,NodePath] = {}
 ##Frames that will be played. 
 ##This stores an [Array] that contains a [Dictionary]:[code]
 ##{
@@ -56,12 +57,7 @@ extends Resource
 ##[/codeblock]
 ##In that example, in the first frame, the node will be move to -50 in x position,[br]
 ##and in the second frame will be moved to 50.
-@export var frames: Array: 
-	set(i):
-		maxFrames = i.size()
-		_float_frame = 0
-		frames = i
-		
+@export var frames: Array
 ##The Node to animate, [u][b]essential to make the animation work.[/u/][/b]
 var node_to_animate: Node: set = set_node_animate
 
@@ -108,8 +104,8 @@ var paused: bool = false: set = pause
 var _is_processing: bool = false
 var can_process: bool = false
 
-
-@export var looped: bool = false ##If [code]true[/code], the animation will restarts when it finishes.
+##If [code]true[/code], the animation will restarts when it finishes.
+@export var looped: bool = false
 var _float_frame: float = 0.0
 
 
@@ -130,7 +126,8 @@ func process_frame(delta: float) -> void:
 	if reverse: _float_frame -= delta*_animation_speed
 	else: _float_frame += delta*_animation_speed
 	
-	if _float_frame >= 0 and _float_frame < maxFrames: _real_cur_frame = _float_frame; return
+	if _float_frame >= 0 and _float_frame < maxFrames: 
+		_real_cur_frame = _float_frame; return
 	
 	#Loop Animation
 	if looped: _float_frame = loop_frame; return
@@ -153,11 +150,15 @@ func play_reverse() -> void: ##Play the animation in reverse.
 func start_anim():
 	finished = false
 	paused = false
-	if frames:
-		if _real_cur_frame != _float_frame: _real_cur_frame = _float_frame
-		else: set_frame(_float_frame)
-		start_process()
-		animation_started.emit()
+	
+	if !frames: maxFrames = 0; return
+	maxFrames = frames.size()
+	
+	if _real_cur_frame != _float_frame: _real_cur_frame = _float_frame
+	else: set_frame(_float_frame)
+	if maxFrames > 1 or !looped: start_process()
+	
+	animation_started.emit(name)
 	
 func _can_start_anim() -> bool: return can_process and not paused and not finished
 
@@ -184,22 +185,29 @@ func start_process(start: bool = true) -> void:
 
 func set_node_animate(node) -> void:
 	node_to_animate = node
-	if !node: can_process = false; stop(); return
-	can_process = node.is_inside_tree()
-	start_process()
+	if node: 
+		can_process = node.is_inside_tree()
+		start_process()
+		return
+	can_process = false; 
+	stop();
+	
 	
 func set_frame(frame: int = _real_cur_frame) -> void:
 	curFrameData = frames[frame]
-	for i in curFrameData: node_to_animate.set_indexed(i,curFrameData[i])
-	
-func set_frame_rate(value: float):
+	for i in curFrameData:
+		if i is NodePath: 
+			node_to_animate.set_indexed(i,curFrameData[i])
+		else: node_to_animate.set(i,curFrameData[i])
+
+func set_frame_rate(value: float) -> void:
 	if value == frameRate: return
 	frameRate = value
 	_update_animation_speed()
 	
-func set_speed_scale(value: float):
+func set_speed_scale(value: float) -> void:
 	if value == speed_scale: return
 	speed_scale = value
 	_update_animation_speed()
 	
-func _update_animation_speed(): _animation_speed = frameRate*speed_scale
+func _update_animation_speed() -> void: _animation_speed = frameRate*speed_scale

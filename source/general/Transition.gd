@@ -8,8 +8,7 @@ func _ready():
 	sprite = Sprite2D.new()
 	sprite.name = 'gradiant'
 	sprite.texture = GradientTexture2D.new()
-	sprite.texture.width = ScreenUtils.screenWidth
-	sprite.texture.height = ScreenUtils.screenHeight*2
+	_update_size()
 	sprite.centered = false
 	
 	sprite.texture.fill_from = Vector2(0.5,0.5)
@@ -21,21 +20,24 @@ func _ready():
 	
 	#var gradiant = GradientTexture1D.new()
 
+func _update_size():
+	sprite.texture.width = ScreenUtils.screenWidth
+	sprite.texture.height = ScreenUtils.screenHeight*2.0
 func startTrans():
 	sprite.position.x = 0
 	sprite.position.y = -ScreenUtils.screenHeight*2
 	var tween: Tween = create_tween()
 	tween.tween_property(self,'position:y',ScreenUtils.screenHeight*2.0,0.5)
-	tween.tween_callback(
-		func():
-			finished.emit()
-	)
+	tween.tween_callback(func():finished.emit())
+	_update_size()
 func removeTrans():
-	var tween: Tween = create_tween()
+	_update_size()
 	sprite.rotation_degrees = 180
 	sprite.position.x = ScreenUtils.screenWidth
 	sprite.position.y = ScreenUtils.screenHeight
 	position.y = 0
+	
+	var tween: Tween = create_tween()
 	tween.tween_property(self,'position:y',ScreenUtils.screenHeight*2.0,1)
 	tween.finished.connect(queue_free)
 	

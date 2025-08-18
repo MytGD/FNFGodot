@@ -3,19 +3,18 @@ const TRANSITION = preload("res://source/general/Transition.gd")
 
 signal onSwapTree
 
-
-
 static var scene: Node
 
 
 var gd = FunkinGD
-
+var scripts_running = FunkinGD.scriptsCreated
 var is_transiting: bool = false
 
 var current_transition: TRANSITION
 
 var error_prints: Array[Label]
-	
+
+var f11_to_fullscreeen: bool = true
 func _ready() -> void:
 	scene = get_parent()
 ##Swap the Tree for a new [Node]. [br][br]
@@ -58,13 +57,19 @@ func doTransition() -> TRANSITION:
 	
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
-		if event.keycode == 45:
+		if event.keycode == KEY_EQUAL:
 			AudioServer.set_bus_volume_db(0,maxf(-80.0,AudioServer.get_bus_volume_db(0) - 2.0))
-		elif event.keycode == 61:
-			AudioServer.set_bus_volume_db(0,maxf(-80.0,AudioServer.get_bus_volume_db(0) + 2.0))
-		elif event.keycode == 48:
+		elif event.keycode == KEY_MINUS:
+			AudioServer.set_bus_volume_db(0,AudioServer.get_bus_volume_db(0) + 2.0)
+		elif event.keycode == KEY_0:
 			AudioServer.set_bus_mute(0,not AudioServer.is_bus_mute(0))
-
+		elif event.keycode == KEY_F11:
+			if !f11_to_fullscreeen or !ScreenUtils.main_window: return
+			var mode = ScreenUtils.main_window.mode
+			if mode == Window.MODE_FULLSCREEN:
+				ScreenUtils.main_window.mode = Window.MODE_WINDOWED
+			else:
+				ScreenUtils.main_window.mode = Window.MODE_FULLSCREEN
 func show_label_error(text: String, time: float = 2.0) -> Label:
 	for i in error_prints:
 		i.position.y += 20

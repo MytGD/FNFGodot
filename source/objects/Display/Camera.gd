@@ -36,8 +36,7 @@ var color: Color:
 		
 var angle: float:
 	set(value):
-		if value == angle:
-			return
+		if value == angle:return
 		camera.rotation_degrees = value
 	get():
 		return camera.rotation_degrees
@@ -125,7 +124,6 @@ func _ready():
 func setFilters(shaders: Array = []) -> void: ##Set Shaders in the Camera
 	removeFilters()
 	filtersArray.append_array(_convertFiltersToMaterial(shaders))
-	
 	if !filtersArray: return
 	
 	_add_camera_to_viewport()
@@ -133,12 +131,16 @@ func setFilters(shaders: Array = []) -> void: ##Set Shaders in the Camera
 	
 	if filtersArray.size() == 1: _shader_image.texture = _viewport.get_texture(); return
 	
-	for i: ShaderMaterial in filtersArray.slice(1): _addViewportShader(i)
+	var index: int = 1
+	while index < filtersArray.size():
+		_addViewportShader(filtersArray[index])
+		index += 1
 
 
 func addFilters(shaders: Variant) -> void: ##Add shaders to the existing ones.
-	if shaders is String:
-		shaders = [shaders]
+	if shaders is String: shaders = [shaders]
+	if !filtersArray: setFilters(shaders); return
+	
 	shaders = _convertFiltersToMaterial(shaders)
 	_add_camera_to_viewport()
 	for i in shaders: _addViewportShader(i)
@@ -276,7 +278,7 @@ func add(node: Node,front: bool = true) -> void:
 
 func _insert_object_to_camera(node: Node):
 	var parent = node.get_parent()
-	if parent:  parent.remove_child(node)
+	if parent: parent.remove_child(node)
 	camera.add_child(node)
 	node.set("camera",self)
 	
@@ -308,5 +310,5 @@ static func _get_new_viewport() -> SubViewport:
 	view.transparent_bg = true
 	view.disable_3d = true
 	view.size = ScreenUtils.screenSize
-	view.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	#view.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	return view

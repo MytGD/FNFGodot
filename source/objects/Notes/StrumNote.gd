@@ -15,6 +15,7 @@ const Note = preload("res://source/objects/Notes/Note.gd")
 var direction: float = 0.0
 
 var mustPress: bool = false ##Player Strum
+var hit_action: String = '' ##Hit Key
 
 var return_to_static_on_finish: bool = true
 ##Pixel Note
@@ -32,11 +33,8 @@ var return_to_static_on_finish: bool = true
 		elif !is_pixel and texture.begins_with("pixelUI/"):
 			texture = texture.right(-8)
 		
-		 
-		
-		
 ##The [Input].action_key of the note, see [method Input.is_action_just_pressed]
-var hit_action: String = ''
+
 
 
 ##Strum Texture
@@ -70,6 +68,7 @@ var multSpeed: float = 1.0 ##The note speed multiplier.
 ## When this reaches 0, the 'static' animation is played.
 var hitTime: float = 0.0
 
+var is_static: bool = false #Used in PlayState to disable hold splashes
 #var rgbShader: ShaderMaterial = RGBPalette.new()
 #var useRGBShader: bool = true
 signal texture_changed(old_tex, new_tex)
@@ -91,7 +90,9 @@ func _init(dir: int = 0):
 		if anim != 'static' and return_to_static_on_finish and not mustPress:
 			animation.play('static')
 	)
-
+	animation.animation_started.connect(func(anim):
+		is_static = anim == 'static'
+	)
 const _anim_direction: Array = ['left','down','up','right']
 
 func reloadStrumNote(): ##Reload Strum Texture Data

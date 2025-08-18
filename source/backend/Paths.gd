@@ -48,25 +48,25 @@ static var extraDirectory: String:
 const icons_dictionaries: PackedStringArray = ['icons/','icons/icon-','winning_icons/','winning_icons/icon-']
 const data_dictionaries: PackedStringArray = ['data/','data/songs/']
 
-static var _files_directories_cache: Dictionary[StringName,String] = {}
-static var _dir_exists_cache: Dictionary[StringName,bool] = {}
+static var _files_directories_cache: Dictionary[String,String] = {}
+static var _dir_exists_cache: Dictionary[String,bool] = {}
 
-static var imagesCreated: Dictionary[StringName,Image] = {}
-static var imagesTextures: Dictionary[StringName,ImageTexture] = {}
+static var imagesCreated: Dictionary[String,Image] = {}
+static var imagesTextures: Dictionary[String,ImageTexture] = {}
 
-static var songsCreated: Dictionary[StringName,AudioStream] = {}
-static var soundsCreated: Dictionary[StringName,AudioStream] = {}
+static var songsCreated: Dictionary[String,AudioStream] = {}
+static var soundsCreated: Dictionary[String,AudioStream] = {}
 
-static var musicCreated: Dictionary[StringName,AudioStream] = {}
-static var fontsCreated: Dictionary[StringName,FontFile] = {}
-static var shadersCreated: Dictionary[StringName,Material] = {}
+static var musicCreated: Dictionary[String,AudioStream] = {}
+static var fontsCreated: Dictionary[String,FontFile] = {}
+static var shadersCreated: Dictionary[String,Material] = {}
 
-static var modelsCreated: Dictionary[StringName,Object] = {}
+static var modelsCreated: Dictionary[String,Object] = {}
 const model_formats: PackedStringArray = ['.tres','.glb']
 
-static var videosCreated: Dictionary[StringName,VideoStream] = {}
+static var videosCreated: Dictionary[String,VideoStream] = {}
 
-static var dirsToSearch: Array = []
+static var dirsToSearch: PackedStringArray = []
 static var searchAllMods: bool = false: 
 	set(value): searchAllMods = value; updateDirectories()
 
@@ -91,7 +91,10 @@ static func updateDirectories() -> void:
 	
 	var new_dirs: PackedStringArray
 	if enableMods:
-		for i in (modsFounded.keys() if searchAllMods else getRunningMods()): 
+		var array_mods: PackedStringArray
+		if searchAllMods: array_mods = modsFounded.keys()
+		else: array_mods = getRunningMods()
+		for i in array_mods: 
 			new_dirs.append(exePath+'/mods/'+i+'/')
 		new_dirs.append(exePath+'/mods/')
 	
@@ -135,7 +138,6 @@ static func detectFileFolder(path: String) -> String:
 		if FileAccess.file_exists(curPath):
 			_files_directories_cache[path] = curPath
 			return curPath
-	_files_directories_cache[path] = ''
 	return ''
 	
 static func image(path: String,imagesDirectory: bool = true) -> Image:
@@ -427,8 +429,6 @@ static func clearLocalFiles() -> void:
 static func loadShader(path: String) -> ShaderMaterial:
 	var absolute_path = shaderPath(path)
 	if !absolute_path: return null
-	
-	print(shadersCreated)
 	if shadersCreated.has(absolute_path): 
 		return shadersCreated[absolute_path].duplicate()
 	
@@ -443,41 +443,51 @@ static func loadShader(path: String) -> ShaderMaterial:
 	shadersCreated[absolute_path] = material
 	return material
 
-static func getFilesAtDirectory(folder: String, directory_path: bool = false, extension: Variant = '', return_extension: bool = false) -> PackedStringArray:
+static func getFilesAt(folder: String, return_folder: bool = false, filters: Variant = '', with_extension: bool = false) -> PackedStringArray:
 	var files: PackedStringArray = PackedStringArray()
-	
-	if extension and extension is String:
-		extension = [extension.right(-1) if extension.begins_with('.') else extension]
-		
+
 	if folder.ends_with('/'): folder = folder.left(-1)
 	
-	var folders_array: PackedStringArray = dirsToSearch
+	if filters and filters is String:
+		if filters.begins_with('.'): filters = PackedStringArray([filters.right(-1)])
+		else: filters = PackedStringArray([filters])
 	
-	#Find the Dir Absotule
-	if dir_exists(exePath+'/'+folder):
-		folders_array = [exePath+'/'+folder]
-		folder = ''
-		
-	elif dir_exists(folder):
-		folders_array = [folder]
-		folder = ''
+	for i in dirsToSearch:
+		files.append_array(getFilesAtAbsolute(i+folder,return_folder,filters,with_extension))
 	
-	for i in folders_array:
-		var dir = i+folder
-		
-		if not dir_exists(dir): continue
-		
-		for file in DirAccess.get_files_at(dir):
-			if extension:
-				var file_extension = file.get_extension()
-				if not extension.has(file_extension): continue
-				#Remove Extension
-				if !return_extension: file = file.left(-file_extension.length()-1)
-			
-			if directory_path: files.append(dir+'/'+file); continue
-			if not file in files: files.append(file)
 	return files
-	
+
+static func getFilesAtAbsolute(
+	folder: String, 
+	return_folder: bool = false, 
+	filters: Variant = PackedStringArray(), 
+	with_extension: bool = false
+) -> PackedStringArray:
+	if folder.left(exePath.length()) != exePath: folder = exePath+'/'+folder
+	if filters and filters is String:
+		if filters.begins_with('.'): filters = PackedStringArray([filters.right(-1)])
+		else: filters = PackedStringArray([filters])
+	if !dir_exists(folder): return PackedStringArray()
+	return _getFilesNoCheck(folder,return_folder,filters,with_extension)
+
+static func _getFilesNoCheck(
+	folder: String, 
+	return_folder: bool = false, 
+	filters: Variant = PackedStringArray(), 
+	with_extension: bool = false
+) -> PackedStringArray:
+	if !filters and with_extension: return DirAccess.get_files_at(folder)
+	var files: Dictionary[String,bool] = {}
+	for file in DirAccess.get_files_at(folder):
+		if filters:
+			var file_extension = file.get_extension()
+			if not filters.has(file_extension): continue
+			if !with_extension: file = file.left(-file_extension.length()-1)
+		
+		if return_folder: files[folder+'/'+file] = true; continue
+		files[file] = true
+	return files.keys()
+
 static func getRunningMods(location: bool = false, folder_name: bool = false) -> PackedStringArray:
 	var mods: PackedStringArray = []
 	if location: 

@@ -31,7 +31,7 @@ func _ready():
 func reloadShaders():
 	shadersPop.clear()
 	var last_mod: String = ''
-	for i in Paths.getFilesAtDirectory("shaders",true,['frag','gdshader'],true):
+	for i in Paths.getFilesAt("shaders",true,['frag','gdshader'],true):
 		var mod = Paths.getModFolder(i)
 		if last_mod != mod:
 			last_mod = mod

@@ -3,7 +3,7 @@ uniform vec3 light_color : source_color = vec3(1.5, 1.5, 1.2);
 uniform vec4 darken_color : source_color = vec4(0.8,0.8,0.8,1.0);
 uniform int edge_width : hint_range(0, 30) = 4; // largura da borda iluminada (em pixels)
 
-uniform float light_strength = 1.0;
+uniform float light_strength = 1.2;
 uniform bool check_left = true;
 uniform bool check_right = true;
 uniform bool check_top = true;
@@ -45,6 +45,6 @@ void fragment() {
 	}
 
 	if(borders_offset < 1.0){
-		COLOR.rgb = mix(COLOR.rgb,texture(TEXTURE,UV).rgb*light_color,(1.0 - borders_offset)*light_strength);
+		COLOR.rgb = mix(COLOR.rgb,texture(TEXTURE,UV).rgb*light_color*light_strength,(1.0 - borders_offset));
 	}
 }

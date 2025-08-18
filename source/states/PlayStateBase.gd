@@ -28,8 +28,6 @@ var icons: Array[Icon] = [iconP1,iconP2]
 
 var scoreTxt = GDText.new()
 
-
-
 var healthBar: Bar = Bar.new('healthBar')
 var health: float: set = set_health
 var healthBar_State: int = 0
@@ -66,6 +64,10 @@ var canPause: bool = true
 var onPause: bool = false
 
 var isStoryMode: bool = false
+
+@export_category('Story Mode')
+var story_song_notes: Dictionary = {}
+var story_songs: PackedStringArray = []
 
 @export_category("Hud Elements")
 var hideHud: bool = ClientPrefs.data.hideHud
@@ -163,7 +165,7 @@ func _ready():
 			
 			if isPixelStage: timeTxt.font = 'pixel.otf'
 			timeTxt.name = 'TimeTxt'
-			timeTxt.set_pos(timeBar.x+timeBar.bg.pivot_offset.x,timeBar.y)
+			timeTxt._position = Vector2(timeBar.x+timeBar.bg.pivot_offset.x,timeBar.y)
 			
 			timeBar.screenCenter('x')
 			uiGroup.add_child(timeBar)
@@ -199,7 +201,7 @@ func createMobileGUI():
 	button.pressed.connect(pauseSong)
 	add_child(button)
 func loadCharactersFromData(json: Dictionary = SONG):
-	if not stageJson.get("hide_girlfriend"): changeCharacter(2,json.get('gfVersion','gf'))
+	changeCharacter(2,json.get('gfVersion','gf'))
 	changeCharacter(0,json.get('player1','bf'))
 	changeCharacter(1,json.get('player2','bf'))
 
@@ -259,8 +261,8 @@ func updateNotes() -> void: #Function from StrumState
 func updateIconPos(icon: Icon) -> void:
 	var icon_pos: Vector2 
 	if icon.flipX: icon_pos = healthBar.get_process_position(healthBar.progress - 0.03)
-	else: icon_pos = healthBar.get_process_position(healthBar.progress + 0.015)
-	icon.set_pos(icon_pos + healthBar.position - icon.pivot_offset)
+	else: icon_pos = healthBar.get_process_position(healthBar.progress)
+	icon._position = icon_pos + healthBar.position - icon.pivot_offset
 
 func updateIconsPivot() -> void:
 	var angle = healthBar.rotation
@@ -309,10 +311,29 @@ func spawnNote(note):
 func reloadNotes():
 	for i in noteTypesFounded: FunkinGD.addScript('custom_notetypes/'+i)
 	super.reloadNotes()
+
+func loadNotes():
+	super.loadNotes()
+	if !_events_preload:
+		var events_to_load = SONG.get('events',[])
+		var events_json = Paths.loadJson('data/'+Conductor.songFolder+'/events.json')
+		
+		if events_json:
+			if events_json.get('song') is Dictionary: 
+				events_json = events_json.song
+			events_to_load.append_array(events_json.get('events',[]))
+		_events_preload = EventNote.loadEvents(events_to_load)
 	
+	eventNotes = _events_preload.duplicate()
 func reloadNote(note: Note):
 	super.reloadNote(note)
 	FunkinGD.callOnScripts('onLoadNote',[note])
+	if note.noteType: 
+		FunkinGD.callScript(
+			'custom_notetypes/'+note.noteType+'.gd',
+			'onLoadThisNote',
+			[note]
+		)
 
 func updateNote(note):
 	var _return = super.updateNote(note)
@@ -340,14 +361,13 @@ func _load_song_scripts():
 	#Load Stage Script
 	FunkinGD.addScript('stages/'+curStage+'.gd')
 	
-	var look_scripts: PackedStringArray = []
-	look_scripts.append_array(Paths.getFilesAtDirectory('data/'+Conductor.songFolder+'/',true))
-	look_scripts.append_array(Paths.getFilesAtDirectory('scripts',true))
-	for i in look_scripts: FunkinGD.addScript(i)
+	for i in Paths.getFilesAt('data/'+Conductor.songFolder+'/',true): FunkinGD.addScript(i)
+	for i in Paths.getFilesAt('scripts',true): FunkinGD.addScript(i)
 
 func triggerEvent(event: StringName,variables: Variant) -> void:
-	if variables is Dictionary: FunkinGD.callOnScripts('onEvent',[event,variables]); return
-
+	if !variables is Dictionary: return
+	FunkinGD.callOnScripts('onEvent',[event,variables])
+	FunkinGD.callScript('custom_events/'+event,'onLocalEvent',[variables])
 #endregion
 
 #region Song Methods
@@ -361,8 +381,8 @@ func startCountdown():
 	
 	if skipCountdown: startSong()
 
-func _create_strum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
-	var strum = super._create_strum(i,opponent_strum,pos)
+func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
+	var strum = super.createStrum(i,opponent_strum,pos)
 	FunkinGD.callOnScripts('onLoadStrum',[strum,opponent_strum])
 	return strum
 
@@ -371,27 +391,24 @@ func loadSong(data: String = song_json_file, songDifficulty: String = difficulty
 	loadStage(SONG.get('stage',''),false)
 	
 func loadSongObjects() -> void:
+	print('Loading Stage')
 	Stage.loadSprites()
 	#Load Scripts
+	print('Loading Scripts')
 	_load_song_scripts()
+	
 	super.loadSongObjects()
-	loadEvents()
+	print('Loading Events')
+	loadEventsScripts()
+	
+	print('Loading Characters')
 	loadCharactersFromData()
 
-func loadEvents():
-	if !_events_preload:
-		var events_to_load = SONG.get('events',[])
-		var events_json = Paths.loadJson('data/'+Conductor.songFolder+'/events.json')
-		
-		if events_json:
-			if events_json.get('song') is Dictionary: events_json = events_json.song
-			events_to_load.append_array(events_json.get('events',[]))
-		_events_preload = EventNote.loadEvents(events_to_load)
-	eventNotes = _events_preload.duplicate()
-	
+func loadEventsScripts():
 	#Load Event Scripts
 	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i)
-	
+	for i in Paths.getFilesAtAbsolute('assets/custom_events',false,'.gd'): 
+		FunkinGD.addScript('custom_events/'+i)
 func startSong():
 	super.startSong()
 	if Conductor.songs: Conductor.songs[0].finished.connect(endSound)
@@ -441,6 +458,8 @@ func endSound() -> void:
 	if FunkinGD.Function_Stop in results or !canExitSong: return
 	exitingSong = true
 	canPause = false
+	if isStoryMode and story_song_notes:
+		loadSong()
 	if back_state: Global.swapTree(back_state.new(),true)
 
 func countDownTick(beat: int) -> void:
@@ -490,15 +509,14 @@ func reloadPlayState():
 
 #region Modding Methods
 func chartEditor():
-	Global.doTransition().finished.connect(Global.swapTree.bind(ChartEditorScene.instantiate(),false))
+	var chart = ChartEditorScene.instantiate()
+	Global.swapTree(chart,true)
 	pauseSong(false)
 
 func characterEditor():
-	Global.doTransition().finished.connect(func():
-		var editor = CharacterEditor.instantiate()
-		editor.back_to = get_script()
-		Global.swapTree(editor,false)
-	)
+	var editor = CharacterEditor.instantiate()
+	editor.back_to = get_script()
+	Global.swapTree(editor,true)
 	pauseSong(false)
 #endregion
 
@@ -528,6 +546,10 @@ func startVideo(path: Variant, isCutscene: bool = true) -> VideoStreamPlayer:
 		seenCutscene = true
 		FunkinGD.callOnScripts('onEndCutscene',[path])
 	)
+	videoPlayer.resized.connect(func():
+		videoPlayer.scale = (ScreenUtils.screenSize/videoPlayer.size).min(Vector2.ONE)
+	)
+	
 	return videoPlayer
 
 func skipVideo() -> void:
@@ -584,9 +606,9 @@ func onSectionHit(sec: int = Conductor.section) -> void:
 	var sectionData = ArrayHelper.get_array_index(SONG.get('notes',[]),sec)
 	if !sectionData: return
 	
-	mustHitSection = sectionData.get('mustHitSection',false)
-	gfSection = sectionData.get('gfSection',false)
-	altSection = sectionData.get('altAnim',false)
+	mustHitSection = !!sectionData.get('mustHitSection')
+	gfSection = !!sectionData.get('gfSection')
+	altSection = !!sectionData.get('altAnim')
 	FunkinGD.mustHitSection = mustHitSection
 	FunkinGD.gfSection = gfSection
 	FunkinGD.altAnim = altSection
@@ -598,7 +620,7 @@ func detectSection() -> StringName:
 
 #region Character Methods
 func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
-	var char_name = get_character_type_name(type)
+	var char_name: StringName = get_character_type_name(type)
 	var character_obj = get(char_name)
 	if character_obj and character_obj.curCharacter == character: return
 	
@@ -607,6 +629,12 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 	
 	var newCharacter = addCharacterToList(type,character)
 	if not newCharacter: return
+	
+	newCharacter.name = char_name
+	newCharacter.holdTimer = 0.0
+	newCharacter.visible = true
+	newCharacter.process_mode = Node.PROCESS_MODE_INHERIT
+	set(char_name,newCharacter)
 	
 	if character_obj:
 		var anim_to_play = character_obj.animation.current_animation
@@ -619,11 +647,7 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 		
 		character_obj.visible = false
 		character_obj.process_mode = PROCESS_MODE_DISABLED
-	newCharacter.name = char_name
-	newCharacter.holdTimer = 0.0
-	newCharacter.visible = true
-	newCharacter.process_mode = Node.PROCESS_MODE_INHERIT
-	set(char_name,newCharacter)
+	
 	
 	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
 	match type:
@@ -635,13 +659,13 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 			iconP2.reloadIconFromCharacterJson(newCharacter.json)
 	
 	updateIconsPivot()
-	if not isCameraOnForcedPos and detectSection() == char_name: moveCamera(char_name)
+	if !isCameraOnForcedPos and detectSection() == char_name: moveCamera(char_name)
 	return newCharacter
 
 func onSectionHitOnce():
-	if not isCameraOnForcedPos: moveCamera(detectSection())
+	if !isCameraOnForcedPos: moveCamera(detectSection())
 	
-static func get_character_type_name(type: int) -> String:
+static func get_character_type_name(type: int) -> StringName:
 	match type:
 		1: return 'dad'
 		2: return 'gf'
@@ -675,16 +699,17 @@ func loadStage(stage: StringName, loadScript: bool = true):
 
 #region Health Methods
 func set_health(value: float):
-	value = clamp(value,0.0,2.0)
+	value = clamp(value,-1.0,2.0)
 	if health == value: return
 	health = value
 	if canGameOver(): gameOver(); return
 	
-	healthBar.progress = 1.0 - value/2.0
+	var progress_h = value/2.0
+	healthBar.progress = progress_h if playAsOpponent else 1.0 - progress_h
 	
 	var bar_state = healthBar_State
-	if value >= 0.7: bar_state = 2
-	elif value <= 0.3: bar_state = 0
+	if progress_h >= 1.7: bar_state = 2
+	elif progress_h <= 0.3: bar_state = 0
 	else: bar_state = 1
 	
 	if bar_state == bar_state:return

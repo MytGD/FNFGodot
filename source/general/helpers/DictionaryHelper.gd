@@ -17,7 +17,6 @@ static func back(dic: Dictionary) -> Variant: ##Retruns the last element from [p
 	return dic[dic.keys().back()]
 
 static func rename_key(dic: Dictionary, key: Variant, new_key: Variant):
-	if !dic.has(key):
-		return
+	if !dic.has(key): return
 	dic[new_key] = dic[key]
 	dic.erase(key)

@@ -47,7 +47,7 @@ func loadSongObjects():
 	else:
 		GameOverSubstate.characterName = 'bf'
 		GameOverSubstate.opponentName = 'bf'
-		GameOverSubstate.deathSoundName = 'gameplay/gameover/fnf_loss_sfx-pixel'
+		GameOverSubstate.deathSoundName = 'gameplay/gameover/fnf_loss_sfx'
 		GameOverSubstate.loopSoundName = 'gameplay/gameover/gameOver'
 		GameOverSubstate.endSoundName = 'gameplay/gameover/gameOverEnd'
 	super.loadSongObjects()
@@ -65,9 +65,9 @@ func gameOver():
 func loadStage(stage: StringName,loadScript: bool = true):
 	super.loadStage(stage,loadScript)
 	
-	boyfriendCameraOffset = VectorHelper.array_to_vector(stageJson.characters.bf.cameraOffsets)
-	girlfriendCameraOffset = VectorHelper.array_to_vector(stageJson.characters.gf.cameraOffsets)
-	opponentCameraOffset = VectorHelper.array_to_vector(stageJson.characters.dad.cameraOffsets)
+	boyfriendCameraOffset = VectorHelper.array_to_vec(stageJson.characters.bf.cameraOffsets)
+	girlfriendCameraOffset = VectorHelper.array_to_vec(stageJson.characters.gf.cameraOffsets)
+	opponentCameraOffset = VectorHelper.array_to_vec(stageJson.characters.dad.cameraOffsets)
 	
 	defaultCamZoom = stageJson.cameraZoom
 	cameraSpeed = stageJson.cameraSpeed
@@ -80,14 +80,19 @@ func loadStage(stage: StringName,loadScript: bool = true):
 	gfGroup.x = stageJson.characters.gf.position[0]
 	gfGroup.y = stageJson.characters.gf.position[1]
 	
-	if stageJson.get('hide_girlfriend') and gf: gf.kill()
+	if stageJson.get('hide_girlfriend'): 
+		gfGroup.visible = false
+	else: gfGroup.visible = true
+	
+	
+	if stageJson.get('hide_boyfriend'): boyfriendGroup.visible = false
+	else:  boyfriendGroup.visible = true
 	moveCamera(detectSection())
 func _process(delta: float) -> void:
 	if camZooming: camGame.zoom = lerpf(camGame.zoom,defaultCamZoom,delta*3*zoomSpeed)
 	super._process(delta)
-	var follow = camFollow - ScreenUtils.screenCenter
-	if ScreenUtils.screenOffset != Vector2.ZERO:
-		follow += (ScreenUtils.screenOffset/2.0).max(Vector2.ZERO)
+	var follow = camFollow - ScreenUtils.defaultSizeCenter + ScreenUtils.screenOffset
+	
 	camGame.scroll = camGame.scroll.lerp(
 		follow,
 		cameraSpeed*delta*3.5
@@ -113,14 +118,13 @@ func addCharacterToList(type: int = 0,charFile: StringName = 'bf') -> Character:
 		2: group = gfGroup; charType = 'gf'
 		_: group = boyfriendGroup
 		
-	if !Paths.detectFileFolder('characters/'+charFile+'.json'): charFile = 'bf'
+	if !Paths.file_exists('characters/'+charFile+'.json'): charFile = 'bf'
 	
 	#Check if the character is already created.
 	for chars in group.members:
 		if chars and chars.curCharacter == charFile: return chars
 	
 	var newCharacter: Character = Character.new(charFile,type == 0)
-	
 	if group: group.add(newCharacter,false)
 	
 	newCharacter._position += newCharacter.positionArray
@@ -131,8 +135,8 @@ func addCharacterToList(type: int = 0,charFile: StringName = 'bf') -> Character:
 	Paths.image(newCharacter.healthIcon)
 	
 	FunkinGD.addScript('characters/'+charFile+'.gd')
+	FunkinGD.callScript('characters/'+charFile+'.gd','onLoadThisCharacter',[newCharacter,charType])
 	FunkinGD.callOnScripts('onLoadCharacter',[newCharacter,charType])
-	
 	insertCharacterInGroup(newCharacter,group)
 	newCharacter.visible = false
 	newCharacter.process_mode = Node.PROCESS_MODE_DISABLED
@@ -148,9 +152,11 @@ func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 	#var character: Character = gf if gfNote else (dad if mustPress else boyfriend)
 	var dance: bool = not (mustPress != playAsOpponent and not botplay)
 	
-	if not mustPress and dad: dad.autoDance = dance
+	if not mustPress:
+		if dad: dad.autoDance = dance
 	
-	elif mustPress and boyfriend: boyfriend.autoDance = dance and not gfNote
+	elif mustPress:
+		if boyfriend: boyfriend.autoDance = dance and not gfNote
 	
 	elif gf: gf.autoDance = gfNote and dance
 	

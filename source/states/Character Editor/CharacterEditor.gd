@@ -5,6 +5,7 @@ const Icon = preload("res://source/objects/UI/Icon.gd")
 const AnimClass = preload("res://source/general/animation/AnimationService.gd")
 var back_to: Variant
 
+var charactersFound: PackedStringArray = []
 var characterData: Dictionary = Character.getCharacterBaseData()
 var animData: Dictionary = Character.getAnimBaseData()
 
@@ -78,11 +79,9 @@ var _last_save_folder = Paths.exePath+'/'
 @onready var animationGhostPop: PopupMenu = animationGhost.get_popup()
 @onready var animationListPop: PopupMenu = animationList.get_popup()
 @onready var characterPop: PopupMenu = characterList.get_popup()
-@onready var prefixPop: PopupMenu = prefixList.get_popup()
-
 @onready var camera := $BG
 var camera_zoom: float = 1.0
-var camera_y_limit = -120
+var camera_y_limit = -300
 
 #Json Data
 @onready var json_scale := $"TabContainer/Json Data/scale"
@@ -120,6 +119,7 @@ func _ready():
 	characterPop.index_pressed.connect(func(i):
 		var character = characterPop.get_item_text(i)
 		if character == curCharacter: return
+		_last_save_folder = Paths.characterPath(character).get_base_dir()
 		character_node.loadCharacter(character)
 		updateCharacterData()
 	)
@@ -135,7 +135,8 @@ func _ready():
 	#Character List
 	characterPop.min_size = Vector2(250,0)
 	var last_mod = ''
-	for i in Paths.getFilesAtDirectory('characters',true,'.json'):
+	charactersFound = Paths.getFilesAt('characters',true,'.json')
+	for i in charactersFound:
 		var mod = Paths.getModFolder(i)
 		if !mod: mod = Paths.game_name
 		if last_mod != mod:
@@ -143,11 +144,13 @@ func _ready():
 			last_mod = mod
 		characterPop.add_item(i.get_file())
 	
-	prefixPop.index_pressed.connect(func(i):setAnimationPrefix(prefixPop.get_item_text(i)))
+	prefixListPop.index_pressed.connect(
+		func(i):setAnimationPrefix(prefixListPop.get_item_text(i))
+		)
 	
 	$BG_Image.texture = Paths.imageTexture('editors/character_editor/bg')
 	$BG/Ground.texture =  Paths.imageTexture('editors/character_editor/ground')
-	camera_y_limit = $BG/Ground.texture.get_size().y*$BG/Ground.scale.y
+	camera_y_limit = $BG/Ground.texture.get_size().y*$BG/Ground.scale.y + 300
 	
 
 func exit():
@@ -187,15 +190,16 @@ func selectAnim(anim_name: String):
 		animData = i
 		break
 	animationList.text = cur_anim
+	
 	animation_insert_name.placeholder_text = cur_anim
 	animation_asset.text = animData.get('assetPath','')
 	updateAnimData()
 	
 func addCharacterAnimation(anim):
 	if character_node.animationsArray.has(anim): return
-	var animData = Character.getAnimBaseData()
-	animData.anim = anim
-	charJson.animations.append(animData)
+	var newAnimData = Character.getAnimBaseData()
+	newAnimData.anim = anim
+	charJson.animations.append(newAnimData)
 	animationListPop.add_item(anim)
 	animationGhostPop.add_item(anim)
 	cur_anim = anim
@@ -205,6 +209,7 @@ func add_anim_offset():
 		character_node.addAnimOffset(cur_anim,cur_offset.x,cur_offset.y)
 	
 func setAnimationPrefix(new_text: String) -> void:
+	animData.prefix = new_text
 	animation_prefix.text = new_text
 	reloadCharacterAnim()
 
@@ -229,16 +234,15 @@ func updatePrefixList():
 	if !character_node._images: return
 	
 	if character_node._images.size() == 1:
-		prints('Anim File:',character_node.animation._animFile)
 		for i in AnimClass.getPrefixList(character_node.animation._animFile): 
 			prefixListPop.add_item(i)
 	else:
-		for i in character_node._images:
-			var prefix_list = AnimClass.getPrefixList(AnimClass.findAnimFile(i))
+		for i in character_node._images.values():
+			var prefix_list = AnimClass.getPrefixList(AnimClass.findAnimFile(i.resource_name))
 			if !prefix_list: continue
-			prefixListPop.add_separator(i.get_file())
+			prefixListPop.add_separator(i.resource_name.get_file())
 			for p in prefix_list: prefixListPop.add_item(p)
-
+	
 func updateCharacterData():
 	character_node._position = Vector2(640,0) + character_node.positionArray
 	curCharacter = character_node.curCharacter
@@ -300,17 +304,16 @@ func zoomBg(add: float):
 	
 func updateBgPosition():
 	camera.scale = camera.scale.clamp(Vector2(0.45,0.45),Vector2(2,2))
-	var limit = -200+(camera.scale.y-1.0)/2.0*(-camera_y_limit)
-	camera.position.y = maxf(camera.position.y,limit)
-	
-	
+	camera.position.y = clampf(camera.position.y,-700,700)
 func reloadCharacterAnim():
 	character_node.addCharacterAnimation(
 		cur_anim,
-		animation_prefix.text,
-		cur_frame_rate,
-		character_node.animation.curAnim.looped,
-		cur_indices
+		{
+			'prefix': animation_prefix.text,
+			'fps': cur_frame_rate,
+			'looped': character_node.animation.curAnim.looped,
+			'indices': cur_indices
+		}
 	)
 
 func replayCharAnim():
@@ -386,7 +389,7 @@ func _on_save_character_button_up() -> void:
 	folders.visible = true
 	add_child(folders)
 	folders.file_selected.connect(func(dir):
-		_last_save_folder = dir.get_base_dir()
+		if not dir in charactersFound: charactersFound.append(dir)
 		Paths.saveFile(charJson,dir)
 		folders.queue_free()
 	)
@@ -447,8 +450,8 @@ func _on_offset_follow_scale_toggled(toggled_on: bool) -> void:
 
 
 func _on_health_color_color_changed(color: Color) -> void:
-	character_node.healthBarColors = [color.r*255.0,color.g*255.0,color.b*255.0]
-	charJson.healthbar_colors = character_node.healthBarColors
+	character_node.healthBarColors = color
+	charJson.healthbar_colors = [color.r*255.0,color.g*255.0,color.b*255.0]
 	updateBarColor()
 	
 func _on_health_icon_text_submitted(new_text: String) -> void:
@@ -567,13 +570,22 @@ func _on_origin_y_value_changed(value: float) -> void:
 
 
 func _on_create_new_character_button_down() -> void:
+	#Check if the character name already exists
+	var char_name = new_character_name.text
+	for i in charactersFound:
+		if i.get_file() == char_name and Paths.getModFolder(i,'') == Paths.curMod:
+			Global.show_label_error('Error: Character Name already exists!')
+			return
+	
 	var json = Character.getCharacterBaseData()
 	
+	
 	json.assetPath = new_character_image.text
-	characterList.text = new_character_name.text
+	characterList.text = char_name
 	
 	Paths.curMod = Paths.getModFolder(new_character_image.text)
 	character_node.loadCharacterFromJson(json)
+	character_node.curCharacter = char_name
 	charJson = json
 	updateCharacterData()
 	

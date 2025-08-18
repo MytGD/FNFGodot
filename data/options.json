@@ -18,7 +18,7 @@
 	"goodOffset": 130.0,
 	"hideHud": false,
 	"lowQuality": false,
-	"middlescroll": true,
+	"middlescroll": false,
 	"miraculousOffset": 25.0,
 	"miraculousRating": false,
 	"modsEnabled": {
@@ -178,7 +178,7 @@
 	"sickOffset": 45.0,
 	"songOffset": 0.0,
 	"splashAlpha": 0.8,
-	"splashSkin": "noteSplashes/noteSplashes",
+	"splashSkin": "NoteSplashes",
 	"splashesEnabled": true,
 	"timeBarType": "Disabled"
 }

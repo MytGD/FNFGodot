@@ -4,6 +4,7 @@
 ##The Note Base Class
 extends "res://source/objects/Sprite/Sprite.gd"
 
+const NoteSplash = preload("res://source/objects/Notes/NoteSplash.gd")
 const Note = preload("res://source/objects/Notes/Note.gd")
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 const note_colors: PackedStringArray = ['Purple','Blue','Green','Red']
@@ -36,6 +37,7 @@ const prefix: Dictionary = {
 	'greenHoldEnd': 'green hold end',
 	'redHoldEnd': 'red hold end',
 }
+const directions: PackedStringArray = ['left','down','up','right']
 
 ##If [code]true[/code], the note will follow the x position from his [member strum].
 var copyX: bool = true 
@@ -51,6 +53,7 @@ var _is_processing: bool = true
 var downscroll: bool = ClientPrefs.data.downscroll ##If [code]true[/code], the note will come from top.
 
 var isSustainNote: bool = false ##If the note is a Sustain. See also ["source/objects/NoteSustain.gd"]
+var isEndSustain: bool = false
 
 var hitHealth: float = 0.023 ##the amount of life will gain by hitting the note
 var missHealth: float = 0.0475##the amount of life will lose by missing the note
@@ -88,7 +91,7 @@ var noteType: StringName = "": set = setNoteType
 var texture: String: set = setTexture ##Note Texture
 var _real_texture: String = ''
 
-
+var autoHit: bool = false
 var noAnimation: bool = false ##When hit the note and this variable is [code]true[/code], the character will dont play animation
 var mustPress: bool = false ##player note
 
@@ -116,7 +119,7 @@ var animSuffix: StringName = ''
 var ratingMod: int = 0 ## The Rating of the note in [int]. [param 0 = nothing, 1 = sick, 2 = good, 3 = bad, 4 = shit]
 var rating: StringName = '' ## The Rating ot the note in [String]. [param sick, good, bad, shit]
 
-var ratingDisabled: bool = false ##Disable Rating. If [code]true[/code], the rating will always be sick[0].
+var ratingDisabled: bool = false ##Disable Rating. If [code]true[/code], the rating will always be "sick".
 
 var gfNote: bool = false ##Is GF Note
 var ignoreNote: bool = false ##if is opponent note or a bot playing, they will ignore this note
@@ -136,16 +139,10 @@ var _real_note_speed: float = 1.0
 
 var noteSplashData: Dictionary = { ## Note Splash Data.
 	'disabled': false,
-	'useRGBShader': true,
-	'r': 1.0,
-	'g': 1.0,
-	'b': 1.0,
-	'a': ClientPrefs.data.splashAlpha,
 	'scale': Vector2.ONE,
 	'prefix': '',
-	'texture': '',
-	'sustain': false,
-	'looped': false
+	'type': 'noteSplash',
+	'style': 'NoteSplashes'
 }
 
 
@@ -198,7 +195,8 @@ func resetNote() -> void: #Replaced in NoteSustain
 	wasHit = false
 	_is_processing = true
 	missed = false
-	
+	offset = Vector2.ZERO
+
 func reloadNote() -> void: ##Reload Note Texture
 	if !isPixelNote:
 		animation.addAnimByPrefix('static',prefix.get(noteColor.to_lower()+'Static'),24,true)
@@ -229,12 +227,12 @@ func setNoteType(type: String) -> void:
 			texture = 'noteSkins/HURTNOTE_assets'
 			hitHealth = -0.024
 			ignoreNote = true
-			noteSplashData.texture = 'noteSplashes/HURT_splashes'
-			noteSplashData.prefix = 'splash electro '+noteColor.to_lower()
+			noteSplashData.style = 'HurtSplash'
+			noteSplashData.prefix = 'splash electro'
 			ratingDisabled = true
 			lowPriority = true
 		'Alt Animation': animSuffix = '-alt'
-		'No Animation','ugh': noAnimation = true
+		'No Animation': noAnimation = true
 
 func setPixelNote(isPixel: bool) -> void:
 	if isPixel == isPixelNote: return
@@ -248,16 +246,18 @@ func setTexture(_new_texture: String):
 	
 	if _real_texture == real_tex: return
 	_real_texture = real_tex
-	
 	texture = _new_texture
+	
+	
 	image.texture = Paths.imageTexture(real_tex)
 	reloadNote()
 
 func getNoteDistance() -> float:
 	return (strumTime - Conductor.songPositionDelayed) * _real_note_speed
-	
-#Also used in NoteHit and NoteSustain
-func _load_data() -> void: noteSplashData.prefix = 'note splash '+ noteColor.to_lower()
+
+
+func _load_data() -> void: 
+	noteSplashData.prefix = directions[noteData]+'Splashes'
 
 
 func _update_note_speed() -> void: _real_note_speed = noteSpeed * 0.45 * multSpeed
