@@ -1,0 +1,543 @@
+[gd_scene load_steps=13 format=3 uid="uid://cdx3c6oqeoydx"]
+
+[ext_resource type="Script" uid="uid://doy0sw82uf7jv" path="res://source/states/ModchartOld/ModchartEditor.gd" id="1_21c3u"]
+[ext_resource type="Script" uid="uid://dpeyan7ggxi05" path="res://source/states/ModchartOld/ModchartLoadSave.gd" id="2_usr4j"]
+[ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_5p0jn"]
+[ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/basic/Shader.svg" id="4_1p5va"]
+[ext_resource type="Texture2D" uid="uid://dshtfnk38km3v" path="res://icons/basic/Object.svg" id="5_b8ifs"]
+[ext_resource type="Texture2D" uid="uid://d1sff7sklvjrf" path="res://icons/basic/Camera.svg" id="6_5yij3"]
+[ext_resource type="Script" uid="uid://d2uq737ualcad" path="res://source/states/ModchartOld/PropertyEditor.gd" id="7_toln4"]
+[ext_resource type="Script" uid="uid://c0v27f20u05d1" path="res://source/states/ModchartOld/PositionLine.gd" id="8_gdgt2"]
+[ext_resource type="Script" uid="uid://bww7b58pi1flg" path="res://source/states/ModchartOld/AddShader.gd" id="9_ypsgi"]
+[ext_resource type="Script" uid="uid://d3kq4gt4s31su" path="res://source/states/ModchartOld/GameView.gd" id="10_snt88"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_p01lu"]
+viewport_path = NodePath("GameView")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wq6oa"]
+
+[node name="ModchartEditor" type="Node2D"]
+script = ExtResource("1_21c3u")
+
+[node name="Split" type="VSplitContainer" parent="."]
+offset_right = 1281.0
+offset_bottom = 720.0
+split_offset = 560
+
+[node name="O_Split" type="HSplitContainer" parent="Split"]
+layout_mode = 2
+
+[node name="TabContainer" type="TabContainer" parent="Split/O_Split"]
+clip_contents = true
+layout_mode = 2
+current_tab = 0
+tab_focus_mode = 0
+
+[node name="Song" type="VBoxContainer" parent="Split/O_Split/TabContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+script = ExtResource("2_usr4j")
+metadata/_tab_index = 0
+
+[node name="Label2" type="Label" parent="Split/O_Split/TabContainer/Song"]
+layout_mode = 2
+text = "=====Song====="
+
+[node name="BPM" parent="Split/O_Split/TabContainer/Song" instance=ExtResource("3_5p0jn")]
+layout_mode = 2
+text = "BPM: "
+
+[node name="Load Songs" type="Button" parent="Split/O_Split/TabContainer/Song"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "Load Songs"
+
+[node name="Label" type="Label" parent="Split/O_Split/TabContainer/Song"]
+layout_mode = 2
+text = "===Load from Chart==="
+
+[node name="Select Stage" type="Button" parent="Split/O_Split/TabContainer/Song"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "Select Stage"
+
+[node name="LoadFromChart" type="Button" parent="Split/O_Split/TabContainer/Song"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "Select Chart"
+
+[node name="LoadCharacters" type="CheckButton" parent="Split/O_Split/TabContainer/Song"]
+layout_direction = 2
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+text = "Load Characters From Chart"
+
+[node name="LoadStage" type="CheckButton" parent="Split/O_Split/TabContainer/Song"]
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+text = "Load Stage from Chart"
+
+[node name="LoadNotes" type="CheckButton" parent="Split/O_Split/TabContainer/Song"]
+layout_mode = 2
+focus_mode = 0
+text = "Load Notes"
+
+[node name="Modchart" type="ScrollContainer" parent="Split/O_Split/TabContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+metadata/_tab_index = 1
+
+[node name="Options" type="VBoxContainer" parent="Split/O_Split/TabContainer/Modchart"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 2
+
+[node name="Label" type="Label" parent="Split/O_Split/TabContainer/Modchart/Options"]
+layout_mode = 2
+size_flags_horizontal = 0
+horizontal_alignment = 1
+
+[node name="Save Modchart" type="Button" parent="Split/O_Split/TabContainer/Modchart/Options"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "Save Modchart"
+
+[node name="Load Modchart" type="Button" parent="Split/O_Split/TabContainer/Modchart/Options"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "Load Modchart"
+
+[node name="Shortcuts" type="TabBar" parent="Split/O_Split/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Shortcuts" type="Label" parent="Split/O_Split/TabContainer/Shortcuts"]
+layout_mode = 2
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 23.0
+offset_right = 204.0
+offset_bottom = 70.0
+text = "====When Key Selected=====
+
+Ctrl + C: Copy Keys
+
+Ctrl + V: Paste Keys"
+
+[node name="V_Split" type="HSplitContainer" parent="Split/O_Split"]
+layout_mode = 2
+size_flags_horizontal = 3
+split_offset = 730
+
+[node name="ViewportTexture" type="TextureRect" parent="Split/O_Split/V_Split"]
+layout_mode = 2
+texture = SubResource("ViewportTexture_p01lu")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="P_Panel" type="PanelContainer" parent="Split/O_Split/V_Split"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="P_Scroll" type="ScrollContainer" parent="Split/O_Split/V_Split/P_Panel"]
+layout_mode = 2
+
+[node name="Property" type="VBoxContainer" parent="Split/O_Split/V_Split/P_Panel/P_Scroll"]
+layout_mode = 2
+
+[node name="Values" type="VBoxContainer" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Value" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+custom_minimum_size = Vector2(284, 40)
+layout_mode = 2
+text = "Value:"
+
+[node name="InitValue" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+custom_minimum_size = Vector2(303, 40)
+layout_mode = 2
+text = "Init Value:"
+
+[node name="ValueX" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Value(x):"
+
+[node name="ValueY" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Value(y):"
+
+[node name="ValueZ" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Value(z):"
+
+[node name="ValueW" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Value(w):"
+
+[node name="InitValueX" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Begin Value(x):"
+
+[node name="InitValueY" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Begin Value(y):"
+
+[node name="InitValueZ" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Begin Value(z):"
+
+[node name="InitValueW" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values" instance=ExtResource("3_5p0jn")]
+visible = false
+layout_mode = 2
+text = "Begin Value(w):"
+
+[node name="TweenProperty" type="Label" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property"]
+layout_mode = 2
+text = "
+====Tween Properties=====
+
+Duration:
+
+Transition Type:
+
+Easing Type:"
+
+[node name="Duration" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/TweenProperty" instance=ExtResource("3_5p0jn")]
+custom_minimum_size = Vector2(190, 40)
+layout_mode = 2
+offset_left = 84.0
+offset_top = 39.0
+offset_right = 274.0
+offset_bottom = 79.0
+text = "
+"
+limit_min = true
+value_to_add = 0.2
+shift_value = 0.4
+
+[node name="TransitionType" type="OptionButton" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/TweenProperty"]
+layout_mode = 2
+offset_left = 153.0
+offset_top = 87.0
+offset_right = 288.0
+offset_bottom = 107.0
+focus_mode = 0
+
+[node name="EasingType" type="OptionButton" parent="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/TweenProperty"]
+layout_mode = 2
+offset_left = 118.0
+offset_top = 119.0
+offset_right = 197.0
+offset_bottom = 142.0
+focus_mode = 0
+
+[node name="P_Split" type="SplitContainer" parent="Split"]
+layout_mode = 2
+split_offset = 165
+
+[node name="P_Container" type="VBoxContainer" parent="Split/P_Split"]
+layout_mode = 2
+
+[node name="P_Top" type="PanelContainer" parent="Split/P_Split/P_Container"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Split/P_Split/P_Container/P_Top"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Add Shader" type="Button" parent="Split/P_Split/P_Container/P_Top/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "+"
+icon = ExtResource("4_1p5va")
+
+[node name="Add Object" type="Button" parent="Split/P_Split/P_Container/P_Top/HBoxContainer"]
+layout_mode = 2
+text = "+"
+icon = ExtResource("5_b8ifs")
+
+[node name="Add Camera" type="Button" parent="Split/P_Split/P_Container/P_Top/HBoxContainer"]
+layout_mode = 2
+text = "+"
+icon = ExtResource("6_5yij3")
+
+[node name="S_Container" type="PanelContainer" parent="Split/P_Split/P_Container"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Split/P_Split/P_Container/S_Container"]
+layout_mode = 2
+vertical_scroll_mode = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Split/P_Split/P_Container/S_Container/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Split/P_Split/P_Container/S_Container/Scroll/VBoxContainer"]
+layout_mode = 2
+
+[node name="P_Keys" type="PanelContainer" parent="Split/P_Split"]
+material = SubResource("ShaderMaterial_wq6oa")
+layout_mode = 2
+script = ExtResource("7_toln4")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Split/P_Split/P_Keys"]
+layout_mode = 2
+
+[node name="SongPosition" type="HScrollBar" parent="Split/P_Split/P_Keys/VBoxContainer"]
+layout_mode = 2
+step = 1.0
+
+[node name="Zoom" type="HScrollBar" parent="Split/P_Split/P_Keys/VBoxContainer"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+tooltip_text = "Zoom
+"
+min_value = 0.5
+max_value = 2.0
+step = 0.1
+value = 1.0
+
+[node name="Scroll" type="ScrollContainer" parent="Split/P_Split/P_Keys/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+vertical_scroll_mode = 3
+
+[node name="Panel" type="Panel" parent="Split/P_Split/P_Keys/VBoxContainer/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="PositionLine" type="ColorRect" parent="Split/P_Split/P_Keys/VBoxContainer/Scroll/Panel"]
+custom_minimum_size = Vector2(2, 0)
+layout_mode = 2
+offset_top = 1.0
+offset_right = 2.0
+offset_bottom = 129.0
+size_flags_horizontal = 0
+mouse_filter = 2
+script = ExtResource("8_gdgt2")
+
+[node name="AddProperty" type="Panel" parent="."]
+visible = false
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 1283.0
+offset_bottom = 722.0
+focus_mode = 2
+script = ExtResource("9_ypsgi")
+
+[node name="TabContainer" type="TabContainer" parent="AddProperty"]
+layout_mode = 0
+offset_left = 424.0
+offset_top = 232.0
+offset_right = 809.0
+offset_bottom = 418.0
+current_tab = 1
+tabs_visible = false
+tab_focus_mode = 0
+
+[node name="Shader" type="Panel" parent="AddProperty/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="Title" type="Label" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_right = 385.0
+offset_bottom = 166.0
+text = "=============Insert Shader===============
+
+Shader File:
+
+Shader Tag:
+
+Cameras:"
+
+[node name="Shaders" type="MenuButton" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_left = 111.0
+offset_top = 34.0
+offset_right = 246.0
+offset_bottom = 54.0
+flat = false
+alignment = 0
+clip_text = true
+
+[node name="Select" type="Button" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_left = 273.0
+offset_top = 33.0
+offset_right = 338.0
+offset_bottom = 56.0
+focus_mode = 0
+text = "Select"
+
+[node name="camGame" type="CheckBox" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 104.0
+offset_right = 174.0
+offset_bottom = 128.0
+button_pressed = true
+text = "camGame"
+
+[node name="camHUD" type="CheckBox" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_left = 176.0
+offset_top = 104.0
+offset_right = 261.0
+offset_bottom = 128.0
+button_pressed = true
+text = "camHUD"
+
+[node name="camOther" type="CheckBox" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_left = 263.0
+offset_top = 104.0
+offset_right = 366.0
+offset_bottom = 128.0
+text = "camOther"
+
+[node name="Button" type="Button" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_left = 131.0
+offset_top = 133.0
+offset_right = 233.0
+offset_bottom = 156.0
+text = "Add Shader"
+
+[node name="ShaderTag" type="LineEdit" parent="AddProperty/TabContainer/Shader"]
+layout_mode = 0
+offset_left = 102.0
+offset_top = 69.0
+offset_right = 282.0
+offset_bottom = 92.0
+
+[node name="Object" type="Panel" parent="AddProperty/TabContainer"]
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Title" type="Label" parent="AddProperty/TabContainer/Object"]
+layout_mode = 0
+offset_right = 385.0
+offset_bottom = 193.0
+text = "=============Insert Object===============
+
+Name:
+
+Type:"
+
+[node name="Tag" type="LineEdit" parent="AddProperty/TabContainer/Object"]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 34.0
+offset_right = 242.0
+offset_bottom = 57.0
+placeholder_text = "boyfriend"
+
+[node name="Type" type="OptionButton" parent="AddProperty/TabContainer/Object"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 68.0
+offset_right = 179.0
+offset_bottom = 91.0
+selected = 0
+item_count = 2
+popup/item_0/text = "Character"
+popup/item_0/id = 1
+popup/item_1/text = "Object"
+popup/item_1/id = 0
+
+[node name="Button" type="Button" parent="AddProperty/TabContainer/Object"]
+layout_mode = 0
+offset_left = 138.0
+offset_top = 135.0
+offset_right = 240.0
+offset_bottom = 158.0
+text = "Add Object"
+
+[node name="Camera" type="Panel" parent="AddProperty/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Title" type="Label" parent="AddProperty/TabContainer/Camera"]
+layout_mode = 0
+offset_right = 385.0
+offset_bottom = 193.0
+text = "=============Insert Camera===============
+
+Camera:"
+
+[node name="Add Camera" type="Button" parent="AddProperty/TabContainer/Camera"]
+layout_mode = 0
+offset_left = 138.0
+offset_top = 135.0
+offset_right = 240.0
+offset_bottom = 158.0
+text = "Add Camera"
+
+[node name="Cameras" type="OptionButton" parent="AddProperty/TabContainer/Camera"]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 32.0
+offset_right = 204.0
+offset_bottom = 55.0
+selected = 0
+item_count = 3
+popup/item_0/text = "camGame"
+popup/item_0/id = 0
+popup/item_1/text = "camHUD"
+popup/item_1/id = 1
+popup/item_2/text = "camOther"
+popup/item_2/id = 2
+
+[node name="GameView" type="SubViewport" parent="."]
+size = Vector2i(1280, 720)
+script = ExtResource("10_snt88")
+
+[connection signal="value_changed" from="Split/O_Split/TabContainer/Song/BPM" to="." method="setBpm"]
+[connection signal="button_down" from="Split/O_Split/TabContainer/Song/Load Songs" to="Split/O_Split/TabContainer/Song" method="openSongsDialog"]
+[connection signal="button_down" from="Split/O_Split/TabContainer/Song/LoadFromChart" to="Split/O_Split/TabContainer/Song" method="selectChart"]
+[connection signal="value_changed" from="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values/Value" to="." method="setKeyValue"]
+[connection signal="value_changed" from="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/Values/InitValue" to="." method="setKeyInitValue"]
+[connection signal="value_changed" from="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/TweenProperty/Duration" to="." method="setKeyDuration"]
+[connection signal="item_selected" from="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/TweenProperty/TransitionType" to="." method="setKeyTransType"]
+[connection signal="item_selected" from="Split/O_Split/V_Split/P_Panel/P_Scroll/Property/TweenProperty/EasingType" to="." method="setKeyEaseType"]
+[connection signal="button_down" from="Split/P_Split/P_Container/P_Top/HBoxContainer/Add Shader" to="AddProperty" method="show"]
+[connection signal="button_down" from="Split/P_Split/P_Container/P_Top/HBoxContainer/Add Shader" to="AddProperty/TabContainer" method="set_current_tab" binds= [0]]
+[connection signal="ready" from="Split/P_Split/P_Container/P_Top/HBoxContainer/Add Shader" to="." method="_on_add_shader_ready"]
+[connection signal="button_down" from="Split/P_Split/P_Container/P_Top/HBoxContainer/Add Object" to="AddProperty" method="show"]
+[connection signal="button_down" from="Split/P_Split/P_Container/P_Top/HBoxContainer/Add Object" to="AddProperty/TabContainer" method="set_current_tab" binds= [1]]
+[connection signal="button_down" from="Split/P_Split/P_Container/P_Top/HBoxContainer/Add Camera" to="AddProperty" method="show"]
+[connection signal="button_down" from="Split/P_Split/P_Container/P_Top/HBoxContainer/Add Camera" to="AddProperty/TabContainer" method="set_current_tab" binds= [2]]
+[connection signal="value_changed" from="Split/P_Split/P_Keys/VBoxContainer/Zoom" to="." method="setZoom"]
+[connection signal="button_down" from="AddProperty/TabContainer/Shader/Select" to="AddProperty" method="selectShaderManually"]
+[connection signal="button_down" from="AddProperty/TabContainer/Shader/Button" to="AddProperty" method="hide"]
+[connection signal="button_down" from="AddProperty/TabContainer/Shader/Button" to="AddProperty" method="addShader"]
+[connection signal="button_down" from="AddProperty/TabContainer/Object/Button" to="AddProperty" method="hide"]
+[connection signal="button_down" from="AddProperty/TabContainer/Object/Button" to="AddProperty" method="addObject"]
+[connection signal="button_down" from="AddProperty/TabContainer/Camera/Add Camera" to="AddProperty" method="hide"]
+[connection signal="button_down" from="AddProperty/TabContainer/Camera/Add Camera" to="AddProperty" method="addCamera"]

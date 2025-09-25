@@ -86,7 +86,7 @@ var lowPriority: bool = false ##if two notes are close to the strum and this var
 var isPixelNote: bool = false: set = setPixelNote
 
 ##Note Type
-var noteType: StringName = "": set = setNoteType
+var noteType: StringName = ""
 
 var texture: String: set = setTexture ##Note Texture
 var _real_texture: String = ''
@@ -137,12 +137,21 @@ var noteSpeed: float = 1.0: ##Note Speed
 var _real_note_speed: float = 1.0
 #var rgbShader: ShaderMaterial = RGBPalette.new()
 
-var noteSplashData: Dictionary = { ## Note Splash Data.
+## Note Splash Data.[br]
+##A [Dictionary] that can contain: {[br]
+##[code]disabled[/code]: Disable splash for this  note.[br]
+##[code]scale[/code]: Splash Scale(default: Vector2.ONE)[br]
+##[code]prefix[/code]: Splash prefix[br]
+##[code]type[/code]: Splash type(default: "noteSplash")[br]
+##[code]style[/code]: Splash Style Json(default: "NoteSplashes")[br]
+##[code]parent[/code]: Splash parents, can be used to change splash camera(default: null)[br][br]
+##}
+var noteSplashData: Dictionary = { 
 	'disabled': false,
-	'scale': Vector2.ONE,
 	'prefix': '',
 	'type': 'noteSplash',
-	'style': 'NoteSplashes'
+	'style': 'NoteSplashes',
+	'parent': null
 }
 
 
@@ -196,8 +205,12 @@ func resetNote() -> void: #Replaced in NoteSustain
 	_is_processing = true
 	missed = false
 	offset = Vector2.ZERO
-
+	noteSplashData.parent = null
+	
 func reloadNote() -> void: ##Reload Note Texture
+	animation.clearLibrary()
+	_animOffsets.clear()
+	offset = Vector2.ZERO
 	if !isPixelNote:
 		animation.addAnimByPrefix('static',prefix.get(noteColor.to_lower()+'Static'),24,true)
 		setGraphicScale(Vector2(0.7,0.7))
@@ -209,30 +222,6 @@ func reloadNote() -> void: ##Reload Note Texture
 func killNote():
 	_is_processing = false
 	kill()
-
-func setNoteType(type: String) -> void:
-	if type == noteType: return
-	noteType = type
-	
-	match type:
-		'':
-			texture = ''
-			hitHealth = 0.023
-			ignoreNote = false
-			noteSplashData.texture = ''
-			animSuffix = ''
-			lowPriority = false
-			ratingDisabled = false
-		'Hurt Note':
-			texture = 'noteSkins/HURTNOTE_assets'
-			hitHealth = -0.024
-			ignoreNote = true
-			noteSplashData.style = 'HurtSplash'
-			noteSplashData.prefix = 'splash electro'
-			ratingDisabled = true
-			lowPriority = true
-		'Alt Animation': animSuffix = '-alt'
-		'No Animation': noAnimation = true
 
 func setPixelNote(isPixel: bool) -> void:
 	if isPixel == isPixelNote: return

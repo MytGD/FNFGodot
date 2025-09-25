@@ -78,7 +78,7 @@ func followStrum(strum: StrumNote = strumNote) -> void:
 
 func _load_data() -> void:
 	super._load_data()
-	noteSplashData.style = 'holdNoteSplashes'
+	noteSplashData.style = 'HoldNoteSplashes'
 	noteSplashData.type = 'holdNoteCover'
 	noteSplashData.prefix = directions[noteData]
 				

@@ -31,7 +31,7 @@ var _call_emit: bool = true
 @export var limit_max: bool = false
 
 @onready var value_text := $Value
-@onready var _value_nodes: Array = [$ButtonUp,$ButtonDown,$Value]
+@onready var _value_nodes: Array = [$Value,$ButtonUp,$ButtonDown]
 @export var value_to_add: float = 1.0##The value that will be added when the arrows are been pressed.
 
 @export var shift_value: float = 1.0##The value to add when pressing SHIFT key([param KEY_SHIFT])
@@ -45,7 +45,6 @@ var _cur_min_size: Vector2 = Vector2.ZERO
 func _ready():
 	update_value_text()
 
-	
 func addValue() -> void:
 	value += shift_value if Input.is_action_pressed("shift") else value_to_add
 
@@ -54,17 +53,14 @@ func subValue() -> void:
 
 func _draw() -> void:
 	var min_size = get_minimum_size()
+	size = min_size
 	
-	var sub = _cur_min_size.x - min_size.x
-	_cur_min_size = min_size
-	
-	custom_minimum_size.y = 40
-	var combined = get_combined_minimum_size()
-	size = combined
+	var width: float = size.x + 8
 	for i in _value_nodes:
-		i.position.x -= sub
-		i.position.y = size.y - 40
-
+		i.position.x = width
+		width += i.size.x + 2
+		i.position.y = size.y/2.0 - 20
+	$Value.position.x -= 4
 func _on_value_text_submitted(new_text: String) -> void:
 	value = float(new_text)
 	value_text.release_focus()

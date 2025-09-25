@@ -106,8 +106,7 @@ func _process(delta: float) -> void:
 	)
 	
 func set_option(index: int = curOptionIndex):
-	if not canSwap:
-		return
+	if not canSwap: return
 	var optionSize = options.size()-1
 	if index > optionSize: index = 0
 	elif index < 0:index = optionSize
@@ -116,11 +115,13 @@ func set_option(index: int = curOptionIndex):
 	FunkinGD.playSound('scrollMenu')
 
 func selectOption(node: Node = option_node):
+	if treeSwap.time_left > 0 and node == option_node: return
 	canSwap = false
 	FunkinGD.playSound('confirmMenu')
 	blink = true
-	treeSwap.start(1)
 	option_node = node
+	treeSwap.start(1)
+	
 
 func exitTo(option: String):
 	match option:
@@ -145,12 +146,9 @@ func exitTo(option: String):
 func _input(event):
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
-			KEY_UP:
-				set_option(curOptionIndex - 1)
-			KEY_DOWN:
-				set_option(curOptionIndex + 1)
-			KEY_ENTER:
-				selectOption()
+			KEY_UP: set_option(curOptionIndex - 1)
+			KEY_DOWN: set_option(curOptionIndex + 1)
+			KEY_ENTER: selectOption()
 			KEY_BACKSPACE:
 				if not canSwap:
 					FunkinGD.playSound('cancelMenu')

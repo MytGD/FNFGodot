@@ -86,6 +86,7 @@ var camera_y_limit = -300
 #Json Data
 @onready var json_scale := $"TabContainer/Json Data/scale"
 @onready var playable_character := $"CharacterData/Playable Character"
+@onready var gf_character := $"CharacterData/GF Character"
 @onready var json_flip := $"TabContainer/Json Data/FlipX"
 @onready var json_antialiasing := $"TabContainer/Json Data/antialiasing"
 @onready var json_image_file := $"TabContainer/Json Data/image_file"
@@ -119,7 +120,6 @@ func _ready():
 	characterPop.index_pressed.connect(func(i):
 		var character = characterPop.get_item_text(i)
 		if character == curCharacter: return
-		_last_save_folder = Paths.characterPath(character).get_base_dir()
 		character_node.loadCharacter(character)
 		updateCharacterData()
 	)
@@ -250,11 +250,12 @@ func updateCharacterData():
 	characterList.text = curCharacter
 	animation_asset.placeholder_text = charJson.assetPath
 	playable_character.set_pressed_no_signal(character_node.name.begins_with('bf'))
+	gf_character.set_pressed_no_signal(character_node.name.begins_with('gf'))
 	updatePrefixList()
 	updateDataInfo()
 	updateAnimationList()
 	cur_anim = character_node.animation.current_animation
-	
+	_last_save_folder = Paths.characterPath(curCharacter).get_base_dir()
 func updateDataInfo():
 	icon.reloadIconFromCharacterJson(charJson)
 	
@@ -406,7 +407,6 @@ func _on_load_character_from_file_button_up() -> void:
 		Paths.curMod = Paths.getModFolder(file)
 		character_node.loadCharacter(file.get_file())
 		updateCharacterData()
-		_last_save_folder = file.get_base_dir()
 	)
 	
 func _on_frame_rate_value_changed(value) -> void:
@@ -461,7 +461,7 @@ func _on_health_icon_text_submitted(new_text: String) -> void:
 	charJson.healthIcon.id = new_text
 	charJson.healthIcon.isPixel = new_text.ends_with('-pixel')
 	character_node.healthIcon = new_text
-	icon.reloadIcon(new_text)
+	icon.changeIcon(new_text)
 
 func _on_is_pixel_icon_toggled(toggled_on: bool) -> void:
 	charJson.healthIcon.isPixel = toggled_on
@@ -549,7 +549,10 @@ func _on_playable_character_toggled(toggled_on: bool) -> void:
 	character_node.isPlayer = toggled_on
 	updateCameraPosition()
 	replayCharAnim() 
-	
+
+func _on_gf_character_toggled(toggle_on: bool) -> void:
+	character_node.isGF = toggle_on
+	updateCameraPosition()
 func _on_flip_x_toggled(toggled_on: bool) -> void:
 	character_node.flipX = toggled_on != character_node.isPlayer
 	charJson.flipX = toggled_on

@@ -25,13 +25,13 @@ static func split_no_space(text: String, delimiter: String) -> Array:
 	return split
 
 static func replace_chars_from_dict(string: String,chars_to_replace: Dictionary):
-	var s: String = ''
+	var new_s: PackedStringArray = []
 	for i in string:
 		if chars_to_replace.has(i):
-			s += chars_to_replace[i]
+			new_s.append(chars_to_replace[i])
 			continue
-		s += i
-	return s
+		new_s.append(i)
+	return ''.join(new_s)
 
 static func first_letter_upper(string: String) -> String:
 	return string[0].to_upper() + string.right(-1)

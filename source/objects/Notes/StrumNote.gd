@@ -96,7 +96,9 @@ func _init(dir: int = 0):
 const _anim_direction: Array = ['left','down','up','right']
 
 func reloadStrumNote(): ##Reload Strum Texture Data
+	animation.clearLibrary()
 	_animOffsets.clear()
+	offset = Vector2.ZERO
 	image.texture = Paths.imageTexture(texture)
 	antialiasing = !isPixelNote
 	
@@ -116,8 +118,6 @@ func reloadStrumNote(): ##Reload Strum Texture Data
 	else:
 		var keyCount: int = Conductor.keyCount
 		image.region_rect.size = imageSize/Vector2(keyCount,5)
-		
-		#prints(image.texture.region.size,keyCount,data)
 		animation.addFrameAnim('static',[data])
 		animation.addFrameAnim('confirm',[data + (keyCount*3),data + (keyCount*4),data + keyCount])
 		animation.addFrameAnim('press',[data + (keyCount*3),data + (keyCount*2)])

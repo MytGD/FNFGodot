@@ -20,7 +20,6 @@ extends Resource
 ##   animation.play_reverse() #Play in reverse.
 ##   
 ##func _notification(what: int) -> void:
-##   if !is_animated: return
 ##   match what:
 ##       #Make the animation pause when stop processing.
 ##       NOTIFICATION_DISABLED, NOTIFICATION_EXIT_TREE:

@@ -8,16 +8,12 @@ class_name Sprite
 const CameraCanvas = preload("res://source/objects/Display/Camera.gd")
 
 @export var x: float:
-	set(value):
-		position.x += value - _position.x
-		_position.x = value
+	set(value):_position.x = value
 	get(): return _position.x
 	
 ##Position Y
 @export var y: float: 
-	set(value):
-		position.y += value - _position.y
-		_position.y = value
+	set(value): _position.y = value
 	get(): return _position.y
 
 @export var offset: Vector2 = Vector2.ZERO: 
@@ -127,7 +123,8 @@ var camera: Node:
 		if camera == newCamera: return
 
 		var is_in_scene: bool =is_inside_tree()
-		if camera and camera is CameraCanvas: camera.remove(self)
+		if camera and camera is CameraCanvas: 
+			camera.remove.call(self)
 		camera = newCamera
 		if !is_in_scene: return
 		
@@ -144,18 +141,18 @@ var _last_rotation: float = rotation
 var _real_pivot_offset: Vector2 = pivot_offset
 
 func _init(image_file: Variant = null, animated: bool = false):
-	super._init()
 	is_animated = animated
+	super._init()
 	
 	set_notify_local_transform(true)
-	set_notify_transform(true)
-	if image_file:
-		if image_file is Texture2D: image.texture = image_file
-		elif image_file is String:
-			image.texture = Paths.imageTexture(image_file)
-			name = image_file.get_file()
-		
-		if image.texture: _update_texture()
+	if !image_file: return
+	
+	if image_file is Texture2D: image.texture = image_file
+	elif image_file is String:
+		image.texture = Paths.imageTexture(image_file)
+		name = image_file.get_file()
+	
+	if image.texture: _update_texture()
 
  ##Move the sprite to the center of the screen
 func screenCenter(type: StringName = 'xy') -> void:
@@ -171,7 +168,8 @@ func getMidpoint() -> Vector2:return _position + _scroll_offset + pivot_offset
 func _process(delta: float) -> void:
 	#Add velocity
 	if acceleration != Vector2.ZERO: velocity += acceleration * delta
-	if velocity != Vector2.ZERO: _position += clamp(velocity,-maxVelocity,maxVelocity) * delta
+	if velocity != Vector2.ZERO: 
+		_position += velocity.clamp(-maxVelocity,maxVelocity) * delta
 	
 	if scrollFactor != Vector2.ONE and camera:
 		var pos = camera.get('_position')
@@ -249,17 +247,16 @@ func addAnimOffset(animName: StringName, offsetX: Variant = 0.0, offsetY: float 
 		_: _offset = Vector2(offsetX,offsetY)
 	
 	_animOffsets[animName] = _offset
-	if animation and animation.curAnim.name == animName: 
-		set_offset_from_anim(animName)
+	if animation and animation.curAnim.name == animName: set_offset_from_anim(animName)
 	#node.owner = self
 
-func _create_animation(): #Function from SpriteBase
-	if animation: return
-	super._create_animation()
+func _connect_animation(): #Function from SpriteBase
+	super._connect_animation()
 	animation.animation_started.connect(set_offset_from_anim)
 	animation.animation_renamed.connect(func(old,new):
 		if _animOffsets.has(old): DictionaryHelper.rename_key(_animOffsets,old,new)
 	)
+	
 func _update_texture():
 	imageSize = image.texture.get_size() if image.texture else Vector2.ZERO
 	super._update_texture()
@@ -290,8 +287,6 @@ func set_offset_from_anim(anim: String) -> void:
 	if offset_follow_flip: off *= image.scale
 	offset = off
 
-func check_scroll_factor():
-	pass
 func _notification(what: int) -> void:
 	super._notification(what)
 	match what:

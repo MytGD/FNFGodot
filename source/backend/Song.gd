@@ -1,23 +1,85 @@
-static func loadJson(json_path: String, difficulty: String = '') -> Dictionary:
-	var json = Paths.loadJson(json_path)
-	if !json:
-		return json
-	if json.get('song') is Dictionary:
-		json = json.song
+extends Object
+##A Chart Song Class.
+
+##Contains the location of the json files.[br]
+##[code]{"song name": 
+##{"difficulty": {"folder": "folder_name","json": "json name", "audio_suffix": "suffix tag"}}
+##}[/code][br][br]
+##Example:[codeblock]
+##songs_dir["Dad Battle"] = {
+##    "Erect": {
+##      "folder": "dad-battle",
+##      "json": "dad-battle-erect-chart",
+##      "audio_suffix": "-erect"
+##    }, 
+##    "Nightmare": {
+##      "folder": "dad-battle",
+##      "json": "dad-battle-erect-chart",
+##      "audio_suffix": "-erect"
+##    },
+##}
+##[/codeblock]
+static var songs_dir: Dictionary[String,Dictionary] = {}
+
+static var songName: String = ''
+static var songJsonName: String = ''
+static var audioSuffix: String = ''
+static var audioFolder: String = ''
+static var folder: String = ''
+static var difficulty: String = ''
+
+
+static func loadJson(json_name: String, _difficulty: String = '') -> Dictionary:
+	var json: Dictionary
+	var json_path: String
 	
-	#Check if the chart is from the fnf
-	var meta_data_path = json_path.replace('-chart','-metadata')
-	if json.get('notes') is Dictionary:
-		var meta_data = Paths.loadJson(meta_data_path)
-		meta_data.songDifficulty = difficulty.to_lower()
-		json = _convert_new_to_old(json,meta_data,difficulty)
-		return json
+	var song_dir = songs_dir.get(json_name)
+	if song_dir: song_dir = song_dir.get(_difficulty)
 	
-	fixChart(json)
-	sort_song_notes(json.notes)
-	_insertSectionTimes(json)
+	if song_dir:
+		folder = song_dir.get('folder',folder)
+		json_name = song_dir.get('json',json_name)
+		audioSuffix = song_dir.get('audioSuffix','')
+		audioFolder = folder
+		json_path = Paths.data(json_name,'',folder)
+	else:
+		audioSuffix = ''
+		if !folder: folder = json_name.get_base_dir()
+		
+		json_path = Paths.data(json_name,_difficulty)
+		folder = Paths.getPath(json_path,false).get_base_dir()
+		audioFolder = folder.get_slice('/',folder.get_slice_count('/')-1)
+	
+	json = _loadData(json_path,_difficulty)
+	
+	difficulty = _difficulty
+	songJsonName = json_name
+	
+	if !json: return json
+	
+	if !json.get('audioSuffix'): json.audioSuffix = audioSuffix
+	if !json.get('audioFolder'): json.audioFolder = audioFolder
+	
+	songName = json.get('song','')
+	if !songName: songName = songJsonName.get_basename()
+	
 	return json
 
+static func _loadData(json_path: String, difficulty: String = '') -> Dictionary:
+	var data = Paths.loadJson(json_path)
+	if !data: return data
+	if data.get('song') is Dictionary: data = data.song
+	
+	#Check if the chart is from the original fnf
+	if data.get('notes') is Dictionary:
+		var meta_data_path = json_path.replace('-chart','-metadata')
+		var meta_data = Paths.loadJson(meta_data_path)
+		data = _convert_new_to_old(data,meta_data,difficulty)
+	else:
+		fixChart(data)
+		sort_song_notes(data.notes)
+		_insertSectionTimes(data)
+	return data
 static func _insertSectionTimes(json: Dictionary):
 	var section_time: float = 0.0
 	var cur_bpm: float = json.bpm
@@ -67,6 +129,13 @@ static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, di
 	oldJson.player2 = characters.opponent
 	oldJson.songSuffix = characters.get('instrumental','')
 	
+	var vocal = characters.get('playerVocals')
+	if vocal: oldJson.playerVocals = vocal[0]
+	
+	vocal = characters.get('opponentVocals')
+	if vocal: oldJson.opponentVocals = vocal[0]
+	
+	oldJson.opponentVoice = characters.get('opponentVocals',oldJson.player1)
 	oldJson.speed = chart.get('scrollSpeed',{}).get(difficulty.to_lower(),2.0)
 	
 	oldJson.song = songData.get('songName','')
@@ -80,7 +149,7 @@ static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, di
 		if ArrayHelper.array_has_index(bpms,bpmIndex) and bpms[bpmIndex][0] <= strumTime:
 			json_bpm = bpms[bpmIndex][1]
 			sectionStep = Conductor.get_section_crochet(json_bpm)
-			var newSection = int(strumTime/sectionStep) - subSections
+			var newSection = strumTime/sectionStep - subSections
 			subSections -= newSection - section
 			section = newSection - subSections
 			bpmIndex += 1
@@ -136,6 +205,7 @@ static func getSectionBase() -> Dictionary:
 		'changeBPM': false,
 		'bpm': 0
 	}
+
 static func getChartBase(bpm: float = 0) -> Dictionary: ##Returns a base [Dictionary] of the Song.
 	return {
 		'notes': [],
@@ -154,3 +224,9 @@ static func getChartBase(bpm: float = 0) -> Dictionary: ##Returns a base [Dictio
 		'needsVoices': true,
 		'keyCount': 4,
 	}
+
+
+static func _clear():
+	songs_dir.clear()
+	audioSuffix = ''
+	folder = ''

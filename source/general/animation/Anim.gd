@@ -1,9 +1,8 @@
-extends Resource
 ##A Animation custom class[br][br]
 ##[b]OBS:[/b] 
 ##The animation will just works when the parent's as a [NinePatchRect] or a
 ##[Sprite2D] with [member Sprite2D.region_rect] = [code]true[/code].
-
+extends Resource
 
 const AnimationService = preload("res://source/general/animation/AnimationService.gd")
 const _AnimationController = preload("res://source/general/animation/AnimationController.gd")
@@ -28,7 +27,7 @@ var image: CanvasItem:
 			image.texture_changed.disconnect(_verify_anim_file)
 		image = graphic
 		
-		if graphic: graphic.texture_changed.connect(_verify_anim_file)
+		if graphic and graphic is Sprite2D: graphic.texture_changed.connect(_verify_anim_file)
 		
 		_verify_anim_file()
 		if curAnim: curAnim.node_to_animate = image
@@ -89,18 +88,18 @@ func _set_auto_loop(loop: bool):
 	auto_loop = loop
 
 func _verify_loop(anim):
-	if animationsArray.has(anim+'-loop'): play(anim+'-loop'); return
-	if animationsArray.has(anim+'-hold'): play(anim+'-hold'); return
+	if !play(anim+'-loop',true): play(anim+'-hold',true);
 	
 ##Play animation.[br][br]
+##Returns [code]true[/code] if the animation starts.[br][br]
 ##If [param force] is [code]true[/code], the animation will be forced to restart if already playing.[br]
 ##See also [method play_reverse].
-func play(anim: StringName, force: bool = false) -> void:
-	if !can_play(anim,force): return
-	update_anim(anim)
-
+func play(anim: StringName, force: bool = false) -> bool:
+	if !can_play(anim,force): return false
+	if anim != current_animation: update_anim(anim)
 	curAnim.play()
 	animation_started.emit(anim)
+	return true
 
 func play_random(force: bool = false):
 	if !animationsArray: return
@@ -136,8 +135,7 @@ func setAnimDataValue(animName: String, property: StringName, value: Variant):
 		
 func update_anim(anim: String = current_animation):
 	var animData = animationsArray[anim]
-	if animations_use_textures and animData.asset:
-		image.texture = animData.asset
+	if animations_use_textures and animData.asset: image.texture = animData.asset
 	curAnim.name = anim
 	curAnim.frames = animData.frames
 	curAnim.frameRate = animData.fps
@@ -187,8 +185,8 @@ func addAnimation(animName: String, frames: Array, fps: float = 24.0, loop: bool
 ##Add frame animation.
 ##To works, the [param region_rect.size] of the [member image] have to be defined, 
 ##that will be used as offset to which frame.
-func addFrameAnim(animName: String, indices: Array = [], fps: float = 24.0, loop: bool = false) -> Dictionary:
-	if !image or !image.texture: return {}
+func addFrameAnim(animName: String, indices: PackedInt32Array = [], fps: float = 24.0, loop: bool = false) -> Dictionary:
+	if !indices or !image or !image.texture: return {}
 	var animData = {
 		'frames': Array([],TYPE_DICTIONARY,'',null),
 		'fps': fps,
@@ -214,9 +212,6 @@ func addFrameAnim(animName: String, indices: Array = [], fps: float = 24.0, loop
 				)},
 				TYPE_STRING,'',null,TYPE_NIL,'',null),
 			)
-	
-	if !frames: return {}
-
 	frames[0].size = offset
 	if !_midpoint_set: _set_midpoint(offset)
 	return insertAnim(animName,animData)
@@ -224,18 +219,18 @@ func addFrameAnim(animName: String, indices: Array = [], fps: float = 24.0, loop
 
 
 func setImageAnimation(anim_name: String, _image: Texture2D):
-	if !animationsArray.has(anim_name) \
-	or _image and image and image.texture \
-	and image.texture.resource_name == _image.resource_name: return
-	
+	var anim_data = animationsArray.get(anim_name)
+	if !anim_data: return
+	if _image and image and image.texture and image.texture.resource_name == _image.resource_name: return
 	setup_animation_textures()
 	animationsArray[anim_name].asset = _image
 
 ##Sets the frame of the [param animName] that will return when the animation ends.[br][br]
 ##[b]OBS:[/b] The animation [u]must be looping[/u] to works.
 func setLoopFrame(animName: String, frame: int) -> void:
-	if !animationsArray.has(animName): return
-	animationsArray[animName].loop_frame = frame
+	var anim_data = animationsArray.get(animName)
+	if !anim_data: return
+	anim_data.loop_frame = frame
 	
 func removeAnimation(anim_name: String) -> void:
 	animationsArray.erase(anim_name)
@@ -243,8 +238,8 @@ func removeAnimation(anim_name: String) -> void:
 func _set_midpoint(size: Vector2):
 	if _midpoint_set or size == Vector2.ZERO: return
 	size /= 2.0
-	image.pivot_offset = size
-	if image_parent: image_parent.pivot_offset = size
+	image.set('pivot_offset',size)
+	if image_parent: image_parent.set('pivot_offset',size)
 	_midpoint_set = true
 	pivot_offset_setted.emit()
 
@@ -277,16 +272,18 @@ func insertAnim(animName: String, animData: Dictionary = {}) -> Dictionary:
 	animData.frames = adjustAnimationFramesToNode(animData.frames,image)
 	animationsArray[animName] = animData
 	
-	if !current_animation or animName == curAnim.name: play(animName,true)
+	if !current_animation: play(animName)
+	elif animName == curAnim.name: update_anim(animName); play(animName,true); 
 	
-	if animations_use_textures and !animData.get('asset'):
-		animData.asset = image.texture
+	if animations_use_textures and !animData.get('asset'): animData.asset = image.texture
 	animation_added.emit(animName)
 	return animData
 
 func update_midpoint_from_frame(frame: Dictionary):
-	if frame.has('frameSize'): _set_midpoint(frame.frameSize)
-	elif frame.has('size'): _set_midpoint(frame.size)
+	var size = frame.get('frameSize')
+	if !size: size = frame.get('size')
+	if size: _set_midpoint(size)
+	else: return
 	if _midpoint_set: _midpoint_is_rotated = !!frame.get('rotation')
 	
 func setup_animation_textures():
@@ -301,7 +298,9 @@ func can_play(anim: String, force: bool = false) -> bool:
 
 func _verify_anim_file() -> void:
 	if !image or !image.texture: _animFile = ''; return
-	_animFile = AnimationService.findAnimFile(image.texture.resource_name)
+	_animFile = image.texture.resource_name
+	if _animFile.ends_with('.png'): _animFile = _animFile.left(-4)
+	_animFile = AnimationService.findAnimFile(_animFile)
 #region Static Methods
 static func getAnimBaseData() -> Dictionary[String,Variant]:
 	return {

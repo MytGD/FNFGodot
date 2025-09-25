@@ -16,16 +16,15 @@ var icon_pivot_rotation: float = 0.0
 var isPixel: bool = false
 
 func _init(texture: String = ''):
-	is_animated = true
 	super._init()
-	if texture: reloadIcon(texture)
+	is_animated = true
+	if texture: changeIcon(texture)
 	name = 'icon'
 	
-func reloadIcon(icon: String = "icon-face"):
+func changeIcon(icon: String = "icon-face"):
 	icon = Paths.icon(icon)
 	if !icon: icon = Paths.icon('icon-face')
 	if imageFile == icon: return
-	
 	animation.clearLibrary()
 	
 	var texture = Paths.imageTexture(icon)
@@ -53,7 +52,7 @@ func reloadIcon(icon: String = "icon-face"):
 
 func reloadIconFromCharacterJson(json: Dictionary):
 	var data = json.get('healthIcon',{})
-	reloadIcon(data.get('id','icon-face'))
+	changeIcon(data.get('id','icon-face'))
 	set_pixel(data.get('isPixel',false),data.get('canScale',false))
 	
 func _process(delta: float) -> void:
@@ -62,6 +61,7 @@ func _process(delta: float) -> void:
 	
 
 func set_pixel(is_pixel: bool = false, scale_if_pixel: bool = false):
+	if is_pixel == isPixel: return
 	antialiasing = !is_pixel
 	if scale_if_pixel and is_pixel:
 		scale  =Vector2(4.5,4.5)

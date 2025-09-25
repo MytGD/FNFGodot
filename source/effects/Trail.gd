@@ -1,8 +1,6 @@
 var trailTime: float = 0.3
 
 static var process_frame_signal: Signal
-static func _static_init() -> void:
-	process_frame_signal = Engine.get_main_loop().process_frame
 var object: CanvasItem: 
 	set(node):
 		if object == node:
@@ -71,9 +69,9 @@ func set_frequency(time: float):
 		start_process()
 	
 func start_process():
-	if enabled or !object:
-		return
+	if enabled or !object:return
 	enabled = true
+	if !process_frame_signal: process_frame_signal = Engine.get_main_loop().process_frame
 	var delta = Global.get_process_delta_time()
 	while true:
 		_cur_time -= delta

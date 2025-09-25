@@ -22,7 +22,7 @@ static var defaultScaleMode: Window.ContentScaleMode = getScreenScaleModeViaStri
 )
 static var main_window: Window
 
-static func _static_init() -> void:
+static func _init() -> void:
 	#ProjectSettings.set_setting("display/window/size/viewport_width")
 	defaultSize.x = ProjectSettings.get_setting('display/window/size/viewport_width')
 	defaultSize.y = ProjectSettings.get_setting('display/window/size/viewport_height')

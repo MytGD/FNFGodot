@@ -1,3 +1,4 @@
+@tool
 class_name ClientPrefs
 ##Client Preferences. 
 
@@ -112,7 +113,7 @@ static var data: Dictionary = {
 ]
 """
 
-static func _static_init() -> void:
+static func _init() -> void:
 	var options = JSON.parse_string(FileAccess.get_file_as_string("res://data/options.json"))
 	if options: DictionaryHelper.merge_existing(data,options)
 

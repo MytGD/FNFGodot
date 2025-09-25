@@ -6,8 +6,8 @@ const Song = preload("res://source/backend/Song.gd")
 
 var songPosition: float = 0.0: set = _set_song_position
 
-var songPositionDelayed: float = 0.0
-var songPositionSeconds: float = 0.0
+var songPositionDelayed: float = 0.0 #songPosition - ClientPrefs.data.songOffset
+var songPositionSeconds: float = 0.0 ##[param songPosition] in seconds.
 
 var crochet: float = 0.0
 var stepCrochet: float = 0.0
@@ -39,45 +39,17 @@ var beat_offset: float = 0
 var section_offset: float = 0
 var section_beats_offset: float = 0.0
 
-var songs: Array[AudioStreamPlayer] = []
-var songPath = ''
+var songs: Array[AudioStreamPlayer] = [] #[Inst,Opponent,Player]
 var keyCount: int = 4
 
 var jsonDir: String = ''
-
-var songName: String = ''
-var songDifficulty: String = ''
-var songJsonName: String = ''
 var songJson: Dictionary = {}
-var songFolder: String = ''
-var audioSuffix: String = ''
-var audioFolder: String = ''
-
+var songDefaultBpm: float = 0.0
 var fixVoicesSync: bool = false
 
 var music_pitch: float = 1.0
 
 var is_playing: bool = false
-##Contains the location of the json files.[br]
-##[code]{"song name": 
-##{"difficulty": {"folder": "folder_name","json": "json name", "audio_suffix": "suffix tag"}}
-##}[/code][br][br]
-##Example:[codeblock]
-##var chart_directory = {
-##   "Erect": {
-##      "folder": "dad-battle",
-##      "json": "dad-battle-erect-chart",
-##      "audio_suffix": "-erect"
-##    }, 
-##   "Nightmare": {
-##      "folder": "dad-battle",
-##      "json": "dad-battle-erect-chart",
-##      "audio_suffix": "-erect"
-##    },
-##}
-##Conductor.songs_dir["DadBattle"] = chart_directory
-##[/codeblock]
-var songs_dir: Dictionary[StringName,Dictionary] = {}
 
 signal step_hit ##When a step is hitt.
 
@@ -97,44 +69,22 @@ signal song_loaded
 
 
 #region Song methods
-func loadSong(json_name: String, suffix: String = '', folder: StringName = '') -> Dictionary:
-	if json_name.ends_with('.json'): json_name = json_name.left(-5)
-	songDifficulty = suffix
-	if songs_dir.has(json_name) and songs_dir[json_name].get(suffix):
-		var dir = songs_dir[json_name][suffix]
-		folder = dir.folder
-		json_name = dir.json
-		audioSuffix = dir.audio_suffix
-		suffix = ''
-	else:
-		folder = folder.get_base_dir()
-		if !folder: folder = json_name.get_base_dir()
+func loadSong(json_name: String, suffix: String = '') -> Dictionary:
+	songJson = Song.loadJson(json_name, suffix)
+	if !songJson: return Song.getChartBase()
 	
-	jsonDir = Paths.data(json_name,suffix,folder)
-	
-	if !jsonDir: songJson = Song.getChartBase(); return songJson
-
-	songJson = Song.loadJson(jsonDir, songDifficulty)
-	songJsonName = jsonDir.get_file().left(-5)
-	songFolder = Paths.getPath(jsonDir,false).get_base_dir().right(-5)
-	
-	audioFolder = songJson.get('audioFolder','')
-	if !audioFolder: audioFolder = songFolder
-	
-	songPath = jsonDir
-	songName = songJson.song
-	
-	bpm = songJson.get('bpm',120)
+	songDefaultBpm = songJson.get('bpm',120)
+	bpm = songDefaultBpm
 	detectBpmChanges()
 	
 	return songJson
 
 ##Load [AudioPlayer]'s from the current song.
-func loadSongsStreams(folder: String = audioFolder, suffix: String = audioSuffix) -> void: #Used in StrumState.
+func loadSongsStreams(folder: String = Song.audioFolder, suffix: String = Song.audioSuffix) -> void: #Used in StrumState.
 	if songs: return
 
-	var player_name = songJson.get('player1','')
-	var opponent_name = songJson.get('player2','')
+	var player_name = songJson.get('opponentVocals',songJson.get('player1',''))
+	var opponent_name = songJson.get('playerVocals',songJson.get('player2',''))
 	
 	var paths: Array[PackedStringArray] = [
 		#Inst Path
@@ -151,7 +101,6 @@ func loadSongsStreams(folder: String = audioFolder, suffix: String = audioSuffix
 			'Voices-'+player_name.replace(' ','-').get_slice('-',0)+suffix,
 			'Voices-Player',
 			'Voices'+suffix
-			
 		]
 	]
 	
@@ -203,13 +152,13 @@ func playSongs(at: float = 0) -> void: ##Play songs.[br][b]Note:[/b] [param at] 
 	for song in songs: song.play(at/1000.0)
 
 func resumeSongs() -> void:
-	if songPosition < 0: return
+	if songPositionSeconds < 0: return
 	for song in songs:
 		song.play(songPositionSeconds)
-		setSongPosition(songPosition)
+		#setSongPosition(songPosition)
 
 func pauseSongs() -> void: ##Pause the streams.
-	for song in songs: song.stream_paused = true
+	for song in songs: song.stop()
 
 func stopSongs(delete: bool = false) -> void: ##Stop the streams.
 	if delete:
@@ -225,33 +174,20 @@ func clearSong(absolute: bool = true) -> void: ##Clear all the songs created
 	stopSongs(true)
 	setSongPosition(0.0)
 	setBpmChangeIndex(-1)
-	if absolute:
-		bpmChanges.clear()
-		bpm = 0
-		songJson.clear()
-		songs_dir.clear()
-		audioSuffix = ''
+	if !absolute: return
 	
-#endregion
-
-func insertEventsInJson():
-	#Load Events
-	var eventPath = songPath.get_base_dir()+'/events.json'
-	if !FileAccess.file_exists(eventPath): return
-	
-	var events = Paths.loadJson(eventPath)
-	if events.song is Dictionary: events = events.song
-	
-	if events:
-		if events.get('scrollSpeed') is Dictionary: events = Song._convert_new_to_old(events)
-		songJson.events.append_array(events.get('events',[]))
-		songJson.events.sort_custom(func(a,b):
-			return a[0] < b[0]
-		)
-
+	bpmChanges.clear()
+	bpm = 0
+	songJson.clear()
+	Song._clear()
 #endregion
 
 #region Get methods
+func get_step_count() -> int:
+	if !bpmChanges: return int(songLength/get_step_crochet(bpm))
+	var last_change = bpmChanges.back()
+	return int(songLength/get_step_crochet(last_change.bpm) - last_change.step_offset)
+	
 static func get_step_crochet(bpm: float) -> float: return 15000.0/bpm #15000.0 = 60000.0/4.0
 	
 static func get_section_crochet(bpm: float, section_beats: float = 4) -> float: 
@@ -268,7 +204,7 @@ static func get_crochet(bpm: float) -> float:
 	if !bpm: return 0.0
 	return 60000/bpm
 
-func get_section_time(_section: int = section, _bpm: float = bpm) -> float:
+func get_section_time(_section: int = section, _bpm: float = songDefaultBpm) -> float:
 	if _section <= 0: return 0
 	var section_data = get_section_data(_section)
 	if section_data: return section_data.sectionTime
@@ -277,12 +213,12 @@ func get_section_time(_section: int = section, _bpm: float = bpm) -> float:
 	if !section_changes: return _section * get_section_crochet(_bpm)
 	return _section * get_section_crochet(section_changes.bpm) - section_changes.section_offset
 
-func get_section(_position: float, _bpm: float = bpm) -> float:
+func get_section(_position: float, _bpm: float = songDefaultBpm) -> float:
 	var changes = get_bpm_changes_from_pos(_position)
 	if !changes: return _position / get_section_crochet(_bpm)
 	return (_position / get_section_crochet(changes.bpm)) - changes.section_offset
 
-func get_beat(pos: float, _bpm: float = bpm) -> float:
+func get_beat(pos: float, _bpm: float = songDefaultBpm) -> float:
 	var changes = get_bpm_changes_from_pos(pos)
 	if !changes: return pos/get_crochet(_bpm)
 	return pos/get_crochet(changes.bpm) - changes.beat_offset
@@ -292,12 +228,12 @@ func get_beat_section(_section: float) -> float:
 	if !changes: return _section * 4.0
 	return (_section+changes.section_beats_offset) * 4.0 - changes.beat_offset
 
-func get_step(pos: float, _bpm: float = bpm) -> float:
+func get_step(pos: float, _bpm: float = songDefaultBpm) -> float:
 	var changes = get_bpm_changes_from_pos(pos)
 	if !changes: return pos/get_step_crochet(_bpm)
 	return pos/get_step_crochet(changes.bpm) - changes.step_offset
 
-func get_step_time(step: float, _bpm: float = bpm):
+func get_step_time(step: float, _bpm: float = songDefaultBpm):
 	var changes = get_bpm_changes(step/16.0) #step / 16.0 = one section
 	if !changes: return step * get_step_crochet(_bpm)
 	return step * get_step_crochet(changes.bpm) - changes.step_offset
@@ -342,11 +278,9 @@ func _set_song_position(position: float):
 		if is_playing and fixVoicesSync:
 			for song in songs:
 				if song.name == 'Inst': continue
-				if absf(song.get_playback_position() - songPositionSeconds) > 0.01:
-					song.seek(songPositionSeconds)
+				if absf(song.get_playback_position() - songPositionSeconds) > 0.01: song.seek(songPositionSeconds)
 
-func set_bpm(value: float):
-	bpm = value; update_bpm()
+func set_bpm(value: float): bpm = value; update_bpm()
 #endregion
 
 #region Bpm Methods
@@ -363,7 +297,7 @@ func detectBpmChanges():
 
 func addNewBpm(section: int,newBpm: float, oldBpm: float = bpm) -> void:
 	if newBpm == oldBpm: return
-
+	
 	var song_position = get_section_time(section,oldBpm)
 	var oldBeat: float = get_beat(song_position)
 	var oldStep: float = get_step(song_position)
@@ -391,7 +325,7 @@ func setSongBpm(_bpm: float):
 func setBpmChangeIndex(index: int):
 	bpm_index = clampi(index,-1,bpmChanges.size()-1)
 	if index == -1:
-		bpm = songJson.bpm
+		bpm = songJson.get('bpm',0)
 		section_offset = 0
 		beat_offset = 0
 		step_offset = 0
@@ -442,11 +376,14 @@ func update_bpm() -> void:
 	
 func get_bpm_changes_from_pos(position: float, at: int = bpm_index) -> Dictionary:
 	if !bpmChanges: return {}
+	
 	if position == songPosition: 
 		if bpm_index == -1: return {} 
 		return bpmChanges[bpm_index]
 	
-	return bpmChanges[_find_current_change_index_from_pos(position, at)]
+	var index = _find_current_change_index_from_pos(position, at)
+	if index == -1: return {}
+	return bpmChanges[index]
 	
 func get_bpm_changes(_section: int = section, at: int = bpm_index) -> Dictionary:
 	if !bpmChanges: return {}
@@ -464,16 +401,21 @@ func _find_current_change_index(_section: int,at: int = 0) -> int:
 func _find_current_change_index_from_pos(pos: float, at: int = 0) -> int:
 	if pos <= 0: return -1
 	#Checks if the index is before the "at"
+	
+	var is_before: bool = false
 	while at > 0:
 		var sec_data = get_section_data(bpmChanges[at].section)
-		if pos > sec_data.sectionTime: break
+		if pos > sec_data.sectionTime: 
+			if is_before: return at
+			break
 		at -= 1
+		is_before = true
 	
 	while at < bpmChanges.size()-1:
 		var sec_data = get_section_data(bpmChanges[at+1].section)
+		prints(pos,sec_data.sectionTime)
 		if pos <= sec_data.sectionTime: return at
 		at += 1
-	
 	return at
 
 static func getChangesBase() -> Dictionary:

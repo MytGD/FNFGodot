@@ -17,8 +17,7 @@ static func fragToGd(shaderCode: String) -> String:
 	#if type == 0 and not 'uniform sampler2D screen_texture : hint_screen_texture;' in shaderCode:
 		#shaderCode = 'uniform sampler2D screen_texture : hint_screen_texture;\n'+shaderCode
 		#GDCode = 'uniform sampler2D screen_texture;\n'+GDCode
-	if not 'shader_type canvas_item;' in shaderCode:
-		shaderCode = 'shader_type canvas_item;\n'+shaderCode
+	if not 'shader_type canvas_item;' in shaderCode: shaderCode = 'shader_type canvas_item;\n'+shaderCode
 	
 	shaderCode = shaderCode.replace('openfl_TextureCoordv','UV').replace('bitmap','TEXTURE')
 	shaderCode = shaderCode.replace('texture(TEXTURE,UV)','COLOR').replace('texture(TEXTURE, UV)','COLOR')

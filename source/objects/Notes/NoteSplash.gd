@@ -24,7 +24,8 @@ var angle: float: ##Similar to [member Node2D.rotation_degrees].
 		_updatePos()
 	get():
 		return rotation_degrees
-	
+
+var _is_custom_parent: bool = false #Used in StrumState.
 var strum: Node: ##The Splash strum.
 	set(value):
 		strum = value
@@ -40,7 +41,6 @@ var splashType: SplashType = SplashType.NORMAL
 
 var _animsOffset: Dictionary = {}
 func _init():
-	is_animated = true
 	super._init()
 	visibility_changed.connect(func():
 		_updatePos()
@@ -54,13 +54,12 @@ func _set_pixel(isPixel: bool):
 	if isPixel:
 		if !mosaicShader: mosaicShader = Paths.loadShader('MosaicShader')
 		material = mosaicShader
-		if material: material.set_shader_parameter('strength',8.0)
+		if material: material.set_shader_parameter('strength',6.0)
 	else: material = null
 	
 ##Add animation to splash. Returns [code]true[/code] if the animation as added successfully.
 func loadSplash(type: StringName, prefix: StringName) -> bool:
 	var data = getSplashData(style,type)
-	
 	if !data: prints(type,prefix); return false
 	
 	var anim_data = data.get('data')
@@ -156,7 +155,7 @@ func _checkOffset(anim_name: StringName, anim_data: Dictionary):
 	var offsets = anim_data.get('offsets')
 	if !offsets: 
 		if !_animsOffset: return
-		offsets = Vector2(100,100)
+		offsets = Vector2(95,95)
 	else: offsets = VectorHelper.array_to_vec(offsets) + Vector2(100,100)
 	
 	if !_animsOffset:

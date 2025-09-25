@@ -1,5 +1,6 @@
 extends Node2D
 #region Consts
+const SolidSprite = preload("res://source/objects/Sprite/SolidSprite.gd")
 const BLOCK_SIZE = Vector2(16,16)
 const CHESS_SCALE = Vector2(3,3)
 const CHESS_REAL_SIZE = BLOCK_SIZE*CHESS_SCALE
@@ -50,8 +51,8 @@ var mouse_create_note: bool = false
 var mouse_pos: Vector2 = Vector2.ZERO
 var mouse_song_position: float = 0
 
-@onready var line_rect: ColorRect = ColorRect.new()
-@onready var mouse_rect_follow: ColorRect = ColorRect.new()
+@onready var line_rect: SolidSprite = SolidSprite.new()
+@onready var mouse_rect_follow: SolidSprite = SolidSprite.new()
 #endregion
 
 #region Chess
@@ -253,7 +254,7 @@ func _ready():
 	chess_control.size = ScreenUtils.screenSize
 	chess_control.position = CHESS_OFFSET
 	
-	mouse_rect_follow.size = CHESS_REAL_SIZE
+	mouse_rect_follow.scale = CHESS_REAL_SIZE
 	mouse_rect_follow.modulate.a = 0
 	#chess_control.clip_contents = true
 	add_child(chess_control)
@@ -313,12 +314,11 @@ func _ready():
 	
 	line_rect.position.x = chess_events.position.x
 	line_rect.z_index = 1
-	line_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	line_rect.name = 'Line Note'
 	
 	chess_control.add_child(line_rect)
 	
-	mouse_rect_follow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	#mouse_rect_follow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mouse_rect_follow.name = 'Mouse Rect'
 	chess_control.add_child(mouse_rect_follow)
 	
@@ -389,7 +389,7 @@ func _ready():
 	set_song_position(songPosition)
 	set_section(curSection)
 	
-func loadPopus(files: Array, popup: PopupMenu):
+func loadPopus(files: PackedStringArray, popup: PopupMenu):
 	var last_mod = ''
 	for i in files:
 		var mod = Paths.getModFolder(i)
@@ -406,8 +406,7 @@ func loadPopus(files: Array, popup: PopupMenu):
 func createChart() -> void:
 	Conductor.clearSong(true)
 	
-	Conductor.songJson = Song.getChartBase()
-	Conductor.setSongBpm(new_chart_bpm.value)
+	
 	
 	var new_song_name = new_chart_song_name.text
 	
@@ -418,10 +417,13 @@ func createChart() -> void:
 	
 	if new_song_name.begins_with('songs/'): new_song_name = new_song_name.right(-6)
 	
-	Conductor.songJson.song = new_song_name
-	Conductor.songFolder = new_song_name
-	Conductor.songName = new_song_name
-	Conductor.songJson.song = new_song_name
+	var new_json = Song.getChartBase()
+	new_json.song = new_song_name
+	Song.folder = new_song_name
+	Song.songName = new_song_name
+	
+	Conductor.songJson = new_json
+	Conductor.setSongBpm(new_chart_bpm.value)
 	
 	Conductor.loadedSong()
 	
@@ -522,7 +524,10 @@ func _update_chess_notes_position():
 		i.position.y = chess_position
 	
 func update_line_rect():
-	line_rect.size = Vector2(chess_player.position.x - line_rect.position.x + CHESS_REAL_SIZE.x*keyCount, 6.0)
+	line_rect.scale = Vector2(
+		chess_player.position.x - line_rect.position.x + CHESS_REAL_SIZE.x*keyCount, 
+		6.0
+	)
 	
 #endregion
 
@@ -542,8 +547,8 @@ func changeCharacter(new_character: String, player_to_change: String = 'player1'
 #endregion
 
 #region Song methods
-func _load_song_data(json_name: StringName = song_json,_difficulty: StringName = difficulty,folder: StringName = song_folder):
-	Conductor.loadSong(json_name,_difficulty,folder)
+func _load_song_data(json_name: StringName = song_json,_difficulty: StringName = difficulty):
+	Conductor.loadSong(json_name,_difficulty)
 	song_json = json_name.get_file()
 
 func loadAudioStreams():
@@ -551,9 +556,9 @@ func loadAudioStreams():
 	Conductor.loadSongsStreams()
 	chart_waveform_pop.clear()
 	for i in Conductor.songs:
-		if i:
-			i.bus = 'Waveform'
-			chart_waveform_pop.add_item(i.name)
+		if !i: continue
+		i.bus = 'Waveform'
+		chart_waveform_pop.add_item(i.name)
 
 func set_song_position(pos: float, conductor_position: bool = true):
 	pos = clampf(pos,0,Conductor.songLength)
@@ -713,7 +718,7 @@ func _update_song_data():
 	
 	song_speed.value = float(SONG.get('speed',1.0))
 	
-	song_name.text = Conductor.songName
+	song_name.text = Song.songName
 	song_bpm.value = Conductor.bpm
 	
 	stage.text = SONG.get('stage','stage')

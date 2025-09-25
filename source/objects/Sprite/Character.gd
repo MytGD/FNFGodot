@@ -126,10 +126,11 @@ func loadCharacterFromJson(new_json: Dictionary):
 	
 	image.texture = Paths.imageTexture(json.assetPath)
 	if image.texture: _images[json.assetPath] = image.texture
+	
 	_update_texture()
 	
-	reloadAnims()
 	
+	reloadAnims()
 	loadData()
 	
 
@@ -196,14 +197,14 @@ func reloadAnims():
 			animName,
 			{
 				'prefix': anims.prefix,
-				'fps': anims.fps,
-				'looped': anims.looped,
-				'indices': anims.frameIndices,
+				'fps': anims.get('fps',24.0),
+				'looped': anims.get('looped',false),
+				'indices': anims.get('frameIndices',[]),
 				'asset': anims.get('assetPath',json.assetPath)
 			}
 		)
 		addAnimOffset(animName,anims.offsets)
-		animation.setLoopFrame(animName,anims.loop_frame)
+		animation.setLoopFrame(animName,anims.get('loop_frame',0))
 	
 	var anim_signal = animation.animation_started
 	if hasDanceAnim and not anim_signal.is_connected(_check_dance_anim):
@@ -273,10 +274,6 @@ func getCameraPosition() -> Vector2:
 		)
 	return getMidpoint() + Vector2(150,-100) + cam_offset
 
-func getAbsoluteCameraPosition() -> Vector2:
-	if isPlayer or isGF: return getCameraPosition()
-	var camPos = getCameraPosition()
-	return Vector2(camPos.x - ScreenUtils.screenOffset.x/2.0,camPos.y)
 
 
 func _check_dance_anim(anim_name: StringName) -> void:
@@ -306,20 +303,22 @@ func flip_h(flip: bool = flipX) -> void:
 
 static func _convert_psych_to_original(json: Dictionary):
 	var new_json = getCharacterBaseData()
-	for i in json.get('animations',[]):
-		var anim = getAnimBaseData()
-		#Detect if the animation data is similar to original
-		DictionaryHelper.merge_existing(anim,i)
-		if i.has('indices'): anim.frameIndices = i.indices
-		if i.has('loop'): anim.looped = i.loop
-		if i.has('anim'):  
-			anim.name = i.anim
-			if i.has('name'): anim.prefix = i.name
-		
-		anim.offsets = i.get('offsets',[0,0])
-		anim.fps = i.get('fps',24.0)
-		
-		new_json.animations.append(anim)
+	
+	var anims = json.get('animations')
+	json.erase('animations')
+	if anims:
+		for i in anims:
+			var anim = getAnimBaseData()
+			
+			DictionaryHelper.merge_existing(anim,i)
+			if i.has('indices'): anim.frameIndices = i.indices
+			if i.has('loop'): anim.looped = i.loop
+			if i.has('anim'):  anim.name = i.anim; if i.has('name'): anim.prefix = i.name
+			
+			anim.offsets = i.get('offsets',[0,0])
+			anim.fps = i.get('fps',24.0)
+			
+			new_json.animations.append(anim)
 	
 	new_json.offsets = json.get('position',[0,0])
 	new_json.flipX = json.get('flip_x',false)
@@ -332,7 +331,6 @@ static func _convert_psych_to_original(json: Dictionary):
 	new_json.camera_position = json.get('camera_position',[0,0])
 	new_json.scale = json.get('scale',1.0)
 	
-	json.erase('animations') #Removing animations to avoid overwriting them in the original dictionary
 	DictionaryHelper.merge_existing(new_json,json)
 	return new_json
 

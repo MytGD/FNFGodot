@@ -52,10 +52,14 @@ func loadSongObjects():
 		GameOverSubstate.endSoundName = 'gameplay/gameover/gameOverEnd'
 	super.loadSongObjects()
 
+func destroy(absolute: bool = true):
+	super.destroy(absolute)
+	camGame.removeFilters()
+
 func gameOver():
 	var state = GameOverSubstate.new()
 	state.scale = Vector2(camGame.zoom,camGame.zoom)
-	state.transform = camGame.camera.transform
+	state.transform = camGame.scroll_camera.transform
 	state.isOpponent = playAsOpponent
 	state.character = dad if playAsOpponent else boyfriend
 	Global.scene.add_child(state)
@@ -88,6 +92,7 @@ func loadStage(stage: StringName,loadScript: bool = true):
 	if stageJson.get('hide_boyfriend'): boyfriendGroup.visible = false
 	else:  boyfriendGroup.visible = true
 	moveCamera(detectSection())
+	
 func _process(delta: float) -> void:
 	if camZooming: camGame.zoom = lerpf(camGame.zoom,defaultCamZoom,delta*3*zoomSpeed)
 	super._process(delta)
@@ -145,29 +150,27 @@ func addCharacterToList(type: int = 0,charFile: StringName = 'bf') -> Character:
 	
 func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 	if not note: return
-	if note.noAnimation:super.hitNote(note,character); return
+	if note.noAnimation: super.hitNote(note,character); return
 	
 	var mustPress: bool = note.mustPress
 	var gfNote = note.gfNote or (gfSection and mustPress == mustHitSection)
-	#var character: Character = gf if gfNote else (dad if mustPress else boyfriend)
 	var dance: bool = not (mustPress != playAsOpponent and not botplay)
 	
-	if not mustPress:
-		if dad: dad.autoDance = dance
+	if gfNote:
+		if character: character.autoDance = false
+		if gf: gf.autoDance = dance
+	else:
+		if character: character.autoDance = dance
+		if gf: gf.autoDance = true
+
+	if !character: super.hitNote(note,character); return;
+	var animNote = singAnimations[note.noteData]
 	
-	elif mustPress:
-		if boyfriend: boyfriend.autoDance = dance and not gfNote
-	
-	elif gf: gf.autoDance = gfNote and dance
-	
-	
-	if character:
-		var animNote = singAnimations[note.noteData]+note.animSuffix
-		var anim = character.animation
-		character.holdTimer = 0.0
-		character.heyTimer = 0.0
-		character.specialAnim = false
-		anim.play(animNote if anim.has_animation(animNote) else singAnimations[note.noteData],true)
+	var anim = character.animation
+	character.holdTimer = 0.0
+	character.heyTimer = 0.0
+	character.specialAnim = false
+	if !note.animSuffix or !anim.play(animNote+note.animSuffix,true): anim.play(animNote,true)
 	super.hitNote(note,character)
 	
 func noteMiss(note: Note, character: Variant = getCharacterNote(note)):
@@ -182,13 +185,66 @@ func screenBeat() -> void:
 	camGame.zoom += 0.015
 	super.screenBeat()
 
+func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
+	var char_name: StringName = get_character_type_name(type)
+	var character_obj = get(char_name)
+	if character_obj and character_obj.curCharacter == character: return
+	
+	var group: SpriteGroup = get(char_name+'Group')
+	if !group: return
+	
+	var newCharacter = addCharacterToList(type,character)
+	if not newCharacter: return
+	
+	newCharacter.name = char_name
+	newCharacter.holdTimer = 0.0
+	newCharacter.visible = true
+	newCharacter.process_mode = Node.PROCESS_MODE_INHERIT
+	set(char_name,newCharacter)
+	
+	if character_obj:
+		var anim_to_play = character_obj.animation.current_animation
+		if newCharacter.animation.has_animation(anim_to_play): newCharacter.animation.play(anim_to_play)
+		
+		newCharacter.dance()
+		
+		newCharacter.material = character_obj.material
+		character_obj.material = null
+		
+		character_obj.visible = false
+		character_obj.process_mode = PROCESS_MODE_DISABLED
+	
+	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
+	match type:
+		0:
+			iconP1.reloadIconFromCharacterJson(newCharacter.json)
+			healthBar.set_colors(null,newCharacter.healthBarColors)
+		1:
+			healthBar.set_colors(newCharacter.healthBarColors)
+			iconP2.reloadIconFromCharacterJson(newCharacter.json)
+	
+	updateIconsPivot()
+	if !isCameraOnForcedPos and detectSection() == char_name: moveCamera(char_name)
+	return newCharacter
+
+func clear():
+	super.clear()
+	camGame.removeFilters()
+	for g in [boyfriendGroup,gfGroup,dadGroup]:
+		for i in g.members: i.queue_free()
+		g.members.clear()
+	boyfriend = null
+	dad = null
+	gf = null
+	
 static func getCameraPos(obj: Node, add_camera_json_offset: bool = true) -> Vector2:
 	if !obj: return Vector2(0.0,0.0)
 	
 	var pos: Vector2
 	if obj is Character:
-		pos = obj.getAbsoluteCameraPosition()
+		pos = obj.getCameraPosition()
 		if add_camera_json_offset: pos += getCameraOffset(obj)
+		if ScreenUtils.screenOffset.x: pos.x -= ScreenUtils.screenOffset.x/2.0
 		return pos
 			
 	if obj is Sprite: return obj.getMidPoint()

@@ -53,7 +53,7 @@ var _parent_camera: Node:
 		for i in members:
 			if i and i.get_parent():
 				i.set('camera',_parent_camera)
-				i.reparent(self)
+				i.reparent(self,false)
 ##Scroll factor of this group, just works if the member is a [Sprite].
 var scrollFactor: Vector2 = Vector2.ONE
 
@@ -77,7 +77,7 @@ func _add_obj_to_camera(node: Node) -> void:
 	if _parent_camera:
 		node.set("camera",_parent_camera)
 	if node.get_parent():
-		node.reparent(self)
+		node.reparent(self,false)
 	else:
 		add_child(node)
 
@@ -103,7 +103,7 @@ func remove(node: Object) -> void:
 		node.groups.erase(self)
 	
 	if node is Node and node.is_inside_tree():
-		node.reparent(get_parent())
+		node.reparent(get_parent(),false)
 
 ##Remove a [Node] using his [code]index[/code] in the group.
 func remove_at(index: int) -> void:
@@ -112,7 +112,7 @@ func remove_at(index: int) -> void:
 	if !node:
 		return
 	if node is Node and node.is_inside_tree():
-		node.reparent(get_parent())
+		node.reparent(get_parent(),false)
 	
 func _add_member_position(member: Node,_x: float = x, _y: float = y) -> void:
 	if member is Sprite:

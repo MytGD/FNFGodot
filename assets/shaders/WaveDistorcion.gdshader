@@ -8,5 +8,7 @@ uniform sampler2D screen_texture: hint_screen_texture;
 void fragment(){
 	float uv_x = cos((SCREEN_UV.y - offset - TIME * frequency)*PI*space)*strength;
 	uv_x *= clamp((SCREEN_UV.y - offset)*space,-1.0,1.0);
-	COLOR = texture(screen_texture,vec2(SCREEN_UV.x+uv_x,SCREEN_UV.y));
+	uv_x += SCREEN_UV.x;
+	if(uv_x < 0.0 || uv_x > 1.0) discard;
+	COLOR = texture(screen_texture,vec2(uv_x,SCREEN_UV.y));
 }

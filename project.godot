@@ -18,11 +18,15 @@ warnings/check_angle_interpolation_type_conflicting=false
 config/name="Friday Night Funkin' Godot"
 config/version="0.1"
 config/tags=PackedStringArray("2d", "modding", "rhythm")
-run/main_scene="uid://cb3iewrftvajn"
+run/main_scene="uid://d38t3n5h1bcw"
 run/disable_stderr=true
 run/print_header=false
-config/features=PackedStringArray("4.4", "GL Compatibility")
+config/features=PackedStringArray("4.5", "GL Compatibility")
 run/max_fps=180
+boot_splash/bg_color=Color(0, 0, 0, 0)
+boot_splash/show_image=false
+boot_splash/fullsize=false
+boot_splash/use_filter=false
 config/icon="res://icon.png"
 
 [autoload]
@@ -31,9 +35,12 @@ Global="*res://source/general/Global.gd"
 InputHelper="*res://source/general/helpers/InputHelper.gd"
 Conductor="*res://source/backend/Conductor.gd"
 AnimationService="*res://source/general/animation/AnimationService.gd"
+TweenService="*res://source/general/utils/Tween/TweenService.gd"
+Discord="*res://source/backend/Discord.gd"
 
 [debug]
 
+file_logging/enable_file_logging.pc=false
 settings/gdscript/max_call_stack=512
 gdscript/warnings/unused_local_constant=0
 gdscript/warnings/unused_private_class_variable=0
@@ -56,11 +63,17 @@ canvas_items/debug_redraw_time=0.5
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/transparent=true
 window/stretch/mode="canvas_items"
+window/vsync/vsync_mode=0
 
 [dotnet]
 
 project/assembly_name="Friday Night Funkin- Godot"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/discord-rpc-gd/plugin.cfg")
 
 [gui]
 
@@ -163,6 +176,6 @@ pointing/emulate_touch_from_mouse=true
 [rendering]
 
 renderer/rendering_method="mobile"
-textures/decals/filter=1
-textures/light_projectors/filter=1
+textures/vram_compression/import_s3tc_bptc=true
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)
+viewport/transparent_background=true

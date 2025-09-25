@@ -1,77 +1,127 @@
-const KeyNode = preload("res://source/states/Modchart/KeyNode.gd")
-var key_node: KeyNode #Setted in ModchartEditor
+extends Object
+const KeyInterpolator = preload("res://source/states/Modchart/KeyInterpolator.gd")
+#Key Data
+var time: float: set = _set_time
+var length: float = 0.0
 
-#[position, object_tag, parameter, value, first_value, duration, transition, easing]
-var array: Array = []
-var keys_in_same_line: Array = []
+var object: Variant: set = _set_object
+var property: String: set = _set_property
+var duration: float: set = _set_duration
+var init_val: Variant: set = _set_init_val
+var prev_val: Variant: set = _set_prev_val
+var value: Variant: set = _set_value
+var transition: Tween.TransitionType: set = _set_trans
+var ease: Tween.EaseType: set = _set_ease
+var array: Array = [
+	time,
+	object,
+	property,
+	init_val,
+	value,
+	duration,
+	transition,
+	ease
+]: set = _set_array
 
-var time: float: set = set_time
-var object_type: int #See ModchartState.PROPERTY_TYPES
-var object_tag: StringName = ''
-var parameter: StringName: set = set_parameter
+var key_node: CanvasItem
 
-var value: Variant: set = set_value
-var init_value: Variant: set = set_init_value
-var default_object_value: Variant
+#EditorProperties
+var tween_started: bool = false
+var is_shader: bool = false
+var _need_to_find_obj: bool = false
 
-var trans: Tween.TransitionType: set = set_trans
-var ease: Tween.EaseType: set = set_ease
-var duration: float = 0: set = set_duration
-var end_time: float = 0.0
-var step: float = 0.0
+func _process() -> void:
+	if !object or !property: return
+	if Conductor.songPosition >= time:
+		if duration: 
+			set_object_value(_get_cur_value())
+			tween_started = true
+		else:  
+			set_object_value(value)
+	else: 
+		set_object_value(prev_val)
+		
+func _get_cur_value() -> Variant:
+	return Tween.interpolate_value(
+			init_val,
+			value - init_val,
+			clampf(Conductor.songPosition - time,0.0,duration),
+			duration,
+			transition,
+			ease
+	)
 
-var add_at_previews_value: bool = false
+func set_object_value(value: Variant):
+	if _need_to_find_obj:
+		var obj = FunkinGD.getProperty(object)
+		if obj: _set_obj_value_no_check(obj,value)
+	elif object: _set_obj_value_no_check(object,value)
 
+func _set_obj_value_no_check(obj: Object, value: Variant):
+	if is_shader: obj.set_shader_parameter(property,value)
+	else: FunkinGD.setProperty(property,value,obj)
 
-var _cur_value = null
+#region Data
+func _set_time(_time: float):
+	time = _time
+	length = time + duration
+	array[0] = _time
 
-func update_step() -> void:
-	step = Conductor.get_step(time)
-	_update_end_time()
+func _set_object(obj_name: Variant):
+	_need_to_find_obj = obj_name is String
+	object = obj_name
+	if !_need_to_find_obj: is_shader = object is ShaderMaterial
+	array[1] = obj_name
 
-func update_data() -> void:
-	time = array[0]
-	object_tag = array[1]
-	parameter = array[2]
-	value = array[3]
-	init_value = array[4]
-	duration = array[5]
-	trans = array[6]
-	ease = array[7]
-func _update_end_time() -> void:
-	end_time = time + duration*1000
+func _set_property(prop: String):
+	property = prop
+	array[2] = prop
+
+func _set_init_val(val: Variant):
+	init_val = val
+	array[3] = val
+	if tween_started: set_object_value(_get_cur_value())
 	
-#region Setters
-func set_time(value: float) -> void:
-	time = value
-	array[0] = value
-	_update_end_time()
-	update_step()
-	
-func set_parameter(new_parameter: StringName) -> void:
-	parameter = new_parameter
-	array[2] = new_parameter
-	
-func set_value(_new_value: Variant) -> void:
-	value = _new_value
-	array[3] = _new_value
+func _set_value(val: Variant):
+	value = val
+	array[4] = val
+	if tween_started: set_object_value(_get_cur_value())
 
-func set_init_value(value: Variant) -> void:
-	init_value = value
-	array[4] = value
-
-func set_duration(value: float) -> void:
-	duration = value
-	array[5] = value
-	_update_end_time()
-	if key_node:
-		key_node.queue_redraw()
-
-func set_trans(value: Tween.TransitionType) -> void:
-	trans = value
-	array[6] = value
+func _set_duration(_duration: float):
+	duration = _duration
+	array[5] = _duration
+	length = time + duration
+	if tween_started: set_object_value(_get_cur_value())
+	if key_node: key_node.queue_redraw()
 	
-func set_ease(_ease: Tween.EaseType) -> void:
+func _set_trans(_trans: Tween.TransitionType):
+	transition = _trans
+	array[6] = _trans
+	if tween_started: set_object_value(_get_cur_value())
+	
+func _set_ease(_ease: Tween.EaseType):
 	ease = _ease
-	array[7] = _ease
+	array[7] = ease
+	if tween_started: set_object_value(_get_cur_value())
+#endregion
+
+#region Setters
+func _set_prev_val(val: Variant):
+	if prev_val == init_val: init_val = val
+	prev_val = val
+
+func _set_array(new_data: Array):
+	time = new_data[0]
+	object = new_data[1]
+	property = new_data[2]
+	init_val = new_data[3]
+	value = new_data[4]
+	duration = new_data[5]
+	transition = new_data[6]
+	ease = new_data[7]
+	
+func duplicate() -> KeyInterpolator:
+	var new_key: KeyInterpolator = KeyInterpolator.new()
+	new_key.array = array.duplicate()
+	return new_key
 #endregion

@@ -1,14 +1,14 @@
 extends Label
 var x: float:
-	set(value):
+	set(value): 
+		position.x += value - _position.x
 		_position.x = value
-	get():
-		return _position.x
+	get(): return _position.x
 var y: float:
-	set(value):
+	set(value): 
+		position.y += value - _position.y
 		_position.y = value
-	get():
-		return _position.y
+	get(): return _position.y
 
 var _position: Vector2 = Vector2.ZERO:
 	set(value):

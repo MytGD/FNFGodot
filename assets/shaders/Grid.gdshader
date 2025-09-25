@@ -10,7 +10,7 @@ uniform vec4 grid_negative_color: source_color = vec4(0.2,0.0,0.0,1.0);
 
 
 uniform int section_beats = 4;
-uniform bool grid_bg_enabled = false;
+uniform bool grid_bg_enabled = true;
 
 uniform float x = 0.0;
 uniform float y = 0.0;

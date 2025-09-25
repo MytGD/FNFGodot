@@ -11,15 +11,23 @@ const CharacterEditor = preload("res://scenes/states/CharacterEditor.tscn")
 const ChartEditorScene = preload("res://scenes/states/ChartEditor.tscn")
 
 static var back_state = preload("res://source/states/Menu/ModeSelect.gd")
-var stateLoaded: bool = false
+var stateLoaded: bool = false #Used in FunkinGD
 
-@export_category('Stage')
+const game_events: Array = [
+	'Add Camera Zoom',
+	'Change Character',
+	'Camera Follow Pos',
+	'Play Animation',
+	'Change Scroll Speed',
+	'Screen Shake',
+	'Change Stage',
+	'Alt Idle Animation'
+]
+
+@export_group('Stage')
 var stageJson: Dictionary = Stage.getStageBase()
 
-var inGameOver: bool = false
-var canExitSong: bool = true
-
-@export_category('Objects')
+@export_group('Objects')
 const Icon := preload("res://source/objects/UI/Icon.gd")
 
 var iconP1: Icon = Icon.new()
@@ -32,36 +40,46 @@ var healthBar: Bar = Bar.new('healthBar')
 var health: float: set = set_health
 var healthBar_State: int = 0
 
-
 var timeBar: Bar
 var timeTxt: GDText
 
-@export_category('Camera')
+@export_group('Camera')
 var camHUD: CameraCanvas = CameraCanvas.new()
 var camOther: CameraCanvas = CameraCanvas.new()
 
 var cameraSpeed: float = 1.0
 var zoomSpeed: float = 1.0
 
-
 var isCameraOnForcedPos: bool = false
 var defaultCamZoom: float = 1.0
 
-@export_category('Gameplay')
-const game_events: Array = [
-	'Add Camera Zoom',
-	'Change Character',
-	'Camera Follow Pos',
-	'Play Animation',
-	'Change Scroll Speed',
-	'Screen Shake',
-	'Change Stage',
-	'Alt Idle Animation'
-]
+@export_group('Play Options')
+@export var singAnimations: PackedStringArray = ["singLEFT","singDOWN","singUP","singRIGHT"]
 
+##The amount of beats for the camera to give a "beat" effect.
+@export var bumpStrumBeat: float = 4.0
+@export var canExitSong: bool = true
+@export var canPause: bool = true
+@export var canGameOver: bool = true
+
+@export_subgroup('Events')
+var eventNotes: Array[Dictionary] = []
+@export var generateEvents: bool = true
+
+@export_group("Countdown Options")
+@export var countDownEnabled: bool = true
+@export var countSounds = ['introTHREE','introTWO','introONE','introGO']
+@export var countDownImages = ['','ready','set','go']
+
+@export_group("Hud Elements")
+@export var hideHud: bool = ClientPrefs.data.hideHud: set = _set_hide_hud
+
+var hideTimeBar: bool = ClientPrefs.data.timeBarType == "Disabled"
+var timeBarType: StringName = ClientPrefs.data.timeBarType
 var pauseState: PauseSubstate
-var canPause: bool = true
 var onPause: bool = false
+
+var inGameOver: bool = false
 
 var isStoryMode: bool = false
 
@@ -69,29 +87,13 @@ var isStoryMode: bool = false
 var story_song_notes: Dictionary = {}
 var story_songs: PackedStringArray = []
 
-@export_category("Hud Elements")
-var hideHud: bool = ClientPrefs.data.hideHud
-var hideTimeBar: bool = ClientPrefs.data.timeBarType == "Disabled"
-var timeBarType: StringName = ClientPrefs.data.timeBarType
-
-@export_category('Song')
-var eventNotes: Array[Dictionary] = []
-var generateEvents: bool = true
-
 var _countdown_started: bool = false
 var skipCountdown: bool = false
 
-#region Countdown
-var countDownEnabled: bool = true
-var countSounds = ['introTHREE','introTWO','introONE','introGO']
-var countDownImages = ['','ready','set','go']
 
-#endregion
 var introSoundsSuffix: StringName = ''
 
 var altSection: bool = false
-
-var singAnimations: PackedStringArray = ["singLEFT","singDOWN","singUP","singRIGHT"]
 
 var curStage: StringName = ''
 var songName: StringName = ''
@@ -102,6 +104,8 @@ var skipCutscene: bool = true
 var inCutscene: bool = false
 
 var videoPlayer: VideoStreamPlayer
+
+var camZooming: bool = false##If [code]true[/code], the camera make a beat effect every [member bumpStrumBeat] beats and the zoom will back automatically.
 
 func _ready():
 	Global.onSwapTree.connect(destroy)
@@ -176,9 +180,10 @@ func _ready():
 	
 	health = 1.0
 	
-	if splashesEnabled: Paths.image(SONG.get('splashSkin') if SONG.get('splashSkin') else 'noteSplashes/noteSplashes')
+	if splashesEnabled: 
+		Paths.image(SONG.get('splashType') if SONG.get('splashType') else 'noteSplashes/noteSplashes')
 	
-	moveCamera(detectSection())
+	if !isCameraOnForcedPos: moveCamera(detectSection())
 	_resetScore()
 	
 	
@@ -200,6 +205,7 @@ func createMobileGUI():
 	button.position.x = ScreenUtils.screenCenter.x
 	button.pressed.connect(pauseSong)
 	add_child(button)
+	
 func loadCharactersFromData(json: Dictionary = SONG):
 	changeCharacter(2,json.get('gfVersion','gf'))
 	changeCharacter(0,json.get('player1','bf'))
@@ -309,22 +315,25 @@ func spawnNote(note):
 	FunkinGD.callOnScripts('onSpawnNote',[note])
 
 func reloadNotes():
-	for i in noteTypesFounded: FunkinGD.addScript('custom_notetypes/'+i)
+	for i in noteTypesFounded: 
+		#FunkinGD.addScript('assets/custom_notetypes/'+i)
+		FunkinGD.addScript('custom_notetypes/'+i)
 	super.reloadNotes()
 
 func loadNotes():
 	super.loadNotes()
-	if !_events_preload:
-		var events_to_load = SONG.get('events',[])
-		var events_json = Paths.loadJson('data/'+Conductor.songFolder+'/events.json')
-		
-		if events_json:
-			if events_json.get('song') is Dictionary: 
-				events_json = events_json.song
-			events_to_load.append_array(events_json.get('events',[]))
-		_events_preload = EventNote.loadEvents(events_to_load)
+	if _events_preload: 
+		eventNotes = _events_preload.duplicate()
+		return
+	var events_to_load = SONG.get('events',[])
+	var events_json = Paths.loadJson(Song.folder+'/events.json')
 	
+	if events_json:
+		if events_json.get('song') is Dictionary: events_json = events_json.song
+		events_to_load.append_array(events_json.get('events',[]))
+	_events_preload = EventNote.loadEvents(events_to_load)
 	eventNotes = _events_preload.duplicate()
+	
 func reloadNote(note: Note):
 	super.reloadNote(note)
 	FunkinGD.callOnScripts('onLoadNote',[note])
@@ -345,6 +354,7 @@ func hitNote(note: Note, character: Variant = null) -> void:
 	super.hitNote(note)
 	
 	#Add Health if the note is from the player
+	if !note.mustPress: camZooming = true
 	if note.mustPress != playAsOpponent: health += note.hitHealth * note.ratingMod 
 		
 	FunkinGD.callOnScripts('goodNoteHit' if note.mustPress else 'opponentNoteHit',[note])
@@ -359,10 +369,15 @@ func noteMiss(note, character: Variant = null) -> void:
 #region Script Methods
 func _load_song_scripts():
 	#Load Stage Script
+	print('Loading Stage Script')
 	FunkinGD.addScript('stages/'+curStage+'.gd')
 	
-	for i in Paths.getFilesAt('data/'+Conductor.songFolder+'/',true): FunkinGD.addScript(i)
-	for i in Paths.getFilesAt('scripts',true): FunkinGD.addScript(i)
+	
+	print('Loading Song Folder Script')
+	if Song.folder: for i in Paths.getFilesAt(Song.folder,true,'.gd'): FunkinGD.addScript(i)
+	
+	print('Loading Scripts from Scripts Folder')
+	for i in Paths.getFilesAt('scripts',true,'.gd'): FunkinGD.addScript(i)
 
 func triggerEvent(event: StringName,variables: Variant) -> void:
 	if !variables is Dictionary: return
@@ -391,23 +406,31 @@ func loadSong(data: String = song_json_file, songDifficulty: String = difficulty
 	loadStage(SONG.get('stage',''),false)
 	
 func loadSongObjects() -> void:
+	camHUD.removeFilters()
+	camOther.removeFilters()
+	
 	print('Loading Stage')
 	Stage.loadSprites()
 	#Load Scripts
 	print('Loading Scripts')
 	_load_song_scripts()
 	
+	print('Loading Song Objects')
 	super.loadSongObjects()
+	
 	print('Loading Events')
 	loadEventsScripts()
 	
 	print('Loading Characters')
 	loadCharactersFromData()
-
+	
+	if !inModchartEditor:
+		DiscordRPC.state = 'Now Playing: '+Song.songName
+		DiscordRPC.refresh()
+		
 func loadEventsScripts():
-	#Load Event Scripts
-	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i)
-	for i in Paths.getFilesAtAbsolute('assets/custom_events',false,'.gd'): 
+	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i+'.gd')
+	for i in Paths.getFilesAt(Paths.exePath+'/assets/custom_events',false,'.gd',true):
 		FunkinGD.addScript('custom_events/'+i)
 func startSong():
 	super.startSong()
@@ -430,9 +453,11 @@ func pauseSong(menu: bool = true) -> void:
 	
 	onPause = true
 	pauseState = PauseSubstate.new()
-	pauseState.resume_song.connect(func(): resumeSong.call_deferred())
-	pauseState.restart_song.connect(func(): restartSong.call_deferred())
-	pauseState.exit_song.connect(func(): endSound.call_deferred())
+	pauseState.resume_song.connect(resumeSong.call_deferred)
+	pauseState.restart_song.connect(restartSong.call_deferred)
+	pauseState.exit_song.connect(endSound.call_deferred)
+	
+	Global.show_label_error('Adding to Scene')
 	call_deferred('add_sibling',pauseState)
 
 func restartSong(absolute: bool = true):
@@ -459,9 +484,14 @@ func endSound() -> void:
 	exitingSong = true
 	canPause = false
 	if isStoryMode and story_song_notes:
-		loadSong()
-	if back_state: Global.swapTree(back_state.new(),true)
+		loadNextSong()
+	elif back_state: Global.swapTree(back_state.new(),true)
 
+func loadNextSong():
+	var newSong = story_songs[0]
+	story_songs.remove_at(0)
+	if !story_song_notes.has(newSong):
+		newSong = loadSong()
 func countDownTick(beat: int) -> void:
 	if beat > 0: return
 	elif beat == 0: startSong(); return
@@ -547,7 +577,9 @@ func startVideo(path: Variant, isCutscene: bool = true) -> VideoStreamPlayer:
 		FunkinGD.callOnScripts('onEndCutscene',[path])
 	)
 	videoPlayer.resized.connect(func():
-		videoPlayer.scale = (ScreenUtils.screenSize/videoPlayer.size).min(Vector2.ONE)
+		var video_div = ScreenUtils.screenSize/videoPlayer.size
+		var video_scale = minf(video_div.x,video_div.y)
+		videoPlayer.scale = Vector2(video_scale,video_scale)
 	)
 	
 	return videoPlayer
@@ -578,6 +610,9 @@ func destroy(absolute: bool = true):
 	
 	if exitingSong: ChartEditor.reset_values()
 	Paths.extraDirectory = ''
+	
+	camHUD.removeFilters()
+	camOther.removeFilters()
 	super.destroy(absolute)
 	
 
@@ -619,48 +654,10 @@ func detectSection() -> StringName:
 #endregion
 
 #region Character Methods
+
+#Replaced in PlayState and PlayState3D
 func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
-	var char_name: StringName = get_character_type_name(type)
-	var character_obj = get(char_name)
-	if character_obj and character_obj.curCharacter == character: return
-	
-	var group: SpriteGroup = get(char_name+'Group')
-	if !group: return
-	
-	var newCharacter = addCharacterToList(type,character)
-	if not newCharacter: return
-	
-	newCharacter.name = char_name
-	newCharacter.holdTimer = 0.0
-	newCharacter.visible = true
-	newCharacter.process_mode = Node.PROCESS_MODE_INHERIT
-	set(char_name,newCharacter)
-	
-	if character_obj:
-		var anim_to_play = character_obj.animation.current_animation
-		if newCharacter.animation.has_animation(anim_to_play): newCharacter.animation.play(anim_to_play)
-		
-		newCharacter.dance()
-		
-		newCharacter.material = character_obj.material
-		character_obj.material = null
-		
-		character_obj.visible = false
-		character_obj.process_mode = PROCESS_MODE_DISABLED
-	
-	
-	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
-	match type:
-		0:
-			iconP1.reloadIconFromCharacterJson(newCharacter.json)
-			healthBar.set_colors(null,newCharacter.healthBarColors)
-		1:
-			healthBar.set_colors(newCharacter.healthBarColors)
-			iconP2.reloadIconFromCharacterJson(newCharacter.json)
-	
-	updateIconsPivot()
-	if !isCameraOnForcedPos and detectSection() == char_name: moveCamera(char_name)
-	return newCharacter
+	return
 
 func onSectionHitOnce():
 	if !isCameraOnForcedPos: moveCamera(detectSection())
@@ -684,9 +681,9 @@ func moveCamera(target: StringName = 'boyfriend') -> void:
 #region Stage Methods
 func loadStage(stage: StringName, loadScript: bool = true):
 	if curStage == stage: return
-	
 	#Remove old stage script
 	FunkinGD.removeScript('stages/'+curStage)
+	FunkinGD.curStage = stage
 	curStage = stage
 	
 	stageJson = Stage.loadStage(stage)
@@ -695,14 +692,26 @@ func loadStage(stage: StringName, loadScript: bool = true):
 	if loadScript: 
 		FunkinGD.addScript('stages/'+stage)
 		Stage.loadSprites()
+	
 #endregion
+
+#region Setters
+func _set_hide_hud(hide: bool):
+	hideHud = false
+	for i in get_hud_elements(): if i: i.visible = !hide
+	hideHud = hide
+	
+		
+func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
+	healthBar.flip = !isOpponent
+	super._set_play_opponent(isOpponent)
 
 #region Health Methods
 func set_health(value: float):
 	value = clamp(value,-1.0,2.0)
 	if health == value: return
 	health = value
-	if canGameOver(): gameOver(); return
+	if isGameOverEnabled(): gameOver(); return
 	
 	var progress_h = value/2.0
 	healthBar.progress = progress_h if playAsOpponent else 1.0 - progress_h
@@ -727,17 +736,14 @@ func set_health(value: float):
 			if iconP1.hasWinningIcon: iconP1.animation.play('winning')
 			else: iconP1.animation.play('normal')
 			iconP2.animation.play('losing')
-
-func canGameOver() -> bool:
-	return health < 0.0 \
-			and not inGameOver\
-			and not FunkinGD.Function_Stop in FunkinGD.callOnScripts('onGameOver',[],true)
+#endregion
 
 ##Set HealthBar angle(in degrees). See also [method @GlobalScope.rad_to_deg]
 func setHealthBarAngle(angle: float):
 	healthBar.rotation_degrees = angle
 	updateIconsPivot()
 #endregion
+
 
 #region General Methods
 func get_hud_elements() -> Array[Node]:
@@ -748,16 +754,24 @@ func get_hud_elements() -> Array[Node]:
 func seek_to(time: float, kill_notes: bool = true):
 	skipCountdown = true
 	super.seek_to(time,kill_notes)
-	
-func _set_play_opponent(play: bool = playAsOpponent) -> void:
-	healthBar.flip = !play
-	super._set_play_opponent(play)
 
+
+#region Game Over Methods
 func gameOver():
 	FunkinGD.inGameOver = true
 	inGameOver = true
 	pauseSong(false)
 
+func isGameOverEnabled() -> bool:
+	return canGameOver and health < 0.0 \
+			and not inGameOver\
+			and not FunkinGD.Function_Stop in FunkinGD.callOnScripts('onGameOver',[],true)
+#endregion
+
+func clear():
+	super.clear()
+	camHUD.removeFilters()
+	camOther.removeFilters()
 static func _reset_values():
 	super._reset_values()
 	_events_preload.clear()

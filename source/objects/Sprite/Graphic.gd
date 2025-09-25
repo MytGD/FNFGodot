@@ -17,7 +17,7 @@ var pivot_offset: Vector2:
 		pivot_offset = value
 		_update_offset()
 
-var graphic_color: Color = Color.WHITE: set = set_graphic_color
+var graphic_color: Color: set = set_graphic_color
 var is_solid: bool = false
 func _init() -> void:
 	region_enabled = true
@@ -40,7 +40,6 @@ func set_graphic_color(color: Color) -> void:
 func _update_texture() -> void:
 	_frame_offset = Vector2.ZERO
 	_frame_angle = 0
-	pass
 
 func _draw() -> void:
 	if is_solid: draw_rect(Rect2(0,0,1,1),graphic_color)

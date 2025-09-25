@@ -1,32 +1,51 @@
-[gd_scene load_steps=6 format=3 uid="uid://eohwpqwan48"]
+[gd_scene load_steps=9 format=3 uid="uid://eohwpqwan48"]
 
 [ext_resource type="Script" uid="uid://cbkrff2c37tt" path="res://source/states/PlayState3D.gd" id="1_my0t5"]
 [ext_resource type="Script" uid="uid://d36d81mp85pxe" path="res://source/general/Camera3DCustom.gd" id="3_h2p51"]
 
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_knddk"]
+sky_top_color = Color(0.878895, 0.928459, 0.933449, 1)
+
+[sub_resource type="Sky" id="Sky_lu6e4"]
+sky_material = SubResource("ProceduralSkyMaterial_knddk")
+
 [sub_resource type="Environment" id="Environment_sr88b"]
-background_mode = 1
-background_color = Color(0.621524, 0.621524, 0.621524, 1)
+background_mode = 2
+background_color = Color(1, 1, 1, 1)
+background_energy_multiplier = 1.8
+sky = SubResource("Sky_lu6e4")
+ambient_light_source = 3
 
 [sub_resource type="BoxMesh" id="BoxMesh_q8d6i"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_n8mjy"]
 
+[sub_resource type="BoxMesh" id="BoxMesh_5y12a"]
+
 [node name="PlayState3D" type="Node" node_paths=PackedStringArray("boyfriend", "dad")]
 script = ExtResource("1_my0t5")
-boyfriend = NodePath("WorldEnvironment/boyfriend")
-dad = NodePath("WorldEnvironment/dad")
+boyfriend = NodePath("camGame/boyfriend")
+dad = NodePath("camGame/dad")
+song_folder = "test"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_sr88b")
 
-[node name="dad" type="MeshInstance3D" parent="WorldEnvironment"]
+[node name="camGame" type="Node3D" parent="."]
+script = ExtResource("3_h2p51")
+metadata/_custom_type_script = "uid://d36d81mp85pxe"
+
+[node name="dad" type="MeshInstance3D" parent="camGame"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
 mesh = SubResource("BoxMesh_q8d6i")
+skeleton = NodePath("../../WorldEnvironment")
 
-[node name="boyfriend" type="MeshInstance3D" parent="WorldEnvironment"]
+[node name="boyfriend" type="MeshInstance3D" parent="camGame"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
 mesh = SubResource("BoxMesh_n8mjy")
+skeleton = NodePath("../../WorldEnvironment")
 
-[node name="Camera3DCustom" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.23455, 0.383468, -2.39695)
-script = ExtResource("3_h2p51")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="camGame"]
+transform = Transform3D(21.1794, 0, 0, 0, 1, 0, 0, 0, 27.3106, 0, -0.85267, 0)
+mesh = SubResource("BoxMesh_5y12a")
+skeleton = NodePath("../..")

@@ -7,6 +7,7 @@ static var _letters_cache: Dictionary = {}
 var imageFile: StringName:
 	set(path):
 		texture = Paths.imageTexture(path)
+
 		imageFile = path
 
 var _frame_offset: Vector2 = Vector2.ZERO:

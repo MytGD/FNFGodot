@@ -1,5 +1,5 @@
 ##A script to help with Event Notes.
-static var eventsFounded: PackedStringArray = []
+static var eventsFounded: PackedStringArray
 
 static func convert_events(events: Array) -> Array:
 	var new_events: Array = []
@@ -71,13 +71,14 @@ const default_variables = {
 	}
 }
 
-static func _static_init() -> void:
-	for i in TweenHelper.transitions:
+static func _get_transitions():
+	var trans: PackedStringArray = []
+	for i in TweenService.transitions:
 		i = StringHelper.first_letter_upper(i)
-		easing_types.append("#"+i)
-		if i == 'Linear': easing_types.append("Linear"); continue
-		for e in TweenHelper.easings: easing_types.append(i+e)
-
+		trans.append("#"+i)
+		if i == 'Linear': trans.append("Linear"); continue
+		for e in TweenService.easings: trans.append(i+e)
+	return trans
 ##Return the variables of the a custom_event using "@vars" in his text.[br]
 ##The function returns a [Dictionary] that contains an [Array] with its type and its default value.[br][br]
 ##[b]Example:[/b] [code]{"value1": [TYPE_STRING,''], "value2": [TYPE_FLOAT,0.0]}[/code]

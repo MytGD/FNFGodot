@@ -60,14 +60,14 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 				
 				sprite.addAnimOffset(anim_name,anim.get('offsets',Vector2.ZERO))
 			
-			if data.has('startingAnimation'):
-				sprite.animation.play(data.startingAnimation)
-			
-			
-			if data.get('danceEvery'):
+			var startAnim = data.get('startingAnimation')
+			if startAnim: sprite.animation.play(startAnim,true)
+
+			var danceEvery = data.get('danceEvery')
+			if danceEvery:
 				dance_sprites.append(
 					[
-						data.danceEvery,
+						danceEvery,
 						sprite,
 						sprite.animation.has_any_animations(['danceLeft','danceRight'])
 					]
@@ -155,10 +155,16 @@ static func convert_old_to_new(json: Dictionary):
 		new_json.characters.dad.cameraOffsets[1] += 100
 	
 	
-	for i in new_json.characters.values():
-		i.position[0] -= 180
-		i.position[1] -= 750
-	
+	var chars = new_json.characters
+	for i in chars:
+		var pos = chars[i].position
+		if i == 'gf':
+			pos[0] -= 280
+			pos[1] -= 700
+		else:
+			pos[0] -= 180
+			pos[1] -= 750
+		
 	new_json.cameraZoom = json.get('defaultZoom',new_json.cameraZoom)
 	new_json.cameraSpeed = json.get('camera_speed',new_json.cameraSpeed)
 	new_json.characters.bf.position = json.get('boyfriend',new_json.characters.bf.position)

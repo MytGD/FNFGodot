@@ -1,8 +1,8 @@
-extends Node2D
+extends Node
 
 const ModeSelect = preload("res://source/states/Menu/ModeSelect.gd")
 const AlphabetText = preload("res://source/objects/AlphabetText/AlphabetText.gd")
-
+const SolidSprite = preload("res://source/objects/Sprite/SolidSprite.gd")
 
 var introText: PackedStringArray = [
 	'A Engine made on \n#Godot',
@@ -17,7 +17,7 @@ var introTime: float = 0.0
 
 var alphaText: AlphabetText = AlphabetText.new()
 
-var flash: ColorRect = ColorRect.new()
+var flash: SolidSprite = SolidSprite.new()
 var flashTween: Tween
 
 var gfBeating: Sprite = Sprite.new('gfDanceTitle',true)
@@ -33,9 +33,13 @@ var menuState: int = 0
 var playIntroText: bool = true
 
 func _ready():
+	DiscordRPC.details = 'In Menu'
+	DiscordRPC.refresh()
+	
 	var bpm_data = Paths.loadJson('images/gfDanceTitle')
+	
 	FunkinGD.playSound(Paths.music('freakyMenu'),1,'freakyMenu',false,true)
-	flash.size = Vector2(ScreenUtils.screenWidth,ScreenUtils.screenHeight)
+	flash.scale = Vector2(ScreenUtils.screenWidth,ScreenUtils.screenHeight)
 	flash.modulate.a = 0
 	
 	alphaText.position = ScreenUtils.screenCenter
@@ -43,11 +47,17 @@ func _ready():
 	alphaText.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(alphaText)
 	
+	add_child(gfBeating)
+	
+	add_child(pressStart)
+	add_child(logoBomping)
+	add_child(flash)
 	logoBomping.animation.addAnimByPrefix('logo','logo bumpin')
 	logoBomping.visible = false
 	logoBomping._position = Vector2(bpm_data.get('titlex',-150),bpm_data.get('titley',-100))
 	logoBomping.name = 'logoBomping'
 	
+	gfBeating.image.texture = Paths.imageTexture('gfDanceTitle')
 	gfBeating.animation.addAnimByPrefix('danceLeft','gfDance',24,false,range(15))
 	gfBeating.animation.addAnimByPrefix('danceRight','gfDance',24,false,range(15,30))
 	gfBeating.visible = false
@@ -62,11 +72,6 @@ func _ready():
 	pressStart.visible = false
 	pressStart._position = Vector2(bpm_data.get('startx',100),bpm_data.get('starty',ScreenUtils.screenHeight - 150))
 	pressStart.name = 'pressStart'
-	
-	add_child(gfBeating)
-	add_child(pressStart)
-	add_child(logoBomping)
-	add_child(flash)
 	
 	Global.onSwapTree.connect(queue_free)
 	if not playIntroText: changeState(1)
@@ -88,7 +93,8 @@ func set_beat(newBeat: int):
 	logoBomping.animation.play('logo',true)
 	
 func _process(delta: float) -> void:
-	beat = FunkinGD.soundsPlaying.get('freakyMenu').get_playback_position()/(60.0/bpm)
+	var audio = FunkinGD.soundsPlaying.get('freakyMenu')
+	if audio: beat = audio.get_playback_position()/(60.0/bpm)
 	introTime += delta
 	match menuState:
 		0:
@@ -103,7 +109,7 @@ func _process(delta: float) -> void:
 					alphaText.text = text.substr(0,text.find('\n'))
 				else: alphaText.text = text
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton and event.button_index == 1 or event is InputEventKey and event.keycode == KEY_ENTER)\
 	 and event.pressed:
 		match menuState:

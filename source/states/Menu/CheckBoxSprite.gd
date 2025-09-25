@@ -35,7 +35,6 @@ var offset: Vector2 = Vector2.ZERO:
 		offset = value
 func _init():
 	super._init()
-	is_animated = true
 	image.texture = Paths.imageTexture('checkboxThingie')
 	animation.animation_finished.connect(func(anim):
 		if anim == 'selection': 

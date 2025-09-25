@@ -10,8 +10,8 @@ var curSection: String = ''
 
 var curText: int:
 	set(index):
-
 		var textSize = allTexts.size()-1
+
 		var audio = FunkinGD.playSound(Paths.sound('scrollMenu'))
 		audio.reparent(self)
 		if index < 0:
@@ -32,20 +32,17 @@ var scrolled: bool = false
 
 var rect = ColorRect.new()
 
-var lettersGroup: Node2D = Node2D.new()
+@onready var lettersGroup: Node2D = Node2D.new()
 func _init():
-	process_priority = 1
 	rect.color = Color.BLACK
 	rect.size = Vector2(ScreenUtils.screenWidth,ScreenUtils.screenHeight)
 	rect.color.a = 0.5
-	
 
-	
 func _ready():
 	name = 'PauseSubstate'
 	add_child(rect)
 	add_child(lettersGroup)
-	var textPause: Array[String] = [
+	var textPause: PackedStringArray = [
 		'Resume',
 		'Restart Song',
 		'Skip Song: 0:00/0:00',
@@ -53,27 +50,20 @@ func _ready():
 	]
 	for texts in textPause:
 		createText(texts)
-
 	curText = 0
-	
-	get_tree().create_timer(get_physics_process_delta_time()).timeout.connect(
-		func():
-			set_process(true)
-			set_process_input(true)
-	)
 	
 func createText(text: String):
 	var newAlphabet = AlphabetText.new(text)
 	newAlphabet.x = 100
 	newAlphabet.y = 250
 	newAlphabet.name = text
-	var tween = create_tween().chain()
+	var tween = create_tween().set_parallel(true)
 	tween.tween_property(newAlphabet,'x',newAlphabet.x + (50*allTexts.size()),0.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(newAlphabet,'y',newAlphabet.y + (150*allTexts.size()),0.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tween.tween_property(newAlphabet,'y',newAlphabet.y + (150*allTexts.size()),0.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	newAlphabet.modulate = Color.GRAY
 	lettersGroup.add_child(newAlphabet)
 	allTexts.append(newAlphabet)
-
+	
 func _process(_delta):
 	if curText != -1:
 		var textSprite = allTexts[curText]

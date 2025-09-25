@@ -1,4 +1,4 @@
-extends "res://source/objects/Sprite/SpriteAnimated.gd"
+extends SpriteAnimated
 const Note = preload("res://source/objects/Notes/Note.gd")
 
 static var keyCount: int = 4
@@ -44,8 +44,8 @@ var sustainLength: float = 0.0:
 
 
 func _init(direction: int = 0):
+	super._init()
 	add_child(image)
-	is_animated = true
 	image.region_enabled = true
 	image.centered = false
 	noteData = direction

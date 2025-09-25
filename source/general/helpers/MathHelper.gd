@@ -60,7 +60,17 @@ const indexable_types: Dictionary = {
 	TYPE_VECTOR3I: true,
 	TYPE_VECTOR4I: true
 }
-
+const math_types: Dictionary = {
+	TYPE_FLOAT: true,
+	TYPE_INT: true,
+	TYPE_VECTOR2: true,
+	TYPE_VECTOR3: true,
+	TYPE_VECTOR4: true,
+	TYPE_VECTOR2I: true,
+	TYPE_VECTOR3I: true,
+	TYPE_VECTOR4I: true,
+	TYPE_COLOR: true,
+}
 
 static func type_via_string(type: String) -> int:
 	return type_strings.get(type.to_lower(),TYPE_NIL)

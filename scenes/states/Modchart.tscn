@@ -1,0 +1,475 @@
+[gd_scene load_steps=9 format=3 uid="uid://dgigti34bmg6s"]
+
+[ext_resource type="Script" uid="uid://blf6ig37np2mt" path="res://source/states/Modchart/ModchartEditor.gd" id="1_2kx6s"]
+[ext_resource type="Texture2D" uid="uid://dshtfnk38km3v" path="res://icons/basic/Object.svg" id="1_vxf07"]
+[ext_resource type="Script" uid="uid://cg2ig10imhwri" path="res://source/states/PlayState.gd" id="2_2kx6s"]
+[ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_c5smy"]
+[ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/basic/Shader.svg" id="3_n2vt6"]
+[ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="5_n2vt6"]
+[ext_resource type="Script" uid="uid://bwuthavuunu4c" path="res://source/states/Modchart/Timeline.gd" id="7_rhtdg"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_vxf07"]
+viewport_path = NodePath("SubViewport")
+
+[node name="Modchart" type="Node"]
+script = ExtResource("1_2kx6s")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+size = Vector2i(1280, 720)
+
+[node name="PlayState" type="Node" parent="SubViewport"]
+script = ExtResource("2_2kx6s")
+canExitSong = false
+canPause = false
+canGameOver = false
+countDownEnabled = false
+
+[node name="VSplit" type="VSplitContainer" parent="."]
+offset_right = 1282.0
+offset_bottom = 719.0
+split_offset = 520
+
+[node name="HSplit" type="HSplitContainer" parent="VSplit"]
+layout_mode = 2
+split_offset = 300
+
+[node name="PanelContainer" type="TabContainer" parent="VSplit/HSplit"]
+clip_contents = true
+layout_mode = 2
+current_tab = 0
+
+[node name="Song Data" type="Panel" parent="VSplit/HSplit/PanelContainer"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="Label" type="Label" parent="VSplit/HSplit/PanelContainer/Song Data"]
+layout_mode = 0
+offset_top = -1.0
+offset_right = 300.0
+offset_bottom = 32.0
+text = "==========Song Info=============
+
+Song Name:
+
+Bpm:
+
+
+
+
+==========PlayState=============
+
+
+
+
+
+
+============Audio===============
+
+
+
+
+
+
+
+
+
+"
+clip_text = true
+
+[node name="Bpm" type="LineEdit" parent="VSplit/HSplit/PanelContainer/Song Data"]
+layout_mode = 0
+offset_left = 39.0
+offset_top = 68.0
+offset_right = 112.0
+offset_bottom = 91.0
+placeholder_text = "120.0"
+
+[node name="LoadJson" type="Button" parent="VSplit/HSplit/PanelContainer/Song Data"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 188.0
+offset_right = 189.0
+offset_bottom = 215.0
+focus_mode = 0
+text = "Load Json From File"
+
+[node name="Botplay" type="CheckButton" parent="VSplit/HSplit/PanelContainer/Song Data"]
+layout_mode = 0
+offset_top = 225.0
+offset_right = 114.0
+offset_bottom = 249.0
+focus_mode = 0
+text = "Botplay"
+
+[node name="HideHud" type="CheckButton" parent="VSplit/HSplit/PanelContainer/Song Data"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 259.0
+offset_right = 124.0
+offset_bottom = 283.0
+focus_mode = 0
+text = "Hide Hud"
+
+[node name="SelectSongs" type="Button" parent="VSplit/HSplit/PanelContainer/Song Data"]
+layout_mode = 0
+offset_top = 317.0
+offset_right = 121.0
+offset_bottom = 340.0
+text = "Select Songs"
+
+[node name="HSplit" type="HSplitContainer" parent="VSplit/HSplit"]
+layout_mode = 2
+split_offset = 600
+
+[node name="TextureRect" type="TextureRect" parent="VSplit/HSplit/HSplit"]
+layout_mode = 2
+texture = SubResource("ViewportTexture_vxf07")
+expand_mode = 1
+stretch_mode = 5
+metadata/_edit_lock_ = true
+
+[node name="Property" type="PanelContainer" parent="VSplit/HSplit/HSplit"]
+layout_mode = 2
+
+[node name="List" type="VBoxContainer" parent="VSplit/HSplit/HSplit/Property"]
+clip_contents = true
+layout_mode = 2
+theme_override_constants/separation = 34
+metadata/_edit_lock_ = true
+
+[node name="Title" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
+layout_mode = 2
+text = "=============Value Setter============="
+clip_text = true
+
+[node name="Value" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+layout_mode = 2
+text = "Value: "
+
+[node name="ValueBool" type="CheckBox" parent="VSplit/HSplit/HSplit/Property/List"]
+visible = false
+layout_mode = 2
+text = "Enabled"
+
+[node name="ValueX" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Value X:"
+
+[node name="ValueY" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Value Y: "
+
+[node name="ValueZ" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Value Z: "
+
+[node name="ValueW" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Value W: "
+
+[node name="initVal" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Init Value: "
+
+[node name="initValX" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Init Value X:"
+
+[node name="initValY" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Init Value Y: "
+
+[node name="initValZ" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Init Value Z: "
+
+[node name="initValW" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+visible = false
+layout_mode = 2
+text = "Init Value W:"
+
+[node name="TitleTween" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
+layout_mode = 2
+text = "=============Tween Options============"
+clip_text = true
+
+[node name="Duration" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Duration: "
+
+[node name="Transition" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
+layout_mode = 2
+text = "Transition:"
+
+[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/List/Transition"]
+layout_mode = 0
+offset_left = 103.0
+offset_top = -5.0
+offset_right = 207.0
+offset_bottom = 21.0
+flat = false
+
+[node name="Ease" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
+layout_mode = 2
+text = "Ease: "
+
+[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/List/Ease"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = -4.0
+offset_right = 116.0
+offset_bottom = 19.0
+text = "In"
+flat = false
+item_count = 4
+popup/item_0/text = "In"
+popup/item_0/id = 0
+popup/item_1/text = "Out"
+popup/item_1/id = 1
+popup/item_2/text = "InOut"
+popup/item_2/id = 2
+popup/item_3/text = "OutIn"
+popup/item_3/id = 3
+
+[node name="HSplitP" type="HSplitContainer" parent="VSplit"]
+layout_mode = 2
+split_offset = 140
+
+[node name="Panel" type="VBoxContainer" parent="VSplit/HSplitP"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="VSplit/HSplitP/Panel"]
+layout_mode = 2
+
+[node name="Object" type="Button" parent="VSplit/HSplitP/Panel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+focus_mode = 0
+text = "Obj+"
+icon = ExtResource("1_vxf07")
+alignment = 0
+
+[node name="Name" type="LineEdit" parent="VSplit/HSplitP/Panel/HBox/Object"]
+visible = false
+z_index = 2
+layout_mode = 1
+offset_left = 69.0
+offset_top = -1.0
+offset_right = 202.0
+offset_bottom = 26.0
+placeholder_text = "Object Name"
+
+[node name="ColorRect" type="ColorRect" parent="VSplit/HSplitP/Panel/HBox/Object/Name"]
+show_behind_parent = true
+layout_mode = 0
+offset_right = 133.0
+offset_bottom = 24.0
+color = Color(0.04755766, 0.047557645, 0.047557645, 1)
+metadata/_edit_lock_ = true
+
+[node name="Shader" type="Button" parent="VSplit/HSplitP/Panel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+focus_mode = 0
+text = "Mat+"
+icon = ExtResource("3_n2vt6")
+
+[node name="Panel" type="PanelContainer" parent="VSplit/HSplitP/Panel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Scroll" type="ScrollContainer" parent="VSplit/HSplitP/Panel/Panel"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="VSplit/HSplitP/Panel/Panel/Scroll"]
+layout_mode = 2
+
+[node name="HTimeline" type="VBoxContainer" parent="VSplit/HSplitP"]
+clip_contents = true
+layout_mode = 2
+
+[node name="Timeline" type="Panel" parent="VSplit/HSplitP/HTimeline"]
+texture_filter = 1
+custom_minimum_size = Vector2(48, 24)
+layout_mode = 2
+
+[node name="Time" type="Node2D" parent="VSplit/HSplitP/HTimeline/Timeline"]
+script = ExtResource("7_rhtdg")
+
+[node name="PositionLine" type="ColorRect" parent="VSplit/HSplitP/HTimeline/Timeline/Time"]
+z_index = 1
+offset_right = 9.0
+offset_bottom = 9.0
+rotation = 0.785398
+
+[node name="Line" type="Node2D" parent="VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine"]
+position = Vector2(0, 0.5)
+rotation = -0.785398
+scale = Vector2(1.035, 190)
+script = ExtResource("5_n2vt6")
+metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
+
+[node name="GridContainer" type="Panel" parent="VSplit/HSplitP/HTimeline"]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Panel" type="Node2D" parent="VSplit/HSplitP/HTimeline/GridContainer"]
+
+[node name="BG" type="Node2D" parent="."]
+visible = false
+modulate = Color(0, 0, 0, 0.584314)
+scale = Vector2(1280, 720)
+script = ExtResource("5_n2vt6")
+metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
+
+[node name="FileDialog" type="FileDialog" parent="."]
+title = "Open a File"
+position = Vector2i(320, 180)
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="."]
+title = "Alert"
+initial_position = 2
+size = Vector2i(541, 100)
+unresizable = true
+ok_button_text = "Confirm"
+dialog_text = "This will remove every shader in this section, you sure?"
+
+[node name="ShaderTab" type="Panel" parent="."]
+visible = false
+offset_left = 391.0
+offset_top = 196.0
+offset_right = 863.0
+offset_bottom = 422.0
+
+[node name="Label" type="Label" parent="ShaderTab"]
+layout_mode = 0
+offset_top = 1.0
+offset_right = 471.0
+offset_bottom = 228.0
+text = "                   Add Shader
+
+
+Shader File:
+
+Shader Tag:
+
+Objects:
+
+"
+metadata/_edit_lock_ = true
+
+[node name="Shaders" type="MenuButton" parent="ShaderTab"]
+layout_mode = 0
+offset_left = 114.0
+offset_top = 52.0
+offset_right = 279.0
+offset_bottom = 73.0
+flat = false
+
+[node name="SelectShader" type="Button" parent="ShaderTab"]
+layout_mode = 0
+offset_left = 288.0
+offset_top = 51.0
+offset_right = 465.0
+offset_bottom = 74.0
+text = "Selected from File"
+
+[node name="AddShader" type="Button" parent="ShaderTab"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 198.0
+offset_right = 187.0
+offset_bottom = 221.0
+focus_mode = 0
+text = "Add"
+
+[node name="Cancel" type="Button" parent="ShaderTab"]
+layout_mode = 0
+offset_left = 224.0
+offset_top = 196.0
+offset_right = 289.0
+offset_bottom = 219.0
+focus_mode = 0
+text = "Cancel"
+
+[node name="Objects" type="LineEdit" parent="ShaderTab"]
+layout_mode = 0
+offset_left = 78.0
+offset_top = 128.0
+offset_right = 312.0
+offset_bottom = 151.0
+placeholder_text = "camGame, camHUD, camOther"
+
+[node name="Tag" type="LineEdit" parent="ShaderTab"]
+layout_mode = 0
+offset_left = 109.0
+offset_top = 88.0
+offset_right = 261.0
+offset_bottom = 111.0
+
+[node name="PropertyOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+initial_position = 2
+size = Vector2i(133, 65)
+item_count = 2
+item_0/text = "Add Property"
+item_0/id = 1
+item_1/text = "Delete"
+item_1/id = 0
+
+[node name="KeyOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+initial_position = 1
+size = Vector2i(77, 27)
+item_count = 1
+item_0/text = "Delete"
+item_0/id = 0
+
+[node name="PropertyName" type="LineEdit" parent="."]
+offset_top = -47.0
+offset_right = 137.0
+offset_bottom = -24.0
+placeholder_text = "Property Name"
+
+[connection signal="pressed" from="VSplit/HSplit/PanelContainer/Song Data/LoadJson" to="." method="load_json"]
+[connection signal="toggled" from="VSplit/HSplit/PanelContainer/Song Data/Botplay" to="SubViewport/PlayState" method="_set_botplay"]
+[connection signal="toggled" from="VSplit/HSplit/PanelContainer/Song Data/HideHud" to="SubViewport/PlayState" method="_set_hide_hud"]
+[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/Value" to="." method="set_keys_value"]
+[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initVal" to="." method="set_keys_init_value"]
+[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initValX" to="." method="set_keys_init_value_index" binds= ["x"]]
+[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initValY" to="." method="set_keys_init_value_index" binds= ["y"]]
+[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initValZ" to="." method="set_keys_init_value_index" binds= ["z"]]
+[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initValW" to="." method="set_keys_init_value_index" binds= ["w"]]
+[connection signal="value_added" from="VSplit/HSplit/HSplit/Property/List/Duration" to="." method="add_keys_duration"]
+[connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="grab_focus"]
+[connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="show"]
+[connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="set_text" binds= [""]]
+[connection signal="text_submitted" from="VSplit/HSplitP/Panel/HBox/Object/Name" to="." method="object_submitted"]
+[connection signal="pressed" from="VSplit/HSplitP/Panel/HBox/Shader" to="BG" method="show"]
+[connection signal="pressed" from="VSplit/HSplitP/Panel/HBox/Shader" to="ShaderTab" method="show"]
+[connection signal="resized" from="VSplit/HSplitP/Panel/Panel/Scroll/VBox" to="." method="updateAllGrids"]
+[connection signal="gui_input" from="VSplit/HSplitP/HTimeline/Timeline" to="." method="timeline_input"]
+[connection signal="pressed" from="ShaderTab/SelectShader" to="." method="_on_select_shader_pressed"]
+[connection signal="pressed" from="ShaderTab/AddShader" to="." method="addShader"]
+[connection signal="pressed" from="ShaderTab/AddShader" to="BG" method="hide"]
+[connection signal="pressed" from="ShaderTab/AddShader" to="ShaderTab" method="hide"]
+[connection signal="pressed" from="ShaderTab/Cancel" to="BG" method="hide"]
+[connection signal="pressed" from="ShaderTab/Cancel" to="ShaderTab" method="hide"]
+[connection signal="index_pressed" from="PropertyOptions" to="." method="grid_options_menu_pressed"]
+[connection signal="index_pressed" from="KeyOptions" to="." method="key_options_menu_pressed"]
+[connection signal="text_submitted" from="PropertyName" to="." method="property_submitted"]

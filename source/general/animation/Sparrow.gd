@@ -8,7 +8,6 @@ const frameSize = StringName('frameSize')
 const pivot = StringName('pivot_offset')
 const position = StringName('position')
 
-
 const deg_90 = deg_to_rad(-90)
 
 ##Load the data from the xml file, [param file] have to be the EXACT LOCATION.[br][br]

@@ -1,4 +1,5 @@
 extends Node
+const Song = preload("res://source/backend/Song.gd")
 const AlphabetText = preload("res://source/objects/AlphabetText/AlphabetText.gd")
 const SpriteAnimated = preload("res://source/objects/Sprite/SpriteAnimated.gd")
 const BarSize = 70
@@ -240,16 +241,15 @@ func setSongSelected(selected: int = 0, play_sound: bool = true):
 	
 	if play_sound: FunkinGD.playSound(Paths.sound('scrollMenu'))
 	
-func load_game(song_name: StringName, difficulty: StringName, songFolder: StringName = '', json_name: StringName = '', audio_suffix: StringName = ''):
-	Conductor.audioSuffix = audio_suffix
+func load_game(song_name: String, difficulty: String, songFolder: String = '', json_name: String = '', audio_suffix: String = ''):
 	Global.swapTree(PlayState.new(song_name,difficulty),true)
 	tweenStarted = true
 	if !songFolder: return
-	Conductor.songs_dir[song_name] = {
+	Song.songs_dir[song_name] = {
 		difficulty: {
 			'folder': songFolder,
 			'json': json_name,
-			'audio_suffix': audio_suffix
+			'audioSuffix': audio_suffix
 		}
 	}
 
@@ -311,7 +311,7 @@ func createDifficulty():
 func setDifficulty(id: int = curDifficulty):
 	
 	if !cur_song_data: return
-	if !isSettingDifficulty:  createDifficulty()
+	if !isSettingDifficulty: createDifficulty()
 	
 	
 	if id < 0: id = cur_song_difficulties.size()-1
@@ -324,12 +324,10 @@ func setDifficulty(id: int = curDifficulty):
 	
 	var path = Paths.imagePath('menudifficulties/'+difficulty.to_lower())
 	
-	
-	
-	
 	var sprite_reference = difficultySprite
 	
 	var is_text: bool = !path
+	
 	if is_text: 
 		difficultySprite.image.texture = null
 		sprite_reference = difficultyText
@@ -344,8 +342,7 @@ func setDifficulty(id: int = curDifficulty):
 		else:
 			difficultySprite.is_animated = false
 			difficultySprite.image.texture = Paths.imageTexture(path)
-		
-		
+	
 	var difWidth = sprite_reference.pivot_offset.x*2*sprite_reference.scale.x
 	
 	

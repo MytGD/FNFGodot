@@ -152,7 +152,6 @@ func findChildRange(node: Node) -> Node:
 func connect_class_to_value(option_data: Array, _signal: Signal):
 	var _class = option_data[1]
 	if _class is Object and _class.has_method(option_data[1]):
-		print(option_data[1])
 		_signal.connect(func(value):
 			_class.call(option_data[1],value)
 		)
