@@ -50,7 +50,7 @@ layout_mode = 2
 focus_mode = 2
 mouse_filter = 0
 mouse_force_pass_scroll_events = false
-scroll_vertical = 100
+scroll_vertical = 210
 metadata/_tab_index = 0
 
 [node name="Container" type="VBoxContainer" parent="TabContainer/Animation Data"]
@@ -63,8 +63,7 @@ custom_minimum_size = Vector2(0, 700)
 layout_mode = 2
 focus_mode = 2
 mouse_filter = 0
-text = "
-======OFFSET DATA======
+text = "======OFFSET DATA======
 
 
 
@@ -92,17 +91,16 @@ Name:"
 autowrap_mode = 3
 
 [node name="LoopFrom" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
-custom_minimum_size = Vector2(284, 40)
 layout_mode = 0
-offset_left = 3.0
-offset_top = 301.0
-offset_right = 287.0
-offset_bottom = 341.0
+offset_left = 1.0
+offset_top = 292.0
+offset_right = 95.0
+offset_bottom = 307.0
 text = "Loop From:"
 int_value = true
 
 [node name="Offset Follow Flip" type="CheckBox" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = -2.0
 offset_top = 32.0
 offset_right = 205.0
@@ -112,7 +110,7 @@ focus_mode = 0
 text = "Offset follows flip"
 
 [node name="Offset Follow Scale" type="CheckBox" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = -1.0
 offset_top = 68.0
 offset_right = 140.0
@@ -122,21 +120,21 @@ focus_mode = 0
 text = "Follow Scale"
 
 [node name="Prefix" type="LineEdit" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 65.0
-offset_top = 211.0
+offset_top = 187.0
 offset_right = 276.0
-offset_bottom = 242.0
+offset_bottom = 218.0
 focus_mode = 1
 clear_button_enabled = true
 draw_control_chars = true
 
 [node name="Indices" type="LineEdit" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 78.0
-offset_top = 263.0
+offset_top = 239.0
 offset_right = 286.0
-offset_bottom = 294.0
+offset_bottom = 270.0
 focus_mode = 1
 mouse_filter = 1
 mouse_force_pass_scroll_events = false
@@ -146,24 +144,24 @@ deselect_on_focus_loss_enabled = false
 drag_and_drop_selection_enabled = false
 
 [node name="Looped" type="CheckBox" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
-offset_left = 284.0
-offset_top = 309.0
-offset_right = 370.0
-offset_bottom = 340.0
+layout_mode = 0
+offset_left = 299.0
+offset_top = 280.0
+offset_right = 385.0
+offset_bottom = 311.0
 focus_mode = 0
 text = "Loop"
 
 [node name="AnimationList" type="MenuButton" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 136.0
-offset_top = 156.0
+offset_top = 132.0
 offset_right = 269.0
-offset_bottom = 183.0
+offset_bottom = 159.0
 flat = false
 
 [node name="Sing Animation Follow Flip" type="CheckBox" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 223.0
 offset_top = 34.0
 offset_right = 495.0
@@ -173,85 +171,82 @@ focus_mode = 0
 text = "Sing Animation Follow Flip"
 
 [node name="PrefixList" type="MenuButton" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 284.0
-offset_top = 208.0
+offset_top = 184.0
 offset_right = 396.0
-offset_bottom = 239.0
+offset_bottom = 215.0
 text = "Prefix List"
 flat = false
 
 [node name="AssetPath" type="LineEdit" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 359.0
-offset_top = 153.0
+offset_top = 129.0
 offset_right = 558.0
-offset_bottom = 184.0
+offset_bottom = 160.0
 
 [node name="Insert Animation Name" type="LineEdit" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 49.0
-offset_top = 441.0
+offset_top = 425.0
 offset_right = 202.0
-offset_bottom = 472.0
+offset_bottom = 456.0
 focus_mode = 1
 mouse_force_pass_scroll_events = false
 placeholder_text = "Animation Name"
 
 [node name="Add Animation" type="Button" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 207.0
-offset_top = 441.0
+offset_top = 425.0
 offset_right = 337.0
-offset_bottom = 472.0
+offset_bottom = 456.0
 focus_mode = 0
 text = "Add Animation"
 
 [node name="Remove Animation" type="Button" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 347.0
-offset_top = 439.0
+offset_top = 423.0
 offset_right = 505.0
-offset_bottom = 470.0
+offset_bottom = 454.0
 focus_mode = 0
 text = "Remove Animation"
 
 [node name="Replay Animation" type="Button" parent="TabContainer/Animation Data/Container/Label"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 512.0
-offset_top = 440.0
+offset_top = 424.0
 offset_right = 593.0
-offset_bottom = 471.0
+offset_bottom = 455.0
 focus_mode = 0
 text = "Replay"
 
 [node name="anim_offset_x" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
-custom_minimum_size = Vector2(275, 40)
-layout_mode = 2
+layout_mode = 0
 offset_left = 5.0
-offset_top = 350.0
-offset_right = 280.0
-offset_bottom = 390.0
+offset_top = 342.0
+offset_right = 90.0
+offset_bottom = 357.0
 text = "Offset X:"
 shift_value = 10.0
 
 [node name="anim_offset_y" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
-custom_minimum_size = Vector2(275, 40)
-layout_mode = 2
+layout_mode = 0
 offset_left = 288.0
 offset_top = 350.0
-offset_right = 563.0
-offset_bottom = 390.0
+offset_right = 373.0
+offset_bottom = 365.0
 text = "Offset Y:"
 shift_value = 10.0
 
 [node name="FrameRate" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
-custom_minimum_size = Vector2(228, 40)
-layout_mode = 2
-offset_left = 297.0
-offset_top = 257.0
-offset_right = 525.0
-offset_bottom = 297.0
+layout_mode = 0
+offset_left = 295.0
+offset_top = 249.0
+offset_right = 333.0
+offset_bottom = 264.0
 text = "FPS:"
 shift_value = 10.0
 
@@ -271,7 +266,7 @@ text = "Image File:"
 
 [node name="scale" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
 custom_minimum_size = Vector2(247, 40)
-layout_mode = 2
+layout_mode = 0
 offset_left = 4.0
 offset_top = 64.0
 offset_right = 251.0
@@ -432,7 +427,7 @@ offset_bottom = 218.0
 layout_mode = 0
 offset_top = 17.0
 offset_right = 150.0
-offset_bottom = 231.0
+offset_bottom = 219.0
 text = "Character:
 
 
@@ -449,6 +444,7 @@ shortcut_feedback = false
 shortcut_in_tooltip = false
 text = "bf"
 flat = false
+clip_text = true
 
 [node name="Save Character" type="Button" parent="CharacterData"]
 layout_mode = 0
@@ -507,7 +503,7 @@ button_pressed = true
 text = "Is GF Character"
 
 [node name="AnimationGhost" type="MenuButton" parent="CharacterData"]
-layout_mode = 2
+layout_mode = 0
 offset_left = 154.0
 offset_top = 63.0
 offset_right = 296.0

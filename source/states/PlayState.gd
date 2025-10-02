@@ -176,10 +176,11 @@ func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 func noteMiss(note: Note, character: Variant = getCharacterNote(note)):
 	if character: character.animation.play(singAnimations[note.noteData]+'miss',true)
 	super.noteMiss(note,character)
-	
-func moveCamera(target: StringName = 'boyfriend') -> void:
-	camFollow = getCameraPos(get(target))
-	super.moveCamera(target)
+
+#Set in scripts/cameraMoviment.gd in game's folder.
+#func moveCamera(target: StringName = 'boyfriend') -> void:
+	#camFollow = getCameraPos(get(target)) 
+	#super.moveCamera(target)
 
 func screenBeat() -> void:
 	camGame.zoom += 0.015
@@ -203,18 +204,19 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 	set(char_name,newCharacter)
 	
 	if character_obj:
-		var anim_to_play = character_obj.animation.current_animation
-		if newCharacter.animation.has_animation(anim_to_play): newCharacter.animation.play(anim_to_play)
-		
-		newCharacter.dance()
+		var char_anim = character_obj.animation
+		if newCharacter.animation.has_animation(char_anim.current_animation): 
+			newCharacter.animation.play(char_anim.current_animation)
+			newCharacter.animation.curAnim.curFrame = char_anim.curAnim.curFrame
+		else: newCharacter.dance()
 		
 		newCharacter.material = character_obj.material
 		character_obj.material = null
 		
 		character_obj.visible = false
 		character_obj.process_mode = PROCESS_MODE_DISABLED
-	
-	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
+	else:
+		newCharacter.dance()
 	match type:
 		0:
 			iconP1.reloadIconFromCharacterJson(newCharacter.json)
@@ -222,9 +224,12 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 		1:
 			healthBar.set_colors(newCharacter.healthBarColors)
 			iconP2.reloadIconFromCharacterJson(newCharacter.json)
+	updateIconsImage(healthBar_State)
 	
+	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
 	updateIconsPivot()
 	if !isCameraOnForcedPos and detectSection() == char_name: moveCamera(char_name)
+	
 	return newCharacter
 
 func clear():

@@ -1,4 +1,4 @@
-class_name Paths
+class_name Paths extends Object
 const game_name = "Friday Night Funkin'"
 const AnimationService = preload("res://source/general/animation/AnimationService.gd")
 const Character = preload("res://source/objects/Sprite/Character.gd")
@@ -8,11 +8,14 @@ static var is_on_mobile: bool = false
 static var curDevice: String = OS.get_name()
 static var is_system_case_sensitive: bool = curDevice in ['macOS','Linux',"FreeBSD", "NetBSD", "OpenBSD", "BSD"]
 
-static var exePath: StringName
+static var exePath: StringName = get_exe_path()
 static var savePath: StringName = 'res:/'
-static var enableMods: bool = true
+static var enableMods: bool = true:
+	set(value):
+		enableMods = value
+		updateDirectories()
 
-static var modsFounded: Dictionary = {}
+static var modsFounded: Dictionary[String,Dictionary] = {}
 static var modsEnabled: PackedStringArray = []
 static var textFiles: Dictionary = {}
 
@@ -63,6 +66,8 @@ static var fontsCreated: Dictionary[String,FontFile] = {}
 static var shadersCreated: Dictionary[String,Material] = {}
 static var shadersCodes: Dictionary[String,Shader] = {}
 
+static var jsonsLoaded: Dictionary[String,Dictionary] = {}
+
 static var modelsCreated: Dictionary[String,Object] = {}
 const model_formats: PackedStringArray = ['.tres','.glb']
 
@@ -75,12 +80,12 @@ static var searchAllMods: bool = false:
 
 static func get_exe_path() -> String:
 	match curDevice:
-		"Android": OS.request_permissions(); return '/storage/emulated/0/.FunkinGD'
+		"Android": return '/storage/emulated/0/.FunkinGD'
 		_: return OS.get_executable_path().get_base_dir()
 		
 static func _init() -> void:
-	exePath = get_exe_path()
 	is_on_mobile = curDevice == 'Android' or curDevice == 'iOs'
+	if is_on_mobile: OS.request_permissions()
 	replace_paths[0] = exePath+'/'
 	replace_paths.make_read_only()
 	
@@ -88,28 +93,23 @@ static func _init() -> void:
 	modsEnabled = getRunningMods()
 	updateDirectories()
 
-static func updateDirectories() -> void:
+static func updateDirectories():
 	_files_directories_cache.clear()
 	_dir_exists_cache.clear()
 	dirsToSearch.clear()
-	dirsToSearch.append('')
 	
 	var new_dirs: PackedStringArray
 	if enableMods:
-		var array_mods: PackedStringArray
-		if searchAllMods: array_mods = modsFounded.keys()
-		else: array_mods = getRunningMods()
-		for i in array_mods: 
-			new_dirs.append(exePath+'/mods/'+i+'/')
+		for i in (modsFounded if searchAllMods else getRunningMods()): new_dirs.append(exePath+'/mods/'+i+'/')
 		new_dirs.append(exePath+'/mods/')
 	
 	new_dirs.append(exePath+'/assets/')
 	new_dirs.append('res://assets/')
 	
-	
-	for i in new_dirs:
+	for i in new_dirs: 
 		if extraDirectory: dirsToSearch.append(i+extraDirectory+'/')
 		dirsToSearch.append(i)
+	
 static func detectMods() -> void:
 	modsFounded.clear()
 	for mods in DirAccess.get_directories_at(exePath+'/mods'):
@@ -122,8 +122,9 @@ static func detectMods() -> void:
 			"description": "nothing"
 		}
 		#Check if the mod have "pack.json" data
-		if file_exists(exePath+'/mods/'+mods+'/pack.json'):
-			modpack.merge(loadJson(exePath+'/'+mods+'/pack.json'),true)
+		var _real_path = exePath+'/mods/'+mods+'/pack.json'
+		if file_exists(_real_path):
+			modpack.merge(JSON.parse_string(FileAccess.get_file_as_string(_real_path)),true)
 		
 		if !modpack.get('name') or modpack.name.to_lower() == 'name': modpack.name = mods
 		
@@ -147,14 +148,14 @@ static func detectFileFolder(path: String, case_sensive: bool = false) -> String
 				var full_path: String = dir_path+'/'+file
 				_files_directories_cache[path] = full_path
 				return full_path
-	else:
-		if FileAccess.file_exists(path): 
-			_files_directories_cache[path] = path
-			return path
-		
-		for d in dirsToSearch:
-			var curPath: String = d+path
-			if !FileAccess.file_exists(curPath): continue
+		return ''
+	
+	if FileAccess.file_exists(path): 
+		_files_directories_cache[path] = path
+		return path
+	for d in dirsToSearch:
+		var curPath: String = d+path
+		if FileAccess.file_exists(curPath):
 			_files_directories_cache[path] = curPath
 			return curPath
 	return ''
@@ -436,6 +437,7 @@ static func clearFiles() -> void:
 	soundsCreated.clear()
 	imagesTextures.clear()
 	imagesCreated.clear()
+	jsonsLoaded.clear()
 	clearLocalFiles()
 	AnimationService._clearAnims()
 	
@@ -557,10 +559,17 @@ static func get_dir(dir: String):
 	
 static func file_exists(path: String) -> bool: 
 	return !!detectFileFolder(path)
-	
-static func loadJson(path: String) -> Dictionary:
+
+##Returns the json file from [param path].[br]
+##Obs: If [param duplicate], this will returns a duplicated json, 
+##making it possible to modify without damaging the original json
+static func loadJson(path: String, duplicate: bool = true) -> Dictionary:
 	if not path.ends_with('.json'): path += '.json'
-	path = detectFileFolder(path)
-	if not path: return {}
-	var jsonParse = JSON.parse_string(FileAccess.get_file_as_string(path))
-	return jsonParse if jsonParse else {}
+	var json = jsonsLoaded.get(path)
+	if json == null: 
+		var absolute_path = detectFileFolder(path)
+		if not absolute_path: return {}
+		json = JSON.parse_string(FileAccess.get_file_as_string(absolute_path))
+		if json == null: return {}
+		jsonsLoaded[path] = json
+	return json.duplicate(true) if duplicate else json

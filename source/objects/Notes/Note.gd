@@ -4,11 +4,16 @@
 ##The Note Base Class
 extends "res://source/objects/Sprite/Sprite.gd"
 
+
+
 const NoteSplash = preload("res://source/objects/Notes/NoteSplash.gd")
 const Note = preload("res://source/objects/Notes/Note.gd")
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
+
+const directions: PackedStringArray = ['left','down','up','right']
 const note_colors: PackedStringArray = ['Purple','Blue','Green','Red']
-const _rating_string: Array = ['marvellous','sick','good','bad','shit']
+const _rating_string: PackedStringArray = ['marvellous','sick','good','bad','shit']
+
 const _ratings_length: int = 4 #The same as _rating_string.size()
 
 const key_actions: Array[PackedStringArray] = [
@@ -20,24 +25,14 @@ const key_actions: Array[PackedStringArray] = [
 	["note_left","note_down","note_center","note_up","note_right"],
 ]
 static var _rating_offset: Array[float] = [-1.0,45.0,130.0,150.0]
+
+static var noteStylesLoaded: Dictionary = {}
+
 static var miraculousRating: bool = false
 
 ##The Note prefix, allowing to changing the name of the xml to add animations to the note.
-const prefix: Dictionary = {
-	'purpleStatic': 'purple0',
-	'blueStatic': 'blue0',
-	'greenStatic': 'green0',
-	'redStatic': 'red0',
-	'purpleHold': 'purple hold piece0',
-	'blueHold': 'blue hold piece0',
-	'greenHold': 'green hold piece0',
-	'redHold': 'red hold piece0',
-	'purpleHoldEnd': 'pruple end hold',
-	'blueHoldEnd': 'blue hold end',
-	'greenHoldEnd': 'green hold end',
-	'redHoldEnd': 'red hold end',
-}
-const directions: PackedStringArray = ['left','down','up','right']
+var styleData: Dictionary
+var styleName: String
 
 ##If [code]true[/code], the note will follow the x position from his [member strum].
 var copyX: bool = true 
@@ -154,25 +149,12 @@ var noteSplashData: Dictionary = {
 	'parent': null
 }
 
-
 func _init(data: int = 0) -> void:
 	noteData = data
 	_load_data()
 	super._init(null,true)
-	"""
-	rgbShader.r = ClientPrefs.data.arrowRGB[noteData][0]
-	rgbShader.g = ClientPrefs.data.arrowRGB[noteData][1]
-	rgbShader.b = ClientPrefs.data.arrowRGB[noteData][2]
-	rgbShader.a = alpha
-	shader = rgbShader
-	image.material = rgbShader
-	
-	noteSplashData.r = rgbShader.r
-	noteSplashData.g = rgbShader.g
-	noteSplashData.b = rgbShader.b
-	"""
 	_update_note_speed()
-		
+
 ##Update Note Position
 func updateNote() -> void:
 	distance = getNoteDistance()
@@ -211,32 +193,37 @@ func reloadNote() -> void: ##Reload Note Texture
 	animation.clearLibrary()
 	_animOffsets.clear()
 	offset = Vector2.ZERO
-	if !isPixelNote:
-		animation.addAnimByPrefix('static',prefix.get(noteColor.to_lower()+'Static'),24,true)
-		setGraphicScale(Vector2(0.7,0.7))
+	
+	var prefix = styleData.data.get(directions[noteData])
+	if prefix:
+		animation.addAnimByPrefix('static',prefix.prefix,prefix.get('fps',24.0),true)
 	else:
 		image.region_rect.size = imageSize/Vector2(Conductor.keyCount,5)
-		animation.addFrameAnim('static',[noteData + Conductor.keyCount])
-		setGraphicScale(Vector2(6,6))
+		animation.addFrameAnim('static',[noteData])
+		
+	var note_scale = styleData.get('scale',0.7)
+	setGraphicScale(Vector2(note_scale,note_scale))
+
+func loadFromStyle(noteStyle: String):
+	styleName = noteStyle
+	styleData = getStyleData(noteStyle)
+	if !styleData: return
+	isPixelNote = styleData.get('isPixel',false)
+	texture = styleData.assetPath
 
 func killNote():
 	_is_processing = false
 	kill()
 
 func setPixelNote(isPixel: bool) -> void:
-	if isPixel == isPixelNote: return
-	
 	antialiasing = !isPixel
 	isPixelNote = isPixel
-	setTexture(texture)
 
 func setTexture(_new_texture: String):
 	var real_tex = getNoteTexture(_new_texture, isPixelNote)
-	
 	if _real_texture == real_tex: return
 	_real_texture = real_tex
 	texture = _new_texture
-	
 	
 	image.texture = Paths.imageTexture(real_tex)
 	reloadNote()
@@ -252,6 +239,9 @@ func _load_data() -> void:
 func _update_note_speed() -> void: _real_note_speed = noteSpeed * 0.45 * multSpeed
 
 #region Statics Funcs
+static func getStyleData(style: String):
+	return Paths.loadJson('data/notestyles/'+style).get('notes',{})
+	
 static func getNoteTexture(_texture: String, is_pixel: bool = false) -> String:
 	if !_texture: _texture = 'noteSkins/NOTE_assets'
 	if is_pixel and not _texture.begins_with('pixelUI/'): return 'pixelUI/'+_texture

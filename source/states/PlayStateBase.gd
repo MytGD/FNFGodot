@@ -23,25 +23,16 @@ const game_events: Array = [
 	'Change Stage',
 	'Alt Idle Animation'
 ]
-
+enum IconState{
+	NORMAL,
+	LOSING,
+	WINNING
+}
 @export_group('Stage')
 var stageJson: Dictionary = Stage.getStageBase()
+var curStage: StringName = ''
 
-@export_group('Objects')
-const Icon := preload("res://source/objects/UI/Icon.gd")
 
-var iconP1: Icon = Icon.new()
-var iconP2: Icon = Icon.new()
-var icons: Array[Icon] = [iconP1,iconP2]
-
-var scoreTxt = GDText.new()
-
-var healthBar: Bar = Bar.new('healthBar')
-var health: float: set = set_health
-var healthBar_State: int = 0
-
-var timeBar: Bar
-var timeTxt: GDText
 
 @export_group('Camera')
 var camHUD: CameraCanvas = CameraCanvas.new()
@@ -62,6 +53,8 @@ var defaultCamZoom: float = 1.0
 @export var canPause: bool = true
 @export var canGameOver: bool = true
 
+var camZooming: bool = false##If [code]true[/code], the camera make a beat effect every [member bumpStrumBeat] beats and the zoom will back automatically.
+
 @export_subgroup('Events')
 var eventNotes: Array[Dictionary] = []
 @export var generateEvents: bool = true
@@ -70,6 +63,8 @@ var eventNotes: Array[Dictionary] = []
 @export var countDownEnabled: bool = true
 @export var countSounds = ['introTHREE','introTWO','introONE','introGO']
 @export var countDownImages = ['','ready','set','go']
+var _countdown_started: bool = false
+var skipCountdown: bool = false
 
 @export_group("Hud Elements")
 @export var hideHud: bool = ClientPrefs.data.hideHud: set = _set_hide_hud
@@ -81,31 +76,41 @@ var onPause: bool = false
 
 var inGameOver: bool = false
 
-var isStoryMode: bool = false
+@export_group('Objects')
+const Icon := preload("res://source/objects/UI/Icon.gd")
+
+var iconP1: Icon = Icon.new()
+var iconP2: Icon = Icon.new()
+var icons: Array[Icon] = [iconP1,iconP2]
+
+var scoreTxt = GDText.new()
+
+var healthBar: Bar = Bar.new('healthBar')
+var health: float: set = set_health
+var healthBar_State: IconState = IconState.NORMAL
+
+var timeBar: Bar
+var timeTxt: GDText
 
 @export_category('Story Mode')
 var story_song_notes: Dictionary = {}
 var story_songs: PackedStringArray = []
+var isStoryMode: bool = false
 
-var _countdown_started: bool = false
-var skipCountdown: bool = false
+@export_category("Song Data")
+var isSongStarted: bool = false
+var songName: StringName = ''
 
+@export_category("Cutscene")
+var seenCutscene: bool = false
+var skipCutscene: bool = true
+var inCutscene: bool = false
+var videoPlayer: VideoStreamPlayer
 
 var introSoundsSuffix: StringName = ''
 
 var altSection: bool = false
 
-var curStage: StringName = ''
-var songName: StringName = ''
-
-var seenCutscene: bool = false
-var skipCutscene: bool = true
-
-var inCutscene: bool = false
-
-var videoPlayer: VideoStreamPlayer
-
-var camZooming: bool = false##If [code]true[/code], the camera make a beat effect every [member bumpStrumBeat] beats and the zoom will back automatically.
 
 func _ready():
 	Global.onSwapTree.connect(destroy)
@@ -225,8 +230,7 @@ func updateTimeBar():
 	
 	songMinutes = str(songMinutes)
 	songSeconds = str(songSeconds)
-	if songMinutes.length() <= 1:
-		songMinutes = '0'+songMinutes
+	if songMinutes.length() <= 1: songMinutes = '0'+songMinutes
 	
 	if songSeconds.length() <= 1: songSeconds = '0'+songSeconds
 	
@@ -293,6 +297,20 @@ func iconBeat() -> void:
 	if !can_process(): return #Do not beat if the game is not being processed.
 	for i in icons: i.scale += i.beat_value
 
+func updateIconsImage(state: IconState):
+	match state:
+		IconState.NORMAL:
+			iconP1.animation.play('normal')
+			iconP2.animation.play('normal')
+		IconState.LOSING:
+			if iconP2.hasWinningIcon: iconP2.animation.play('winning')
+			else: iconP2.animation.play('normal')
+			iconP1.animation.play('losing')
+		IconState.WINNING:
+			if iconP1.hasWinningIcon: iconP1.animation.play('winning')
+			else: iconP1.animation.play('normal')
+			iconP2.animation.play('losing')
+			
 ##Do screen beat effect.
 func screenBeat() -> void: #Used also in "states/PlayState"
 	camHUD.zoom += 0.03
@@ -356,13 +374,19 @@ func hitNote(note: Note, character: Variant = null) -> void:
 	#Add Health if the note is from the player
 	if !note.mustPress: camZooming = true
 	if note.mustPress != playAsOpponent: health += note.hitHealth * note.ratingMod 
-		
+	
+	var audio: AudioStreamPlayer = Conductor.get_node_or_null("Voice" if note.mustPress else "OpponentVoice")
+	if audio: audio.volume_db = 0
+	
 	FunkinGD.callOnScripts('goodNoteHit' if note.mustPress else 'opponentNoteHit',[note])
 	FunkinGD.callOnScripts('hitNote',[note,character])
 
 func noteMiss(note, character: Variant = null) -> void:
 	health -= note.missHealth
 	FunkinGD.callOnScripts('onNoteMiss',[note, character])
+	
+	var audio: AudioStreamPlayer = Conductor.get_node_or_null("Voice" if note.mustPress else "OpponentVoice")
+	if audio: audio.volume_db = -80
 	super.noteMiss(note)
 #endregion
 
@@ -435,10 +459,12 @@ func loadEventsScripts():
 func startSong():
 	super.startSong()
 	if Conductor.songs: Conductor.songs[0].finished.connect(endSound)
+	isSongStarted = true
 	FunkinGD.callOnScripts('onSongStart')
 	
+	
 func resumeSong() -> void:
-	Conductor.resumeSongs()
+	if isSongStarted: Conductor.resumeSongs()
 	generateMusic = true
 	process_mode = PROCESS_MODE_INHERIT
 	onPause = false
@@ -532,7 +558,8 @@ func reloadPlayState():
 	
 	Global.onSwapTree.disconnect(destroy)
 	Global.onSwapTree.connect(func():
-		for vars in ['seenCutscene','playAsOpponent','noteTypesFounded',]: state[vars] = get(vars)
+		for vars in ['seenCutscene','playAsOpponent','noteTypesFounded']: 
+			state[vars] = get(vars)
 		destroy(false)
 	)
 #endregion
@@ -613,6 +640,7 @@ func destroy(absolute: bool = true):
 	
 	camHUD.removeFilters()
 	camOther.removeFilters()
+	Paths.clearLocalFiles()
 	super.destroy(absolute)
 	
 
@@ -657,6 +685,7 @@ func detectSection() -> StringName:
 
 #Replaced in PlayState and PlayState3D
 func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
+	updateIconsImage(healthBar_State)
 	return
 
 func onSectionHitOnce():
@@ -709,34 +738,23 @@ func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
 #region Health Methods
 func set_health(value: float):
 	value = clamp(value,-1.0,2.0)
-	if health == value: return
+	#if health == value: return
 	health = value
+	
 	if isGameOverEnabled(): gameOver(); return
 	
 	var progress_h = value/2.0
 	healthBar.progress = progress_h if playAsOpponent else 1.0 - progress_h
 	
-	var bar_state = healthBar_State
-	if progress_h >= 1.7: bar_state = 2
-	elif progress_h <= 0.3: bar_state = 0
-	else: bar_state = 1
+	var bar_state = 0.0
+	if progress_h >= 0.7: bar_state = IconState.WINNING
+	elif progress_h <= 0.3: bar_state = IconState.LOSING
+	else: bar_state = IconState.NORMAL
 	
-	if bar_state == bar_state:return
-	healthBar_State = bar_state
-	
-	match bar_state:
-		0:
-			iconP1.animation.play('normal')
-			iconP2.animation.play('normal')
-		1:
-			if iconP2.hasWinningIcon: iconP2.animation.play('winning')
-			else: iconP2.animation.play('normal')
-			iconP1.animation.play('losing')
-		2:
-			if iconP1.hasWinningIcon: iconP1.animation.play('winning')
-			else: iconP1.animation.play('normal')
-			iconP2.animation.play('losing')
-#endregion
+	if bar_state != healthBar_State:
+		healthBar_State = bar_state
+		updateIconsImage(healthBar_State)
+	#endregion
 
 ##Set HealthBar angle(in degrees). See also [method @GlobalScope.rad_to_deg]
 func setHealthBarAngle(angle: float):

@@ -23,6 +23,9 @@ canExitSong = false
 canPause = false
 canGameOver = false
 countDownEnabled = false
+showCombo = false
+showRating = false
+showComboNum = false
 
 [node name="VSplit" type="VSplitContainer" parent="."]
 offset_right = 1282.0
@@ -116,6 +119,34 @@ offset_top = 317.0
 offset_right = 121.0
 offset_bottom = 340.0
 text = "Select Songs"
+
+[node name="Modchart" type="Panel" parent="VSplit/HSplit/PanelContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Save" type="Button" parent="VSplit/HSplit/PanelContainer/Modchart"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 29.0
+offset_right = 134.0
+offset_bottom = 52.0
+text = "Save Modchart"
+
+[node name="Load" type="Button" parent="VSplit/HSplit/PanelContainer/Modchart"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 61.0
+offset_right = 135.0
+offset_bottom = 84.0
+text = "Load Modchart
+"
+
+[node name="Label" type="Label" parent="VSplit/HSplit/PanelContainer/Modchart"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 15.0
+text = "============Data============"
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit/HSplit"]
 layout_mode = 2
@@ -309,14 +340,15 @@ script = ExtResource("7_rhtdg")
 
 [node name="PositionLine" type="ColorRect" parent="VSplit/HSplitP/HTimeline/Timeline/Time"]
 z_index = 1
-offset_right = 9.0
+offset_left = 14.0
+offset_right = 23.0
 offset_bottom = 9.0
 rotation = 0.785398
 
 [node name="Line" type="Node2D" parent="VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine"]
-position = Vector2(0, 0.5)
+position = Vector2(1, 2.5)
 rotation = -0.785398
-scale = Vector2(1.035, 190)
+scale = Vector2(2.25, 720)
 script = ExtResource("5_n2vt6")
 metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
 
@@ -335,11 +367,15 @@ script = ExtResource("5_n2vt6")
 metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
 
 [node name="FileDialog" type="FileDialog" parent="."]
+oversampling_override = 1.0
 title = "Open a File"
-position = Vector2i(320, 180)
+position = Vector2i(320, 91)
 ok_button_text = "Open"
 file_mode = 0
 access = 2
+hidden_files_toggle_enabled = false
+file_filter_toggle_enabled = false
+file_sort_options_enabled = false
 
 [node name="ConfirmationDialog" type="ConfirmationDialog" parent="."]
 title = "Alert"
@@ -449,6 +485,7 @@ placeholder_text = "Property Name"
 [connection signal="pressed" from="VSplit/HSplit/PanelContainer/Song Data/LoadJson" to="." method="load_json"]
 [connection signal="toggled" from="VSplit/HSplit/PanelContainer/Song Data/Botplay" to="SubViewport/PlayState" method="_set_botplay"]
 [connection signal="toggled" from="VSplit/HSplit/PanelContainer/Song Data/HideHud" to="SubViewport/PlayState" method="_set_hide_hud"]
+[connection signal="pressed" from="VSplit/HSplit/PanelContainer/Modchart/Save" to="." method="on_save_modchart_pressed"]
 [connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/Value" to="." method="set_keys_value"]
 [connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initVal" to="." method="set_keys_init_value"]
 [connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initValX" to="." method="set_keys_init_value_index" binds= ["x"]]

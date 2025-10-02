@@ -647,9 +647,8 @@ static func _insert_sprite(tag: String, object: Node):
 static func makeSprite(tag: String, path: Variant = null, x: float = 0, y: float = 0) -> Sprite: 
 	var sprite = Sprite.new(path)
 	sprite._position = Vector2(x,y)
-	if tag: 
-		sprite.name = tag
-		_insert_sprite(tag,sprite)
+	if tag: sprite.name = tag
+	_insert_sprite(tag,sprite)
 	return sprite
 
 ##Creates a animated [Sprite].
@@ -666,10 +665,9 @@ static func makeSpriteFromSheet(tag: String,path: Variant, sheet_preffix: String
 static func addSprite(object: Variant, front: bool = false) -> void: ##Add [Sprite] to game.
 	object = _find_object(object)
 	if !object is Node: return
-	
 	var cam: Node = object.get('camera')
-	
 	if !cam: cam = getProperty('camGame')
+	prints(object,cam)
 	if !cam:
 		push_error("Failed in addSprite: Camera of ",object,"don't found.")
 		return
@@ -760,12 +758,16 @@ static func loadGraphic(object: Variant, image: String, width: float = -1, heigh
 ##[b]Note:[/br] Just works if the sprite is not animated.
 static func setGraphicSize(object: Variant, sizeX: float = -1, sizeY: float = -1) -> void:
 	object = _find_object(object)
-	if !object: return
-	object.graphic.size = Vector2(
-		object.graphic.size.x if sizeX == -1 else sizeX,
-		object.graphic.size.y if sizeY == -1 else sizeY
-	)
-		
+	if object is Sprite:
+		object.setGraphicSize(
+			sizeX,
+			sizeY
+		)
+	elif object is NinePatchRect:
+		object.size = Vector2(
+			object.image.size.x if sizeX == -1 else sizeX,
+			object.image.size.y if sizeY == -1 else sizeY
+			)
 ##Move the [param object] to the center of his camera.[br]
 ##[param type] can be: [code]""xy,x,y[/code]
 static func screenCenter(object: Variant, type: String = 'xy') -> void:

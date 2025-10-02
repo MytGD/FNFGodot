@@ -24,39 +24,81 @@ static func process_keys_front():
 			var _keys = obj_keys[prop]
 			if !_keys: continue
 			
-			
 			var key_index_array = keys_index[obj] #[back,front]
 			var key_index = mini(key_index_array[prop],_keys.size()-1)
 			
 			while true:
 				var key = _keys[key_index]
-				update_key(key)
+				check_key(key)
 				if Conductor.songPosition < key.time or key_index >= _keys.size()-1: break
 				key_index += 1
 			key_index_array[prop] = key_index
 	update_keys()
 
-static func update_key(key: KeyInterpolator):
+static func check_key(key: KeyInterpolator):
 	if Conductor.songPosition >= key.time:
 		if key.duration and Conductor.songPosition < key.length: keys_updating.append(key)
-		else: key.set_object_value(key.value)
-	else: key.set_object_value(key.prev_val)
+		else: update_key(key)
 	
-static func update_keys():
+static func update_keys() -> void:
 	var i: int = 0
 	while i < keys_updating.size():
 		var key = keys_updating[i]
-		key._process()
-		if Conductor.songPosition < key.time:
-			key.set_object_value(key.prev_val)
-			keys_updating.remove_at(i)
-			continue
-		elif Conductor.songPosition >= key.length:
-			key.set_object_value(key.value)
+		update_key(key)
+		if Conductor.songPosition < key.time or Conductor.songPosition >= key.length:
 			keys_updating.remove_at(i)
 			continue
 		i += 1
-			
+
+##Data = [time,init_val,value,duration,transition,easing]
+static func update_key(key: KeyInterpolator):
+	var object = key.object
+	if object is String: object = FunkinGD._find_object(object)
+	if !object: return
+	
+	var value: Variant
+	if Conductor.songPosition >= key.time:
+		if !key.duration or Conductor.songPosition >= key.length: value = key.value
+		else:
+			value = Tween.interpolate_value(
+				key.init_val,
+				key.value - key.init_val,
+				Conductor.songPosition - key.time,
+				key.duration,
+				key.transition,
+				key.ease
+			)
+	elif Conductor.songPosition < key.time: value = key.prev_val
+	
+	if object is ShaderMaterial: object.set_shader_parameter(key.property,value)
+	else: object.set(key.property,value)
+
+static func get_keys_data() -> Dictionary:
+	var new_data = {}
+	for i in keys:
+		var obj = keys[i]
+		if !obj: continue
+		
+		var data = {
+			'keys': {},
+			'is_material': false
+		}
+		for property in obj: 
+			var prop_keys = []
+			for key in obj[property]: prop_keys.append(
+				[
+					key.time,
+					key.init_val,
+					key.value,
+					key.duration,
+					key.transition,
+					key.ease
+				]
+			)
+			data[property] = prop_keys
+		new_data[i] = data
+	return new_data
+	
 static func process_keys_back():
 	for obj in keys:
 		var obj_keys = keys[obj]
@@ -66,10 +108,9 @@ static func process_keys_back():
 			
 			var key_index_array = keys_index[obj] #[back,front]
 			var key_index = mini(key_index_array[prop],_keys.size()-1)
-			print(key_index)
 			while true:
 				var key = _keys[key_index]
-				update_key(key)
+				check_key(key)
 				if !key_index or key.time < Conductor.songPosition: break
 				key_index -= 1
 			

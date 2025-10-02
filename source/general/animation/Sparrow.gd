@@ -7,6 +7,7 @@ const rotation = StringName('rotation')
 const frameSize = StringName('frameSize')
 const pivot = StringName('pivot_offset')
 const position = StringName('position')
+const frameCenter = StringName('frameCenter')
 
 const deg_90 = deg_to_rad(-90)
 
@@ -27,70 +28,80 @@ static func loadSparrow(file: String) -> Dictionary[String,Array]:
 	var prevFrameProperties: Dictionary = {}
 	while _xml_parser.read() == OK:
 		if _xml_parser.get_node_type() != XMLParser.NODE_ELEMENT: continue
-		var xmlName: String = _xml_parser.get_named_attribute_value_safe('name')
-		if !xmlName:  continue;
-		
+		var xmlName = _xml_parser.get_named_attribute_value_safe('name')
+		if !xmlName: continue;
+
 		var frame: int = xmlName.right(4).to_int()
+		
+		##Remove frame from name
+		xmlName = xmlName.left(-4)
+		var animationFrames: Array[Dictionary] = sparrow.get_or_add(
+			xmlName,
+			Array([],TYPE_DICTIONARY,'',null)
+		)
+		
 		var region_data: Rect2 = Rect2(
 				float(_xml_parser.get_named_attribute_value('x')),
 				float(_xml_parser.get_named_attribute_value('y')),
 				float(_xml_parser.get_named_attribute_value('width')),
 				float(_xml_parser.get_named_attribute_value('height'))
 		)
-		var r: float = 0
-		var p: Vector2 = Vector2.ZERO
-		var s: Vector2 = region_data.size
+		
+		#Frame Data
+		var s = region_data.size
 		var f_s: Vector2 = s
+		var r: float = 0.0
+		var p: Vector2 = Vector2.ZERO
+		
+		var last_frame: Dictionary = prevFrameProperties.get_or_add(xmlName,{})
 		
 		if _xml_parser.get_named_attribute_value_safe('rotated') == 'true':
 			r = deg_90
 			p.y += s.x
 			s = Vector2(s.y,s.x)
-		if _xml_parser.has_attribute('frameX'):
-			p += -Vector2(
-				float(_xml_parser.get_named_attribute_value('frameX')),
-				float(_xml_parser.get_named_attribute_value('frameY'))
-			)
-			f_s = Vector2(
-				float(_xml_parser.get_named_attribute_value('frameWidth')),
-				float(_xml_parser.get_named_attribute_value('frameHeight'))
-			)
 		
 		var frameData: Dictionary = {
 			region: region_data,
 			position: p,
 			size: s,
-			rotation: r,
-			frameSize: f_s
+			rotation: r
 		}
 		
-		if _xml_parser.has_attribute('pivotX'):
-			frameData[pivot] = Vector2(
-				float(_xml_parser.get_named_attribute_value_safe('pivotX')),
-				float(_xml_parser.get_named_attribute_value_safe('pivotY'))
+		var need_center_update: bool = !last_frame
+		
+		if _xml_parser.has_attribute('frameX'):
+			frameData[position] += -Vector2(
+				float(_xml_parser.get_named_attribute_value('frameX')),
+				float(_xml_parser.get_named_attribute_value('frameY'))
 			)
+			f_s =  Vector2(
+				float(_xml_parser.get_named_attribute_value('frameWidth')),
+				float(_xml_parser.get_named_attribute_value('frameHeight'))
+			)
+			frameData[frameSize] = f_s
+			if last_frame and f_s != last_frame.get(frameSize):
+				need_center_update = true
+		
+		#if _xml_parser.has_attribute('pivotX'):
+			#frameData[pivot] = Vector2(
+				#float(_xml_parser.get_named_attribute_value('pivotX')),
+				#float(_xml_parser.get_named_attribute_value('pivotY'))
+			#)
 		
 		
-		##Remove frame from name
-		xmlName = xmlName.left(-4)
-		
-	
-		
-		var last_frame: Dictionary = prevFrameProperties.get_or_add(xmlName,{})
-		if !last_frame:
-			last_frame.assign(frameData)
-		else:
-			for i in frameData.keys():
+		if last_frame:
+			#if !need_center_update: frameData[position] -= last_frame[frameCenter]
+			#Remove values if not change.
+			for i in frameData:
 				var data = frameData[i]
-				
-				if data == last_frame[i]: 
+				var last_val = last_frame.get(i)
+				if last_val != null and data == last_val: 
 					frameData.erase(i)
 					continue
-				last_frame[i] = data
-		var animationFrames: Array[Dictionary] = sparrow.get_or_add(
-			xmlName,
-			Array([],TYPE_DICTIONARY,'',null)
-		)
+		
+		last_frame.merge(frameData,true)
+		
+		
 		
 		var frames = animationFrames.size()
 		if frames == frame: 

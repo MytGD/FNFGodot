@@ -4,8 +4,6 @@ signal onSwapTree
 
 static var scene: Node
 
-
-var gd = FunkinGD
 var scripts_running = FunkinGD.scriptsCreated
 var sprites_created = FunkinGD.spritesCreated
 var is_transiting: bool = false
@@ -44,18 +42,14 @@ func swapTree(newTree: Variant, transition: bool = true, remove_current_scene: b
 			)
 		return
 	is_transiting = false
-	if newTree is GDScript:
-		newTree = newTree.new()
-	elif newTree is PackedScene:
-		newTree = newTree.instantiate()
+	if newTree is GDScript: newTree = newTree.new()
+	elif newTree is PackedScene: newTree = newTree.instantiate()
 	
 	onSwapTree.emit()
-	if !newTree.is_inside_tree():
-		scene.add_child(newTree)
+	if !newTree.is_inside_tree():scene.add_child(newTree)
 	var tree = get_tree()
 	
-	if remove_current_scene and tree.current_scene:
-		tree.current_scene.queue_free()
+	if remove_current_scene and tree.current_scene: tree.current_scene.queue_free()
 	tree.current_scene = newTree
 	
 func doTransition() -> TRANSITION:

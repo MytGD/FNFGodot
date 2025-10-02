@@ -6,6 +6,7 @@ static var danced: bool = false
 
 static var _beat_connect: bool = false
 static var json: Dictionary = getStageBase()
+static var is_vslice_stage: bool = true
 ##Load Sprites from the stage json.[br]
 ##[b]OBS:[/b] Is recommended to [u]call this function after the characters group are added in PlayState.[/u][br][codeblock]
 ##loadSprites(

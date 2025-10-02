@@ -1,13 +1,25 @@
 @icon("res://icons/strum.png")
-
-##Strum Note
-extends Sprite
-
+extends Sprite ##Strum Note
 const Note = preload("res://source/objects/Notes/Note.gd")
+const default_offset = [0,0]
 ##Strum Direction
 ##[br][param 0: left, 1: down, 2: up, 3: right]
 @export var data: int = 0;
 
+var prefixs: Dictionary = {
+	"leftStatic": {"prefix": "staticLeft"},
+	"downStatic": {"prefix": "staticDown"},
+	"upStatic": {"prefix": "staticUp"},
+	"rightStatic": {"prefix": "staticRight"},
+	"leftConfirm": {"prefix": "confirmLeft"},
+	"downConfirm": {"prefix": "confirmDown"},
+	"upConfirm": {"prefix": "confirmUp"},
+	"rightConfirm": {"prefix": "confirmRight"},
+	"leftPress": {"prefix": "pressLeft"},
+	"downPress": {"prefix": "pressDown"},
+	"upPress": {"prefix": "pressUp"},
+	"rightPress": {"prefix": "pressRight"}
+}
 ##Direction of the note in radius. [br]
 ##Example: [code]deg_to_rad(90)[/code] makes the notes come from the left,
 ##while [code]deg_to_rag(180)[/code] makes come from the top.[br]
@@ -18,26 +30,16 @@ var mustPress: bool = false ##Player Strum
 var hit_action: String = '' ##Hit Key
 
 var return_to_static_on_finish: bool = true
+
+var default_scale: float = 0.7
 ##Pixel Note
-@export var isPixelNote: bool = false: 
-	set(is_pixel):
-		if is_pixel == isPixelNote:
-			return
-		isPixelNote = is_pixel
-		antialiasing = !is_pixel
-		if !texture:
-			return
-		
-		if is_pixel and not texture.begins_with('pixelUI/'):
-			texture = 'pixelUI/'+texture
-		elif !is_pixel and texture.begins_with("pixelUI/"):
-			texture = texture.right(-8)
-		
+@export var isPixelNote: bool = false
 ##The [Input].action_key of the note, see [method Input.is_action_just_pressed]
 
 
 
 ##Strum Texture
+var _auto_reload_when_change_texture: bool = true
 var texture: String: 
 	set(tex):
 		if !tex: tex = 'noteSkins/NOTE_assets'
@@ -50,8 +52,9 @@ var texture: String:
 		var old_tex = texture
 		
 		texture = tex
-		reloadStrumNote()
-		texture_changed.emit(old_tex,tex)
+		if _auto_reload_when_change_texture:
+			reloadStrumNote()
+			texture_changed.emit(old_tex,tex)
 	
 ##If [code]true[/code], make the strum don't make to Static anim when finish's animation
 var specialAnim: bool = false
@@ -105,23 +108,42 @@ func reloadStrumNote(): ##Reload Strum Texture Data
 	if not isPixelNote:
 		var type = _anim_direction[data]
 		
-		animation.addAnimByPrefix('static','arrow'+type.to_upper(),24,true)
-		animation.addAnimByPrefix('press',type+' press',24,false)
-		animation.addAnimByPrefix('confirm',type+' confirm',24,false)
+		var static_anim = prefixs[type+'Static']
+		var press_anim = prefixs[type+'Press']
+		var confirm_anim = prefixs[type+'Confirm']
+		animation.addAnimByPrefix('static',static_anim.prefix,24,true)
+		animation.addAnimByPrefix('press',press_anim.prefix,24,false)
+		animation.addAnimByPrefix('confirm',confirm_anim.prefix,24,false)
 		
-		addAnimOffset('confirm',40,40)
-		#addAnimOffset('confirm',27,27) #without offset_follow_scale enabled.
-		addAnimOffset('static')
-		addAnimOffset('press',-2,-2)
+		var confirm_offset = confirm_anim.get('offsets',default_offset)
+		addAnimOffset('confirm',confirm_offset[0],confirm_offset[1])
 		
-		setGraphicScale(Vector2(0.7,0.7))
+		var press_offset = press_anim.get('offsets',default_offset)
+		addAnimOffset('press',press_offset[0],press_offset[1])
+		
+		var static_offset = static_anim.get('offsets',default_offset)
+		addAnimOffset('static',static_offset[0],static_offset[1])
 	else:
 		var keyCount: int = Conductor.keyCount
 		image.region_rect.size = imageSize/Vector2(keyCount,5)
 		animation.addFrameAnim('static',[data])
 		animation.addFrameAnim('confirm',[data + (keyCount*3),data + (keyCount*4),data + keyCount])
 		animation.addFrameAnim('press',[data + (keyCount*3),data + (keyCount*2)])
-		setGraphicScale(Vector2(6,6))
+		
+	setGraphicScale(Vector2(default_scale,default_scale))
+func loadFromStyle(noteStyle: String):
+	var style_data = Paths.loadJson('data/notestyles/'+noteStyle)
+	if !style_data: 
+		style_data = Paths.loadJson('data/notestyles/funkin.json')
+		if !style_data: return
+		return
+	style_data = style_data.get('strums')
+	if !style_data: return
+	
+	isPixelNote = style_data.get('isPixel',false)
+	prefixs = style_data.data
+	texture = style_data.assetPath
+	default_scale = style_data.get('scale',0.7)
 	
 func strumConfirm(anim: String = 'confirm'):
 	animation.play(anim,true)

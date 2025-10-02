@@ -22,7 +22,7 @@ var ease: Tween.EaseType
 var is_playing: bool = true ##If this tween is playing.
 
 ##When set and this node is not processing, this tween will also not progress until the node is processed again.
-var bind_node: Node
+var bind_node: Node: set = set_bind_node
 
 signal finished ##Called when the tween finishes.
 signal onUpdate
@@ -53,7 +53,7 @@ func tween_property(property: String, to: Variant) -> void:
 		else: init_val = object.get(prop)
 	
 	if init_val != null and init_val != to: properties[prop] = [init_val,to]
-	
+
 func set_step(s: float) -> void:
 	step = s
 	if !is_playing: return
@@ -62,6 +62,13 @@ func set_step(s: float) -> void:
 		is_playing = false
 		finished.emit()
 
+func stop() -> void:
+	is_playing = false
+	step = 0.0
+
+func pause() -> void:
+	is_playing = false
+	
 func _update() -> void:
 	if !object: return
 	
@@ -86,6 +93,9 @@ func _update() -> void:
 			if i is NodePath: object.set_indexed(i,final_val)
 			else: object.set(i,final_val)
 
+func set_bind_node(node: Node):
+	if bind_node and !node: stop()
+	bind_node = node
 func _process(delta: float) -> void:
 	if is_playing and (not bind_node or bind_node.is_inside_tree() and bind_node.can_process()): 
 		step += delta

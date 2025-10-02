@@ -1,7 +1,7 @@
 @tool
 extends Node
 
-const StreamNames = ["Inst","OpponentVoice","PlayerVoice"]
+const StreamNames = ["Inst","OpponentVoice","Voice"]
 const Song = preload("res://source/backend/Song.gd")
 
 var songPosition: float = 0.0: set = _set_song_position
@@ -107,12 +107,14 @@ func loadSongsStreams(folder: String = Song.audioFolder, suffix: String = Song.a
 	#Look for Inst
 	var paths_absolute: PackedStringArray = []
 	for path in paths:
+		var song
 		for i in path:
-			var song = Paths.songPath(folder+'/'+i)
+			song = Paths.songPath(folder+'/'+i)
 			if !song: continue
 			paths_absolute.append(song)
 			break
-	
+		if !song: paths_absolute.append('')
+			
 	loadSongsStreamsFromArray(paths_absolute)
 	
 
@@ -125,6 +127,7 @@ func loadSongsStreamsFromArray(paths_absolute: PackedStringArray):
 	var stream_id: int = -1
 	for i in paths_absolute:
 		stream_id += 1
+		if !i: continue
 		var stream = Paths.audio(i)
 		if !stream: continue
 		var audio = AudioStreamPlayer.new()
@@ -154,8 +157,7 @@ func playSongs(at: float = 0) -> void: ##Play songs.[br][b]Note:[/b] [param at] 
 func resumeSongs() -> void:
 	if songPositionSeconds < 0: return
 	for song in songs:
-		song.play(songPositionSeconds)
-		#setSongPosition(songPosition)
+		if songPositionSeconds < song.stream.get_length(): song.play(songPositionSeconds)
 
 func pauseSongs() -> void: ##Pause the streams.
 	for song in songs: song.stop()
@@ -413,7 +415,6 @@ func _find_current_change_index_from_pos(pos: float, at: int = 0) -> int:
 	
 	while at < bpmChanges.size()-1:
 		var sec_data = get_section_data(bpmChanges[at+1].section)
-		prints(pos,sec_data.sectionTime)
 		if pos <= sec_data.sectionTime: return at
 		at += 1
 	return at

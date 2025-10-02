@@ -3,40 +3,29 @@ shader_type canvas_item;
 uniform int size : hint_range(1, 10) = 2;
 uniform vec4 contour_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform bool show_inside = true;
-
-struct Light{
-	vec2 position;
-	vec3 color;
-    float radius;
-};
-const int maxLights = 8;
-
-void fragment() {
-	if(COLOR.a == 0.0){
-		discard;
-		
-	}
-	vec2 texel = 1.0 / vec2(textureSize(TEXTURE, 0));
-	
+void fragment(){
 	bool is_edge = false;
-	
-	for (int x = -size; x <= size && !is_edge; x++) {
-	    for (int y = -size; y <= size; y++) {
-			float alpha = texture(TEXTURE, UV + vec2(float(x), float(y)) * texel).a;
-			if (alpha <= 0.) {
-				is_edge = true;
-				break;
+	vec4 col = show_inside ? COLOR : vec4(0.0);
+	float dist = 0.0;
+	if(texture(TEXTURE,UV).a < 1.0){
+		for (int x = -size; x <= size; x++) {
+		    for (int y = -size; y <= size; y++) {
+				vec2 pos = vec2(float(x), float(y));
+				if (texture(TEXTURE, UV + pos * TEXTURE_PIXEL_SIZE).a > 0.0) {
+					is_edge = true;
+					dist = max(abs(pos.x),abs(pos.y));
+					break;
+				}
 			}
-		}
-		if(is_edge){
-			break;
+			if(is_edge) break;
 		}
 	}
-	
 	if (is_edge) {
-		COLOR = contour_color;
+		float size_f = float(size);
+		COLOR = mix(col,contour_color,1.0 - COLOR.a);
+		//COLOR.a *= min(1.0,size_f/(size_f - (dist + 1.0)) * 1.0);
 	} 
 	else{
-		COLOR = show_inside ? texture(TEXTURE, UV) : vec4(0.0);
+		COLOR = col;
 	}
 }

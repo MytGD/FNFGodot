@@ -345,7 +345,7 @@ static func getCharacterBaseData() -> Dictionary: ##Returns a base to character 
 		"healthIcon": {
 			"id": "icon-face",
 			"isPixel": false,
-			'canScale': false,
+			'canScale': false
 		},
 		"flipX": false,
 		"singTime": 4.0,

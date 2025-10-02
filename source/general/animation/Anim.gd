@@ -8,7 +8,7 @@ const AnimationService = preload("res://source/general/animation/AnimationServic
 const _AnimationController = preload("res://source/general/animation/AnimationController.gd")
 const _sprite_sheet = preload("res://source/general/animation/spriteSheet.gd")
 
-
+const region_pos_path = NodePath("region_rect:position")
 ##Stores the dates of created animations. See also [method insertAnim].
 var animationsArray: Dictionary[StringName,Dictionary] = {}
 
@@ -192,27 +192,15 @@ func addFrameAnim(animName: String, indices: PackedInt32Array = [], fps: float =
 		'fps': fps,
 		'looped': loop
 	}
-	var frames = animData.frames
-	
 	var tex_size = image.texture.get_size() if image.texture else Vector2.ZERO
-	
 	var offset: Vector2 = image.region_rect.size
 	
 	for i in indices:
 		var frameX = offset.x*i
 		var frameY = int(frameX/tex_size.x)
-		frameX -= (tex_size.x*frameY)
-		frames.append(
-			Dictionary(
-				{"region_rect": Rect2(
-					frameX,
-					offset.y*frameY,
-					offset.x,
-					offset.y
-				)},
-				TYPE_STRING,'',null,TYPE_NIL,'',null),
-			)
-	frames[0].size = offset
+		if frameY: frameX -= (tex_size.x*frameY)
+		animData.frames.append({'region_rect': Rect2(Vector2(frameX,frameY),offset)})
+	animData.frames[0].size = offset
 	if !_midpoint_set: _set_midpoint(offset)
 	return insertAnim(animName,animData)
 #endregion

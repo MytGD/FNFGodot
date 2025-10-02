@@ -108,7 +108,7 @@ func insertKeyToArray(key_node: KeyInterpolatorNode) -> int:
 			
 	else: key.prev_val = properties[property].default
 	
-	key_node.position.y = (size.y/keys.size()/2.0) + ModchartEditor.grid_size.y*keys.keys().find(property)
+	key_node.position.y = size.y/keys.size()/2.0 - key_node.size.y/2.0 + ModchartEditor.grid_size.y*keys.keys().find(property)
 	_keys.insert(index,key)
 	spawn_key(key.key_node)
 	return index
