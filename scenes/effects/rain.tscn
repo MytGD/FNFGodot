@@ -1,12 +1,25 @@
 [gd_scene load_steps=10 format=3 uid="uid://cvfswoadadekj"]
 
-[ext_resource type="Shader" uid="uid://b2qxmgdog6ro5" path="res://assets/shaders/Rain.gdshader" id="1_pb0jo"]
 [ext_resource type="Texture2D" uid="uid://1mw81wl3squt" path="res://assets/images/effects/rain.png" id="2_pb0jo"]
-[ext_resource type="Script" uid="uid://bca73y5o8yhr" path="res://scenes/effects/rain.gd" id="3_ipjee"]
+
+[sub_resource type="Shader" id="Shader_pb0jo"]
+code = "shader_type canvas_item;
+uniform sampler2D screen_texture: hint_screen_texture;
+uniform vec3 rain_constrast: source_color = vec3(0.1,0.1,0.1);
+
+void fragment() {
+	if(COLOR.a < 0.6) discard;
+	vec2 tex_size = vec2(textureSize(screen_texture,0));
+	vec2 uv_offset = 1.0/tex_size;
+	uv_offset.y *= cos(UV.x*5.)*5.0;
+	vec2 screen_position = tex_size * SCREEN_UV/tex_size;
+	COLOR.rgb = texture(screen_texture,SCREEN_UV + uv_offset).rgb + rain_constrast;
+}"
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_57qji"]
-shader = ExtResource("1_pb0jo")
-shader_parameter/rain_constrast = Color(0.0823529, 0.0941176, 0.0862745, 1)
+resource_local_to_scene = true
+shader = SubResource("Shader_pb0jo")
+shader_parameter/rain_constrast = Color(0.1, 0.1, 0.1, 1)
 
 [sub_resource type="Curve" id="Curve_57qji"]
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0]
@@ -40,6 +53,16 @@ scale_curve = SubResource("CurveXYZTexture_ki0cu")
 scale_over_velocity_min = 1.0
 scale_over_velocity_max = 10.0
 
+[sub_resource type="GDScript" id="GDScript_57qji"]
+resource_name = "rain"
+script/source = "@tool
+extends GPUParticles2D
+@export var width: float = 1280: #1280 = screenSize
+	set(value):
+		width = value
+		if process_material: process_material.emission_box_extents.x = width
+"
+
 [node name="Rain" type="GPUParticles2D"]
 material = SubResource("ShaderMaterial_57qji")
 amount = 150
@@ -51,5 +74,4 @@ fixed_fps = 0
 collision_base_size = 0.0
 visibility_rect = Rect2(0, 0, 1280, 720)
 process_material = SubResource("ParticleProcessMaterial_pb0jo")
-script = ExtResource("3_ipjee")
-width = 1280.0
+script = SubResource("GDScript_57qji")

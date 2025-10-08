@@ -96,10 +96,8 @@ func loadStage(stage: StringName,loadScript: bool = true):
 func _process(delta: float) -> void:
 	if camZooming: camGame.zoom = lerpf(camGame.zoom,defaultCamZoom,delta*3*zoomSpeed)
 	super._process(delta)
-	var follow = camFollow - ScreenUtils.defaultSizeCenter + ScreenUtils.screenOffset
-	
 	camGame.scroll = camGame.scroll.lerp(
-		follow,
+		camFollow - ScreenUtils.defaultSizeCenter + ScreenUtils.screenOffset,
 		cameraSpeed*delta*3.5
 	)
 
@@ -241,7 +239,7 @@ func clear():
 	boyfriend = null
 	dad = null
 	gf = null
-	
+
 static func getCameraPos(obj: Node, add_camera_json_offset: bool = true) -> Vector2:
 	if !obj: return Vector2(0.0,0.0)
 	

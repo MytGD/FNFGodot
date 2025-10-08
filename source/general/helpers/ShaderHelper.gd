@@ -59,10 +59,16 @@ static func get_blend(blend: String) -> Material:
 			return shader_material
 		_:
 			return null
-static func set_object_blend(object,blendMode: String) -> void:
-	if !object:
-		return
-	object.set('material',get_blend(blendMode))
+static func set_object_blend(object,blendMode: Variant) -> void:
+	if !object: return
+	var material: CanvasItemMaterial
+	if blendMode is CanvasItemMaterial.BlendMode:
+		material = CanvasItemMaterial.new()
+		material.blend_mode = blendMode
+	else:
+		material = get_blend(blendMode)
+	
+	object.set('material',material)
 	
 
 static func set_texture_hue(texture: ImageTexture, hue_shift: float):

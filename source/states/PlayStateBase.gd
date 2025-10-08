@@ -196,9 +196,8 @@ func _ready():
 	Conductor.beat_hit.connect(onBeatHit)
 	Conductor.section_hit.connect(onSectionHit)
 	Conductor.section_hit_once.connect(onSectionHitOnce)
-	startCountdown()
-	
 	FunkinGD.callOnScripts('onCreatePost')
+	startCountdown()
 	stateLoaded = true
 
 func createMobileGUI():
@@ -333,9 +332,8 @@ func spawnNote(note):
 	FunkinGD.callOnScripts('onSpawnNote',[note])
 
 func reloadNotes():
-	for i in noteTypesFounded: 
-		#FunkinGD.addScript('assets/custom_notetypes/'+i)
-		FunkinGD.addScript('custom_notetypes/'+i)
+	var types = SONG.get('noteTypes')
+	if types: for i in types: FunkinGD.addScript('custom_notetypes/'+i)
 	super.reloadNotes()
 
 func loadNotes():
@@ -393,6 +391,9 @@ func noteMiss(note, character: Variant = null) -> void:
 #region Script Methods
 func _load_song_scripts():
 	#Load Stage Script
+	print('Loading Scripts from Scripts Folder')
+	for i in Paths.getFilesAt('scripts',true,'.gd'): FunkinGD.addScript(i)
+	
 	print('Loading Stage Script')
 	FunkinGD.addScript('stages/'+curStage+'.gd')
 	
@@ -400,8 +401,7 @@ func _load_song_scripts():
 	print('Loading Song Folder Script')
 	if Song.folder: for i in Paths.getFilesAt(Song.folder,true,'.gd'): FunkinGD.addScript(i)
 	
-	print('Loading Scripts from Scripts Folder')
-	for i in Paths.getFilesAt('scripts',true,'.gd'): FunkinGD.addScript(i)
+	
 
 func triggerEvent(event: StringName,variables: Variant) -> void:
 	if !variables is Dictionary: return
@@ -558,7 +558,7 @@ func reloadPlayState():
 	
 	Global.onSwapTree.disconnect(destroy)
 	Global.onSwapTree.connect(func():
-		for vars in ['seenCutscene','playAsOpponent','noteTypesFounded']: 
+		for vars in ['seenCutscene','playAsOpponent']: 
 			state[vars] = get(vars)
 		destroy(false)
 	)
@@ -641,6 +641,7 @@ func destroy(absolute: bool = true):
 	camHUD.removeFilters()
 	camOther.removeFilters()
 	Paths.clearLocalFiles()
+	Paths.clearDirsCache()
 	super.destroy(absolute)
 	
 

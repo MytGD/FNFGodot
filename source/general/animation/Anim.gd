@@ -199,7 +199,7 @@ func addFrameAnim(animName: String, indices: PackedInt32Array = [], fps: float =
 		var frameX = offset.x*i
 		var frameY = int(frameX/tex_size.x)
 		if frameY: frameX -= (tex_size.x*frameY)
-		animData.frames.append({'region_rect': Rect2(Vector2(frameX,frameY),offset)})
+		animData.frames.append({'region_rect': Rect2(Vector2(frameX,frameY*offset.y),offset)})
 	animData.frames[0].size = offset
 	if !_midpoint_set: _set_midpoint(offset)
 	return insertAnim(animName,animData)

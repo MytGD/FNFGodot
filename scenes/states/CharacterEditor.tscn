@@ -50,7 +50,7 @@ layout_mode = 2
 focus_mode = 2
 mouse_filter = 0
 mouse_force_pass_scroll_events = false
-scroll_vertical = 210
+scroll_vertical = 100
 metadata/_tab_index = 0
 
 [node name="Container" type="VBoxContainer" parent="TabContainer/Animation Data"]

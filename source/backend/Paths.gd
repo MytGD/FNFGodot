@@ -94,8 +94,7 @@ static func _init() -> void:
 	updateDirectories()
 
 static func updateDirectories():
-	_files_directories_cache.clear()
-	_dir_exists_cache.clear()
+	clearDirsCache()
 	dirsToSearch.clear()
 	
 	var new_dirs: PackedStringArray
@@ -437,7 +436,6 @@ static func clearFiles() -> void:
 	soundsCreated.clear()
 	imagesTextures.clear()
 	imagesCreated.clear()
-	jsonsLoaded.clear()
 	clearLocalFiles()
 	AnimationService._clearAnims()
 	
@@ -445,6 +443,11 @@ static func clearLocalFiles() -> void:
 	shadersCreated.clear()
 	shadersCodes.clear()
 	textFiles.clear()
+	jsonsLoaded.clear()
+
+static func clearDirsCache():
+	_files_directories_cache.clear()
+	_dir_exists_cache.clear()
 #endregion
 static func loadShader(path: String) -> ShaderMaterial:
 	var absolute_path = shaderPath(path)

@@ -17,7 +17,7 @@
 ##checkBox.value = true #Changes data[2] to true.
 ##[/codeblock]
 
-extends "res://source/objects/Sprite/SpriteAnimated.gd"
+extends SpriteAnimated
 
 signal toggled(toogle_on: bool)
 ##Boolean.
@@ -33,6 +33,8 @@ var offset: Vector2 = Vector2.ZERO:
 	set(value):
 		position -= value - offset
 		offset = value
+		
+
 func _init():
 	super._init()
 	image.texture = Paths.imageTexture('checkboxThingie')
@@ -42,7 +44,7 @@ func _init():
 	)
 	animation.animation_started.connect(func(anim):
 		match anim:
-			'selection','selected': offset = Vector2(10,50)
+			'selection': offset = Vector2(10,90)
 			_: offset = Vector2.ZERO
 	)
 	animation.addAnimByPrefix('unselected','Check Box unselected')

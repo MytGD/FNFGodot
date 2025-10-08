@@ -11,6 +11,8 @@ var noteParent: NoteHit ##Sustain's Note Parent
 
 var sus_size: float = 0
 func _init(data: int, length: float = 0) -> void:
+	noteSplashData.style = 'HoldNoteSplashes'
+	noteSplashData.type = 'holdNoteCover'
 	isSustainNote = true
 	sustainLength = length
 	super._init(data)
@@ -21,7 +23,8 @@ func reloadNote() -> void: ##Reload Note Texture
 	_animOffsets.clear()
 	offset = Vector2.ZERO
 	
-	var prefix = styleData.data.get((directions[noteData]+'End') if isEndSustain else directions[noteData])
+	var prefix = styleData.get('data')
+	if prefix: prefix = prefix.get((directions[noteData]+'End') if isEndSustain else directions[noteData])
 	var anim_name = 'holdEnd' if isEndSustain else 'hold'
 	if prefix: 
 		animation.addAnimByPrefix(anim_name,prefix,24,true)
@@ -36,9 +39,11 @@ func updateNote() -> void:
 	if !isEndSustain: 
 		var rect = animation.curAnim.curFrameData.get('region_rect')
 		if rect: scale.y = sus_size/rect.size.y
-	distance = getNoteDistance()
+	distance = (strumTime - Conductor.songPositionDelayed) * _real_note_speed
 	if isBeingDestroyed: updateSustain();
-	else: detectCanHit(distance)
+	else: 
+		canBeHit = distance <= 30.0 and \
+				(!noteParent or noteParent.wasHit and not isBeingDestroyed)
 	followStrum()
 	
 func updateSustain():
@@ -53,9 +58,6 @@ func updateSustain():
 	
 	if image.region_rect.size.y <= 0.0:  kill(); _is_processing = false
 
-func detectCanHit(_distance: float):
-	canBeHit = noteParent and noteParent.wasHit and not isBeingDestroyed and _distance <= 30.0
-	
 func resetNote() -> void:
 	super.resetNote()
 	var rect = animation.curAnim.curFrameData.get('region_rect')
@@ -63,8 +65,6 @@ func resetNote() -> void:
 	
 	canBeHit = false
 	isBeingDestroyed = false
-	offsetX = 32.0 if isPixelNote else 38.0
-	offsetY = 53.0
 	
 func killNote() -> void:
 	canBeHit = false
@@ -79,11 +79,11 @@ func _update_note_speed() -> void:
 	super._update_note_speed()
 	sus_size = sustainLength * _real_note_speed
 
-func _load_data() -> void:
-	super._load_data()
-	noteSplashData.style = 'HoldNoteSplashes'
-	noteSplashData.type = 'holdNoteCover'
+func setNoteData(_data: int) -> void:
+	super.setNoteData(_data)
 	noteSplashData.prefix = directions[noteData]
+
+func _update_splash_data() -> void: noteSplashData.prefix = directions[noteData]
 
 static func getStyleData(style: String):
 	return Paths.loadJson('data/notestyles/'+style,false).get('holdNote',{})

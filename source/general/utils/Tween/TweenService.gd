@@ -1,6 +1,6 @@
 extends Node
-const CustomTween = preload("res://source/general/utils/Tween/Tweener.gd")
 const TweenerMethod = preload("res://source/general/utils/Tween/TweenerMethod.gd")
+const TweenerObject = preload("res://source/general/utils/Tween/TweenerObject.gd")
 const transitions = {
 	'linear': Tween.TRANS_LINEAR,
 	'sine': Tween.TRANS_SINE,
@@ -38,17 +38,17 @@ static func detect_ease(easing: String, default: int = Tween.EASE_OUT) -> Tween.
 
 var tweens_to_update: Array[RefCounted]= []
 #region Shader Functions
-func tween_shader(shader_material: ShaderMaterial, parameter: StringName, value: Variant, time: float, easing: StringName = 'linear') -> CustomTween:
+func tween_shader(shader_material: ShaderMaterial, parameter: StringName, value: Variant, time: float, easing: StringName = 'linear') -> TweenerObject:
 	if !shader_material: return
-	var tween: CustomTween = CustomTween.new(shader_material,time,detect_trans(easing),detect_ease(easing))
+	var tween: TweenerObject = TweenerObject.new(shader_material,time,detect_trans(easing),detect_ease(easing))
 	tween.tween_property(parameter,value)
 	tweens_to_update.append(tween)
 	return tween
 #endregion
 	
-func createTween(object: Object,properties: Dictionary, time: float = 1.0, easing: String = 'linear') -> CustomTween:
+func createTween(object: Object,properties: Dictionary, time: float = 1.0, easing: String = 'linear') -> TweenerObject:
 	if !object: return null
-	var new_tween = CustomTween.new(object,time,detect_trans(easing),detect_ease(easing))
+	var new_tween = TweenerObject.new(object,time,detect_trans(easing),detect_ease(easing))
 	for property in properties: 
 		new_tween.tween_property(property,properties[property])
 	tweens_to_update.append(new_tween)

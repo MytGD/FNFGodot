@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://b1a3jlb7iu130"]
 
-[ext_resource type="Script" uid="uid://oag071n6bini" path="res://scenes/objects/ButtonRange.gd" id="1_238s7"]
+[ext_resource type="Script" uid="uid://bscbt2dibch22" path="res://scenes/objects/ButtonRange.gd" id="1_238s7"]
 
 [node name="ButtonRange" type="Label"]
 offset_right = 1.0

@@ -859,10 +859,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if !event.pressed: return
 		match event.keycode:
 			KEY_SPACE,KEY_ENTER: pausePlaystate(Conductor.is_playing)
-			KEY_C:
-				if Input.is_key_pressed(KEY_CTRL): copy_keys_selected()
-			KEY_V:
-				if Input.is_key_pressed(KEY_CTRL): paste_keys()
+			KEY_C: if Input.is_key_pressed(KEY_CTRL): copy_keys_selected()
+			KEY_V: if Input.is_key_pressed(KEY_CTRL): paste_keys()
 			KEY_DELETE: removeKeysSelected()
 
 func _input(event: InputEvent) -> void:

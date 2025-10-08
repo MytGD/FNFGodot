@@ -155,7 +155,6 @@ func start_anim():
 	
 	if _real_cur_frame != _float_frame: _real_cur_frame = _float_frame
 	else: set_frame(_float_frame)
-	if maxFrames > 1 or !looped: start_process()
 	
 	animation_started.emit(name)
 	

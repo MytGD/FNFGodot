@@ -22,8 +22,6 @@ static var isModding: bool = true
 static var inModchartEditor: bool = false
 static var week_data: Dictionary = {}
 
-static var noteTypesFounded: PackedStringArray = []
-
 const ChartEditor = preload("res://source/states/ChartEditor/ChartEditor.gd")
 
 @export_group("Song Data")
@@ -112,7 +110,7 @@ var grpNoteHoldSplashes: Array[NoteSplash] = [] ##Note Hold Splashes Group.
 static var isPixelStage: bool = false
 @export var arrowStyle: String = 'funkin'
 @export var splashStyle: String = 'NoteSplashes'
-@export var splashHoldStyle: String = ''
+@export var splashHoldStyle: String = 'HoldNoteSplashes'
 
 #region Rating Data
 var songScore: int = 0 ##Score
@@ -269,9 +267,16 @@ func loadSong(data: String = song_json_file, songDifficulty: String = difficulty
 
 ##Load song data. Used in PlayState
 func loadSongObjects():
-	#arrowSkin = SONG.get('arrowSkin','')
-	splashStyle = SONG.get('splashType',splashStyle)
-	splashHoldStyle = SONG.get('holdSplashType',splashHoldStyle)
+	var arrow_s = SONG.get('arrowSkin')
+	var splash_s = SONG.get('splashType')
+	var hold_s = SONG.get('holdSplashType')
+	
+	if arrow_s: arrowStyle = arrow_s
+	else: arrowStyle = 'pixel' if isPixelStage else 'funkin'
+	
+	print(arrow_s)
+	if splash_s: splashStyle = splash_s
+	if hold_s: splashHoldStyle = hold_s
 	_create_strums()
 	respawnIndex = 0
 	unspawnIndex = 0
@@ -282,7 +287,6 @@ func loadNotes():
 	if !_notes_preload:  _notes_preload = getNotesFromData(SONG)
 	unspawnNotes = _notes_preload.duplicate()
 	unspawnNotesLength = unspawnNotes.size()
-	noteTypesFounded = SONG.get('noteTypes',PackedStringArray())
 	reloadNotes()
 	
 func clearSongNotes():
@@ -406,7 +410,7 @@ func _create_strums() -> void:
 func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
 	i %= keyCount
 	var strum = StrumNote.new(i)
-	strum.loadFromStyle('funkin')
+	strum.loadFromStyle(arrowStyle)
 	strum.name = "StrumNote"+str(i)
 	
 	strum.mustPress = !opponent_strum and !botplay
@@ -889,21 +893,16 @@ static func getNotesFromData(songData: Dictionary = {}) -> Array[Note]:
 			var firstSus = susNotes[0]
 			firstSus.noteSplashData.disabled = false
 			firstSus.noteSplashData.sustain = true
-			firstSus._load_data()
-			
 			var lastSus: NoteSustain = susNotes.back()
 			var susEnd: NoteSustain = createSustainFromNote(note,0,true)
 			susEnd.strumTime = lastSus.strumTime + lastSus.sustainLength
 			susEnd.noteSplashData.disabled = false
-			susEnd._load_data()
 			_insert_note_to_array(susEnd,_notes)
 			susNotes.append(susEnd)
 	
 	
 	var type_unique: PackedStringArray = songData.get_or_add('noteTypes',PackedStringArray())
-	for i in types_founded:
-		if not i in type_unique:
-			type_unique.append(i)
+	for i in types_founded: if not i in type_unique: type_unique.append(i)
 	return _notes
 
 static func _insert_note_to_array(note: Note, array: Array) -> bool:
@@ -934,9 +933,7 @@ static func createNoteFromData(data: Array, sectionData: Dictionary, keyCount: i
 	if type and type is String: 
 		note.noteType = type
 		note.gfNote = gfSection and note.mustPress == mustHitSection or note.noteType == 'GF Sing'
-	
 	else: note.gfNote = gfSection and note.mustPress == mustHitSection
-	
 	return note
 
 static func createSustainFromNote(note: Note,length: float, isEnd: bool = false) -> NoteSustain:
@@ -954,5 +951,4 @@ func clear(): clearSongNotes() #Replaced in PlayStateBase
 static func _reset_values():
 	inModchartEditor = false
 	isPixelStage = false
-	noteTypesFounded.clear()
 	_notes_preload.clear()

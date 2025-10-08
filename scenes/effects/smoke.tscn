@@ -1,7 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://cproj0w72ysi"]
 
 [ext_resource type="Shader" uid="uid://bckrib34ee58y" path="res://assets/shaders/Smoke.gdshader" id="1_8prmg"]
-[ext_resource type="Script" uid="uid://bxr6f0xx82cwd" path="res://scenes/effects/smoke.gd" id="2_v4g5g"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_v4g5g"]
 shader = ExtResource("1_8prmg")
@@ -25,14 +24,25 @@ fractal_octaves = 10
 width = 1
 height = 720
 generate_mipmaps = false
-seamless = true
-seamless_blend_skirt = 1.0
-normalize = false
-color_ramp = SubResource("Gradient_8prmg")
 noise = SubResource("FastNoiseLite_gtfxk")
+color_ramp = SubResource("Gradient_8prmg")
+seamless = true
+normalize = false
+seamless_blend_skirt = 1.0
+
+[sub_resource type="GDScript" id="GDScript_8prmg"]
+resource_name = "smoke"
+script/source = "@tool
+extends Sprite2D
+
+func _ready():
+	var tex: NoiseTexture2D = texture
+	if texture and texture.width <= 1: texture.width = ScreenUtils.screenWidth
+"
 
 [node name="Smoke" type="Sprite2D"]
 material = SubResource("ShaderMaterial_v4g5g")
+scale = Vector2(1278, 1)
 texture = SubResource("NoiseTexture2D_jahxy")
 centered = false
-script = ExtResource("2_v4g5g")
+script = SubResource("GDScript_8prmg")

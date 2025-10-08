@@ -80,7 +80,7 @@ static func _clearAnims() -> void:
 	Map.maps_created.clear()
 	_anims_file_founded.clear()
 	
-func _process(delta: float):
+func _physics_process(delta: float):
 	if !anims_to_update: return
 	for i in anims_to_update.values():
 		if !i.playing: anims_to_update.erase(i.get_instance_id()); continue

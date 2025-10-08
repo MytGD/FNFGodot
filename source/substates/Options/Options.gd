@@ -1,191 +1,139 @@
 extends Node
-const AlphabetText = preload("res://source/objects/AlphabetText/AlphabetText.gd")
-const NumberRange = preload("res://source/substates/Options/NumberRange.gd")
-const NumberRangeKeys = preload("res://source/substates/Options/NumberRangeKeys.gd")
+const OptionMenu = preload("res://source/substates/Options/OptionMenu.gd")
+var back_to: Variant #Can be a GDScript or a PackedScene
+var cur_visual: Node
+var visuals: Dictionary = {}
 
-var back_to: GDScript
-var bg: Sprite2D = Sprite2D.new()
-const check_box = preload("res://source/states/Menu/CheckBoxSprite.gd")
-
-# option: [object/dictionary that have that property, property, value_names, default_value]
-var options = {
-	'Keybinds': {},
-	'Gameplay Options': {
-		'downscroll': [ClientPrefs.data, 'downscroll'],
-		'middlescroll': [ClientPrefs.data, 'middlescroll'],
-		'Play As Opponent': [ClientPrefs.data, 'playAsOpponent']
-	},
-	'Visual Options': {
-		'hideHud': [ClientPrefs.data, 'hideHud'],
-		'lowQuality': [ClientPrefs.data, 'lowQuality'],
-		'frameRate': [Engine, 'max_fps', [50,360,1]]
+var options: Array[Dictionary] = [
+	{'name': 'Gameplay Options', 'menu': [
+		{
+			'name': 'middlescroll', 'visual': "Strums",
+			'object': ClientPrefs.data, 'property': 'middlescroll', 'setter': set_middlescroll
+		},
+		{
+			'name': 'downscroll','visual': "Strums",
+			'object': ClientPrefs.data, 'property': 'downscroll', 'setter': set_downscroll
+		},
+		{
+			'name': 'play as opponent','visual': "Strums",
+			'object': ClientPrefs.data, 'property': 'playAsOpponent', 'setter': set_play_as_opponent
+		}
+	]},
+	{'name': 'Visual Options', 'menu': [
+		{
+			'name': 'Low Quality', 
+			'object': ClientPrefs.data, 
+			'property': 'lowQuality'
+		},
+		{
+			'name': 'Vsync', 
+			'object': DisplayServer, 'getter': DisplayServer.window_get_vsync_mode
+		}
+	]
 	}
-}
+]
+var cur_menu: OptionMenu: 
+	set(menu):
+		if cur_menu: disableNode(cur_menu)
+		cur_menu = menu
+		enableNode(menu)
+		_on_option_selected(cur_menu)
 
-var old_options: Array = []
-var textNodes: Array[Node]
+var menus_created: Dictionary = {}
+var prev_menus: Array = []
 
-var textsGroup: Node2D = Node2D.new()
 
-var curNode: Node
+var bg: Sprite2D = Sprite2D.new()
 
-var curOption: Dictionary
-var curSelected: int:
-	set(value):
-		if not textNodes:
-			return
-		var size = textNodes.size()
-		if value >= size:
-			value = 0
-		if value < 0:
-			value = size-1
-			
-		if value != curSelected:
-			FunkinGD.playSound('scrollMenu')
-		curNode = textNodes[value]
-		curNode.modulate = Color.WHITE
-		
-		textNodes[curSelected].modulate = Color.GRAY
-		curSelected = value
-		
-func _init():
-	if Paths.is_on_mobile: removeComputerOptions()
-	
+func _ready() -> void:
 	add_child(bg)
-	add_child(textsGroup)
-	
 	bg.centered = false
 	bg.texture = Paths.imageTexture('menuDesat')
+	var dir = "res://source/substates/Options/Visuals/"
+	for i in DirAccess.get_files_at(dir):
+		if i.ends_with('.tscn'): 
+			var obj_name = i.get_basename()
+			var scene = load(dir+i).instantiate()
+			visuals[obj_name] = scene
+			add_child(scene)
+			scene.name = obj_name
+			disableNode(scene)
 	
-	loadOptions(options)
+	#Load Options
+	cur_menu = createMenuOptions(options,'default')
 
-func removeComputerOptions() -> void:
-	options["Visual Options"].erase("Window Mode")
+func createMenuOptions(option_data: Array, tag: String):
+	if menus_created.has(tag): return menus_created[tag]
 	
-func loadOptions(data, save_old: bool = true):
-	if !data: return
-	curSelected = 0
-	for text in textNodes: text.queue_free()
+	var node = OptionMenu.new()
+	node.data = option_data
+	node.loadInterators()
+	node.on_index_changed.connect(_on_option_selected.bind(node))
+	add_child(node)
+	return node
 	
-	textNodes.clear()
-	textsGroup.position.y = 0
-	var id = -1
-	
-	
-	for option in data:
-		id += 1
-		var node = AlphabetText.new(option+':' if not data[option] is Dictionary else option)
-		node.name = option
-		node.position = Vector2(10,50 + 100*id)
-		node.modulate = Color.GRAY
-		textsGroup.add_child(node)
-		textNodes.append(node)
-		
-		var option_data = data[option]
-		if option_data is Array: createOptions(node,option_data)
-	
-	if save_old: old_options.append(curOption)
-	curOption = data
-	curSelected = 0
-	
-func createOptions(node: Node,option_data: Array):
-	var object = option_data[0]
-	var variable = option_data[1]
-	var value = null
-	if ArrayHelper.get_array_index(option_data,3) is String and object is Object and object.has_method(option_data[3]): 
-		value = object.call(option_data[3])
-	else: 
-		value = object.get(variable)
-	
-	var type = typeof(value)
-	
-	if ArrayHelper.get_array_index(option_data,3) is Dictionary:
-		var number = createOptionControl(NumberRangeKeys,node,object,variable)
-		number.name = 'num_range'
-		number.set_index_keys(option_data[3])
-		connect_class_to_value(option_data,number.index_changed_key)
-		number.index = value
+func backMenu():
+	if !prev_menus:
+		if back_to: Global.swapTree(back_to)
 		return
-		
-	match type:
-		TYPE_BOOL:
-			var box = createOptionControl(check_box,node,object,variable)
-			box.scale = Vector2(0.8,0.8)
-			box.name = 'box'
-			box.position.y = -30
-			box.value = value
-			connect_class_to_value(option_data,box.toggled)
-		
-		TYPE_INT,TYPE_FLOAT:
-			var number = createOptionControl(NumberRange,node,object,variable)
-			number.int_value = (type == TYPE_INT)
-			number.name = 'num_range'
-			connect_class_to_value(option_data,number.value_changed)
-			number.value = value
-			
-			if option_data.size() >= 2:
-				number.limit_min = true
-				number.limit_max = true
-				
-				number.value_min = option_data[2][0]
-				number.value_max = option_data[2][1]
-				number.value_to_add = option_data[2][2]
+	var prev_menu = prev_menus.pop_back()
+	cur_menu = prev_menu
 
-func addValue(curNode):
-	var node = findChildRange(curNode)
-	if !node: return
-	if node is NumberRange: node.value += 1
-	elif node is NumberRangeKeys: node.index += 1
+#region Options Visual
 
-func subValue(curNode):
-	var node = findChildRange(curNode)
-	if !node: return
-	if node is NumberRange: node.value -= 1
-	elif node is NumberRangeKeys: node.index -= 1
+func _on_option_selected(menu: OptionMenu):
+	show_visual(menu.cur_data.get('visual',''))
 
-func findChildRange(node: Node) -> Node:
-	if !node: return null
-	var child = node.get_node_or_null('num_range')
-	if child: return child
-	return null
-	
-func connect_class_to_value(option_data: Array, _signal: Signal):
-	var _class = option_data[1]
-	if _class is Object and _class.has_method(option_data[1]):
-		_signal.connect(func(value):
-			_class.call(option_data[1],value)
-		)
-		return
-	
-	_signal.connect(func(value):
-		option_data[0].set(option_data[1],value)
-	)
-func createOptionControl(option_class,option_node, object_to_set: Variant, variable: Variant) -> Variant:
-	var obj = option_class.new()
-	option_node.add_child(obj)
-	obj.position.x = option_node.x + option_node.width + 50
-	return obj
+func show_visual(visual_name: String):
+	if !visual_name and !cur_visual: return
+	if cur_visual: 
+		if visual_name == cur_visual.name: return
+		disableNode(cur_visual)
+	cur_visual = get_node(visual_name)
+	if !cur_visual: return
+	enableNode(cur_visual)
 
-func exit():
-	Paths.saveFile(ClientPrefs.data,'res://data/options.json')
-	if !back_to: return
-	Global.swapTree(back_to.new())
-	Global.onSwapTree.connect(queue_free)
-func _input(event):
+func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
-			KEY_UP: curSelected -= 1
-			KEY_DOWN: curSelected += 1
-			KEY_LEFT: subValue(curNode)
-			KEY_RIGHT: addValue(curNode)
+			KEY_BACKSPACE: backMenu()
 			KEY_ENTER:
-				if not curNode: return
-				var optionName = curNode.name
-				var optionSelected = curOption[optionName]
-				var have_box = curNode.get_node_or_null('box')
-				if optionSelected is Dictionary: loadOptions(optionSelected)
-				elif have_box: have_box.value = !have_box.value
-			KEY_BACKSPACE:
-				if old_options: loadOptions(old_options.pop_back(),false)
-				else: exit()
-					
+				var cur_option_data = cur_menu.cur_data
+				if !cur_option_data: return
+				if cur_option_data.has('menu'):
+					prev_menus.append(cur_menu)
+					cur_menu = createMenuOptions(cur_option_data.menu,cur_option_data.name)
+				else:
+					var obj = cur_menu.get_node(cur_option_data.name)
+					if obj and obj.has_node('value'): obj = obj.get_node('value')
+					var value: Variant
+					match cur_option_data.get('type',0):
+						TYPE_BOOL: value = !obj.value
+						_: return
+					obj.value = value
+					var setter = cur_option_data.get('setter')
+					if setter: setter.call(value)
+
+#region Setters
+func set_middlescroll(middle: bool):
+	ClientPrefs.data.middlescroll = middle
+	cur_visual.middle = middle
+
+func set_downscroll(down: bool):
+	ClientPrefs.data.downscroll = down
+	cur_visual.downscroll = down
+	
+func set_play_as_opponent(play: bool):
+	ClientPrefs.data.playAsOpponent = play
+	cur_visual.left_side = play
+#endregion
+
+static func disableNode(node: Node):
+	if !node: return
+	node.process_mode = Node.PROCESS_MODE_DISABLED
+	node.visible = false
+
+static func enableNode(node: Node):
+	if !node: return
+	node.process_mode = Node.PROCESS_MODE_INHERIT
+	node.visible = true

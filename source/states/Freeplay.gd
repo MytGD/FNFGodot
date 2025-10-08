@@ -369,7 +369,7 @@ func exitDifficulty():
 func _process(_delta):
 	if cur_song_data:
 		var node = cur_song_data[1]
-		cur_week_node.position = cur_week_node.position.lerp(Vector2(-node.position.x,-node.position.y + 320),0.15)
+		cur_week_node.position = cur_week_node.position.lerp(Vector2(-node.position.x,-node.position.y + 320),0.1)
 	
 
 

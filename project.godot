@@ -22,7 +22,8 @@ run/main_scene="uid://d38t3n5h1bcw"
 run/disable_stderr=true
 run/print_header=false
 config/features=PackedStringArray("4.5", "GL Compatibility")
-run/max_fps=180
+run/max_fps=200
+run/delta_smoothing=false
 boot_splash/bg_color=Color(0, 0, 0, 0)
 boot_splash/show_image=false
 boot_splash/fullsize=false
@@ -63,9 +64,7 @@ canvas_items/debug_redraw_time=0.5
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/size/transparent=true
 window/stretch/mode="canvas_items"
-window/vsync/vsync_mode=0
 
 [dotnet]
 
@@ -77,7 +76,6 @@ enabled=PackedStringArray("res://addons/discord-rpc-gd/plugin.cfg")
 
 [gui]
 
-common/snap_controls_to_pixels=false
 theme/custom_font="uid://dd562b358n3k0"
 
 [importer_defaults]
@@ -175,7 +173,10 @@ pointing/emulate_touch_from_mouse=true
 
 [rendering]
 
+rendering_device/vsync/frame_queue_size=3
+rendering_device/vsync/swapchain_image_count=4
 renderer/rendering_method="mobile"
 textures/vram_compression/import_s3tc_bptc=true
+viewport/hdr_2d=true
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)
-viewport/transparent_background=true
+2d/sdf/scale=0

@@ -315,7 +315,7 @@ static func _convert_psych_to_original(json: Dictionary):
 			if i.has('loop'): anim.looped = i.loop
 			if i.has('anim'):  anim.name = i.anim; if i.has('name'): anim.prefix = i.name
 			
-			anim.offsets = i.get('offsets',[0,0])
+			anim.offsets = PackedFloat32Array(i.get('offsets',[0,0]))
 			anim.fps = i.get('fps',24.0)
 			
 			new_json.animations.append(anim)

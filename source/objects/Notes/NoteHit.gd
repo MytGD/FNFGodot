@@ -10,13 +10,7 @@ var copyScale: bool = false
 
 func updateNote():
 	super.updateNote()
-	var timeAbs = absf(distance)
-	ratingMod = 0
-	while ratingMod < _ratings_length:
-		if timeAbs < _rating_offset[ratingMod]: break
-		ratingMod += 1
-	rating = _rating_string[ratingMod]
-	
+	updateRating()
 	if !canBeHit: return
 	if sustainParents and ClientPrefs.data.splashesEnabled:
 		var firstSus = sustainParents[0]
@@ -27,7 +21,15 @@ func updateNote():
 		endSus.ratingMod = ratingMod
 		endSus.rating = rating
 
-func _load_data() -> void: super._load_data(); hit_action = getNoteAction()[noteData]
+func updateRating():
+	var timeAbs = absf(distance)
+	ratingMod = 0
+	while ratingMod < _ratings_length:
+		if timeAbs < _rating_offset[ratingMod]: break
+		ratingMod += 1
+	rating = _rating_string[ratingMod]
+func setNoteData(_data: int) -> void: 
+	super.setNoteData(_data); hit_action = getNoteAction()[_data]
 
 func followStrum(strum: StrumNote = strumNote):
 	super.followStrum(strum)

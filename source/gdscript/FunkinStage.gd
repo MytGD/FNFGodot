@@ -44,7 +44,7 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 		var sprite: Sprite
 		if image.begins_with("#"):
 			sprite = FunkinGD.makeSprite(name,null,position[0],position[1])
-			sprite.image.set_graphic_color(Color(image))
+			sprite.image.modulate = Color(image)
 			
 		elif data.get('animations'):
 			sprite = FunkinGD.makeAnimatedSprite(name,image,position[0],position[1])

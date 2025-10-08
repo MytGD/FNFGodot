@@ -5,10 +5,13 @@ uniform float space = 3.0;
 uniform float frequency = 1.0;
 uniform float offset = 0.0;
 uniform sampler2D screen_texture: hint_screen_texture;
+vec2 get_distorcion(vec2 uv){
+	float uv_x = cos((uv.y - offset - TIME * frequency)*PI*space)*strength;
+	uv_x *= clamp((uv.y - offset)*space,-1.0,1.0);
+	uv_x += uv.x;
+	return vec2(uv_x,uv.y);
+}
 void fragment(){
-	float uv_x = cos((SCREEN_UV.y - offset - TIME * frequency)*PI*space)*strength;
-	uv_x *= clamp((SCREEN_UV.y - offset)*space,-1.0,1.0);
-	uv_x += SCREEN_UV.x;
-	if(uv_x < 0.0 || uv_x > 1.0) discard;
-	COLOR = texture(screen_texture,vec2(uv_x,SCREEN_UV.y));
+	//COLOR = texture(TEXTURE,get_distorcion(UV));
+	COLOR = texture(screen_texture,get_distorcion(SCREEN_UV));
 }

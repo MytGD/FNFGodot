@@ -25,7 +25,6 @@ static func loadSparrow(file: String) -> Dictionary[String,Array]:
 	var sparrow: Dictionary[String,Array] = {}
 	_xml_parser.open(file)
 	
-	var prevFrameProperties: Dictionary = {}
 	while _xml_parser.read() == OK:
 		if _xml_parser.get_node_type() != XMLParser.NODE_ELEMENT: continue
 		var xmlName = _xml_parser.get_named_attribute_value_safe('name')
@@ -53,8 +52,6 @@ static func loadSparrow(file: String) -> Dictionary[String,Array]:
 		var r: float = 0.0
 		var p: Vector2 = Vector2.ZERO
 		
-		var last_frame: Dictionary = prevFrameProperties.get_or_add(xmlName,{})
-		
 		if _xml_parser.get_named_attribute_value_safe('rotated') == 'true':
 			r = deg_90
 			p.y += s.x
@@ -67,8 +64,6 @@ static func loadSparrow(file: String) -> Dictionary[String,Array]:
 			rotation: r
 		}
 		
-		var need_center_update: bool = !last_frame
-		
 		if _xml_parser.has_attribute('frameX'):
 			frameData[position] += -Vector2(
 				float(_xml_parser.get_named_attribute_value('frameX')),
@@ -79,27 +74,6 @@ static func loadSparrow(file: String) -> Dictionary[String,Array]:
 				float(_xml_parser.get_named_attribute_value('frameHeight'))
 			)
 			frameData[frameSize] = f_s
-			if last_frame and f_s != last_frame.get(frameSize):
-				need_center_update = true
-		
-		#if _xml_parser.has_attribute('pivotX'):
-			#frameData[pivot] = Vector2(
-				#float(_xml_parser.get_named_attribute_value('pivotX')),
-				#float(_xml_parser.get_named_attribute_value('pivotY'))
-			#)
-		
-		
-		if last_frame:
-			#if !need_center_update: frameData[position] -= last_frame[frameCenter]
-			#Remove values if not change.
-			for i in frameData:
-				var data = frameData[i]
-				var last_val = last_frame.get(i)
-				if last_val != null and data == last_val: 
-					frameData.erase(i)
-					continue
-		
-		last_frame.merge(frameData,true)
 		
 		
 		

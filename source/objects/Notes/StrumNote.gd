@@ -37,33 +37,16 @@ var default_scale: float = 0.7
 ##The [Input].action_key of the note, see [method Input.is_action_just_pressed]
 
 
-
+var styleName: String: set = setStrumStyleName
+var styleData: Dictionary
 ##Strum Texture
 var _auto_reload_when_change_texture: bool = true
-var texture: String: 
-	set(tex):
-		if !tex: tex = 'noteSkins/NOTE_assets'
-		else: tex = Paths.getPath(tex)
-		
-		
-		if isPixelNote and !tex.begins_with('pixelUI/'): tex = 'pixelUI/'+tex
-		
-		if tex == 'images/'+imageFile: return
-		var old_tex = texture
-		
-		texture = tex
-		if _auto_reload_when_change_texture:
-			reloadStrumNote()
-			texture_changed.emit(old_tex,tex)
+var texture: String: set = setTexture
 	
 ##If [code]true[/code], make the strum don't make to Static anim when finish's animation
 var specialAnim: bool = false
 
-##Invert the note direction.
-var downscroll: bool = false:
-	set(value):
-		multSpeed = -1.0 if value else 1.0
-		downscroll = value
+var downscroll: bool = false ##Invert the note direction.
 
 var multSpeed: float = 1.0 ##The note speed multiplier.
 
@@ -96,7 +79,7 @@ func _init(dir: int = 0):
 	animation.animation_started.connect(func(anim):
 		is_static = anim == 'static'
 	)
-const _anim_direction: Array = ['left','down','up','right']
+const _anim_direction: PackedStringArray = ['left','down','up','right']
 
 func reloadStrumNote(): ##Reload Strum Texture Data
 	animation.clearLibrary()
@@ -105,7 +88,7 @@ func reloadStrumNote(): ##Reload Strum Texture Data
 	image.texture = Paths.imageTexture(texture)
 	antialiasing = !isPixelNote
 	
-	if not isPixelNote:
+	if not isPixelNote or prefixs:
 		var type = _anim_direction[data]
 		
 		var static_anim = prefixs[type+'Static']
@@ -125,26 +108,39 @@ func reloadStrumNote(): ##Reload Strum Texture Data
 		addAnimOffset('static',static_offset[0],static_offset[1])
 	else:
 		var keyCount: int = Conductor.keyCount
+
 		image.region_rect.size = imageSize/Vector2(keyCount,5)
 		animation.addFrameAnim('static',[data])
 		animation.addFrameAnim('confirm',[data + (keyCount*3),data + (keyCount*4),data + keyCount])
 		animation.addFrameAnim('press',[data + (keyCount*3),data + (keyCount*2)])
 		
 	setGraphicScale(Vector2(default_scale,default_scale))
+	
 func loadFromStyle(noteStyle: String):
-	var style_data = Paths.loadJson('data/notestyles/'+noteStyle)
-	if !style_data: 
-		style_data = Paths.loadJson('data/notestyles/funkin.json')
-		if !style_data: return
-		return
-	style_data = style_data.get('strums')
-	if !style_data: return
-	
-	isPixelNote = style_data.get('isPixel',false)
-	prefixs = style_data.data
-	texture = style_data.assetPath
-	default_scale = style_data.get('scale',0.7)
-	
+	styleName = noteStyle
+	if !styleData: return
+	isPixelNote = styleData.get('isPixel',false)
+	prefixs = styleData.data
+	default_scale = styleData.get('scale',0.7)
+	texture = styleData.assetPath
+
+#region Setters
+func setTexture(_texture: String) -> void:
+	if !_texture: _texture = 'noteSkins/NOTE_assets'
+	else: _texture = Paths.getPath(_texture)
+	if isPixelNote and !_texture.begins_with('pixelUI/'): _texture = 'pixelUI/'+_texture
+	if _texture == 'images/'+imageFile: return
+	var old_tex = texture
+	texture = _texture
+	if _auto_reload_when_change_texture:
+		reloadStrumNote()
+		texture_changed.emit(old_tex,_texture)
+
+func setStrumStyleName(_name: String):
+	styleName = _name
+	styleData = getStrumStyleData(_name)
+#endregion
+
 func strumConfirm(anim: String = 'confirm'):
 	animation.play(anim,true)
 	hitTime = Conductor.stepCrochet/1000.0
@@ -160,3 +156,11 @@ func _process(delta: float) -> void:
 			if hitTime <= 0.0:
 				hitTime = 0.0
 				animation.play('static')
+
+static func getStrumStyleData(style: String) -> Dictionary:
+	var style_data = Paths.loadJson('data/notestyles/'+style)
+	if !style_data: 
+		style_data = Paths.loadJson('data/notestyles/funkin.json')
+		return {}
+	style_data = style_data.get('strums')
+	return style_data if style_data else {}

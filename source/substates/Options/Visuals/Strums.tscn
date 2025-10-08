@@ -1,0 +1,76 @@
+[gd_scene load_steps=2 format=3 uid="uid://dusa75g5tw2pm"]
+
+[sub_resource type="GDScript" id="GDScript_dciwt"]
+script/source = "extends Control
+const StrumNote = preload(\"res://source/objects/Notes/StrumNote.gd\")
+const Note = preload(\"res://source/objects/Notes/NoteHit.gd\")
+
+var DownPos = ScreenUtils.screenHeight - 150
+var strums: Array[StrumNote] = []
+var notes: Array[Note] = []
+
+var left_side: bool: 
+	set(value): left_side = value; update_strum_x()
+	
+var middle: bool = ClientPrefs.data.middlescroll: 
+	set(value): middle = value; update_strum_x()
+
+var downscroll: bool = ClientPrefs.data.downscroll: set = down_strums
+func _ready() -> void:
+	size = ScreenUtils.screenSize
+	for i in 4: 
+		var strum = StrumNote.new(i); 
+		strum.loadFromStyle('funkin')
+		if downscroll: strum.multSpeed = -1
+		strum._position = get_strum_pos(i)
+		strums.append(strum); 
+		add_child(strum)
+		
+		var note = Note.new(i)
+		note.loadFromStyle('funkin')
+		add_child(note)
+		notes.append(note)
+		note.strumNote = strum
+		note.distance = randf_range(ScreenUtils.screenHeight,ScreenUtils.screenHeight*2)
+		note.followStrum()
+		
+	scale = Vector2(0.45,0.45)
+	position = Vector2(ScreenUtils.screenWidth - size.x*scale.x - 10, 15)
+
+func get_strum_pos(index: int = 0) -> Vector2:
+	var center = ScreenUtils.screenCenter.x + (-112-66 if middle else (-112*5 if left_side else 112))
+	var pos = Vector2(center,DownPos if downscroll else 50)
+	pos.x += 112*index
+	return pos
+
+func update_strum_x():
+	for i in 4: FunkinGD.startTween(str(i)+'x',strums[i],{'x': get_strum_pos(i).x},0.5,'quintOut')
+
+func down_strums(is_down: bool = false):
+	downscroll = is_down
+	if is_down: 
+		for i in 4: FunkinGD.startTween(str(i)+'y',strums[i],{'y': DownPos,'multSpeed': -1},0.5,'quintOut')
+	else: 
+		for i in 4: FunkinGD.startTween(str(i)+'y',strums[i],{'y': 50,'multSpeed': 1},0.5,'quintOut')
+	
+
+func _process(delta: float) -> void:
+	for i in notes:
+		i.distance -= delta*1000.0
+		i.followStrum()
+		if i.distance <= 0:
+			i.strumNote.strumConfirm()
+			i.distance = randf_range(ScreenUtils.screenHeight,ScreenUtils.screenHeight*2)
+
+func _draw():
+	draw_rect(Rect2(Vector2.ZERO,Vector2(ScreenUtils.screenWidth,ScreenUtils.screenHeight)),Color.WHITE,false,10)
+#func _input(event: InputEvent) -> void:
+	#if event is InputEventKey and event.pressed and event.keycode == KEY_D:
+		#down_strums(!is_down_scroll)
+"
+
+[node name="Strums" type="Control"]
+clip_contents = true
+layout_mode = 3
+anchors_preset = 0
+script = SubResource("GDScript_dciwt")

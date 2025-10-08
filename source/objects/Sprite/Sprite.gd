@@ -7,131 +7,70 @@ extends SpriteAnimated
 class_name Sprite
 const CameraCanvas = preload("res://source/objects/Display/Camera.gd")
 
-@export var x: float:
-	set(value):_position.x = value
-	get(): return _position.x
-	
-##Position Y
-@export var y: float: 
-	set(value): _position.y = value
-	get(): return _position.y
+#region Transform
+@export var x: float: set = set_x, get = get_x
+@export var y: float: set = set_y, get = get_y
+var _position: Vector2: set = set_pos
 
-@export var offset: Vector2 = Vector2.ZERO: 
-	set(value):
-		if offset_follow_rotation and rotation: position -= (value - offset).rotated(rotation)
-		else: position -= value - offset
-		offset = value
+@export var angle: float: set = set_angle, get = get_angle ##Similar to [member Control.rotation_degrees].
+@export var alpha: float: set = set_alpha, get = get_alpha ##Change the alpha from the [member CanvasItem.modulate]
 
-@export var _position: Vector2 = Vector2.ZERO:
-	set(value):
-		position += value - _position
-		_position = value
+@export var width: float: set = set_width, get = get_width ##Texture width, only be changed when the sprite it's not being animated. 
+@export var height: float: set = set_height, get = get_height ##Texture height, only be changed when the sprite it's not being animated.
+@export var scrollFactor: Vector2 = Vector2.ONE ##A "parallax" effect
 
+var _graphic_scale: Vector2 = Vector2.ZERO: set = set_graphic_scale
+var _graphic_offset: Vector2 = Vector2.ZERO
+var midpoint_scale: Vector2 = Vector2.ONE
+#endregion
 
-##Similar to [member Control.rotation_degrees].
-@export var angle: float: 
-	set(value):
-		if rotation_degrees == value: return
-		rotation_degrees = value
-		_updatePos()
-	get(): return rotation_degrees
-
-
-##A "parallax" effect
-@export var scrollFactor: Vector2 = Vector2.ONE
-
-
-@export_category("Velocity")
-##This will accelerate the velocity from the value setted.
-@export var acceleration: Vector2 = Vector2.ZERO
-
-##Will add velocity from the position, making the sprite move.
-@export var velocity: Vector2 = Vector2.ZERO
-		
-##The limit of the velocity, set [Vector2](-1,-1) to unlimited.
-@export var maxVelocity: Vector2 = Vector2(999999,99999)
-
-@export_category("Image")
-
-var _animOffsets: Dictionary = {}
-
-##If [code]true[/code], the animation offset will be multiplied by the sprite scale when set.
-var offset_follow_scale: bool = false
+#region Offset
+@export var offset: Vector2: set = set_offset
+@export var offset_follow_scale: bool = false ##If [code]true[/code], the animation offset will be multiplied by the sprite scale when set.
+@export var offset_follow_rotation: bool = true ##If [code]true[/code], the animation offset will follow the rotation.
 
 ##If [code]true[/code], the animation offset will follow the sprite flips.[br][br]
 ##For example, if the sprite has flipped horizontally, the [param offset.x] will be multiplied to [code]-1[/code]
 ##when setted again, and the same for vertically.
-var offset_follow_flip: bool = false
-var offset_follow_rotation: bool = true
+@export var offset_follow_flip: bool = false
 
+#endregion
+
+#region Velocity
+@export_category("Velocity")
+@export var acceleration: Vector2 = Vector2.ZERO ##This will accelerate the velocity from the value setted.
+@export var velocity: Vector2 = Vector2.ZERO ##Will add velocity from the position, making the sprite move.
+@export var maxVelocity: Vector2 = Vector2(999999,99999) ##The limit of the velocity, set [Vector2](-1,-1) to unlimited.
+#endregion
+
+#region Camera
+var camera: Node: set = set_camera
+var _scroll_offset: Vector2 = Vector2.ZERO
+#endregion
+
+#region Image
+@export_category("Image")
+var _animOffsets: Dictionary = {}
 var imageSize: Vector2 = Vector2.ZERO ##The texture size of the [member image]
 
 ##The Path from the current image
 var imageFile: StringName: 
 	get(): return Paths.getPath(imagePath)
 
-##The [b]REAL[/b] Path from the current image
+##The [b]absolute[/b] Path from the current image
 var imagePath: StringName:
 	get(): return image.texture.resource_name if image.texture else ''
 
 ##Set the blend of the Sprite, can be: [param add,subtract,mix]
-@export_enum("none","add","mix","subtract","premult_alpha","overlay") 
-var blend: String = 'none': 
-	set(blendMode):
-		ShaderHelper.set_object_blend(self,blendMode)
-		blend = blendMode
-		
-##Change the alpha from the [member CanvasItem.modulate]
-@export var alpha: float: 
-	set(value): modulate.a = value
-	get(): return modulate.a
-
-
-##Texture width, only be changed when the sprite it's not being animated. 
-@export var width: float:
-	set(value):
-		image.region_rect.size.x = value
-	get():
-		return image.region_rect.size.x if is_animated else imageSize.x
-
-##Texture height, only be changed when the sprite it's not being animated.
-@export var height: float:
-	set(value):
-		image.region_rect.size.y = value
-	get():
-		return  image.region_rect.size.y if is_animated else imageSize.y
+@export var blend: CanvasItemMaterial.BlendMode: set = set_blend
+#endregion
 
 ##[code]True[/code] to make the texture more smooth.
 ##[code]False[/code] to make texture pixelated.
-@export var antialiasing: bool = true: 
-	set(enable):
-		antialiasing = enable
-		texture_filter = CanvasItem.TEXTURE_FILTER_PARENT_NODE if enable else CanvasItem.TEXTURE_FILTER_NEAREST
+@export var antialiasing: bool = true: set = set_antialiasing
+#endregion
 
 
-var _scroll_offset: Vector2 = Vector2.ZERO
-
-var _graphic_scale: Vector2 = Vector2.ZERO:
-	set(value):
-		_graphic_scale = value
-		_graphic_offset = image.pivot_offset*value
-
-var _graphic_offset: Vector2 = Vector2.ZERO
-
-var camera: Node: 
-	set(newCamera):
-		if camera == newCamera: return
-
-		var is_in_scene: bool =is_inside_tree()
-		if camera and camera is CameraCanvas: 
-			camera.remove.call(self)
-		camera = newCamera
-		if !is_in_scene: return
-		
-		if newCamera is CameraCanvas: newCamera.add(self)
-		else: reparent(newCamera)
-		
-var midpoint_scale: Vector2 = Vector2.ONE
 var groups: Array[SpriteGroup] = []
 
 
@@ -158,7 +97,11 @@ func _init(image_file: Variant = null, animated: bool = false):
 func screenCenter(type: StringName = 'xy') -> void:
 	var midScreen: Vector2 = ScreenUtils.screenSize/2.0
 	match type:
-		'xy': set_pos(midScreen.x - (pivot_offset.x * scale.x),midScreen.y - (pivot_offset.y * scale.y))
+		'xy':
+			_position = Vector2(
+				midScreen.x - (pivot_offset.x * scale.x),
+				midScreen.y - (pivot_offset.y * scale.y)
+			)
 		'x': x = midScreen.x - (pivot_offset.x * scale.x)
 		'y': y = midScreen.y - (pivot_offset.y * scale.y)
 
@@ -188,21 +131,6 @@ func centerOrigin():
 ##Sprite.set_pos(Vector2(1.0,1.0)) #Move Sprite to (1.0,1.0).
 ##Sprite.set_pos(1.0,1.0)#The same, but separated.
 ##[/codeblock]
-func set_pos(pos_x: Variant, pos_y: float = 0.0) -> void:
-	if pos_x is Vector2: _position = pos_x; return
-	_position = Vector2(pos_x,pos_y)
-
-
-##Create a Rect
-func makeGraphic(graphicWidth: float = 30.0, graphicHeight: float = 30.0, graphicColor: Color = Color.BLACK):
-	if animation:animation.clearLibrary()
-	image.texture = null
-	var color = ColorRect.new()
-	color.color = graphicColor
-	color.size = Vector2(graphicWidth,graphicHeight)
-	add_child(color)
-	color.name = 'graphic'
-
 ##Cut the Image, just works if [u]not animated[/u] and [member image.texture] is a [AtlasTexture].
 func setGraphicSize(sizeX: float = -1.0, sizeY: float = -1.0) -> void:
 	if !image.texture: return
@@ -243,7 +171,8 @@ func addAnimOffset(animName: StringName, offsetX: Variant = 0.0, offsetY: float 
 	var _offset: Vector2
 	match typeof(offsetX):
 		TYPE_VECTOR2,TYPE_VECTOR2I: _offset = offsetX
-		TYPE_ARRAY: _offset = Vector2(offsetX[0],offsetX[1])
+		TYPE_ARRAY,TYPE_PACKED_FLOAT32_ARRAY,TYPE_PACKED_FLOAT64_ARRAY,\
+		TYPE_PACKED_INT32_ARRAY,TYPE_PACKED_INT64_ARRAY: _offset = Vector2(offsetX[0],offsetX[1])
 		_: _offset = Vector2(offsetX,offsetY)
 	
 	_animOffsets[animName] = _offset
@@ -287,6 +216,43 @@ func set_offset_from_anim(anim: String) -> void:
 	if offset_follow_flip: off *= image.scale
 	offset = off
 
+#region Setters
+func set_x(_x: float): position.x += _x - position.x; _position.x = _x
+func set_y(_y: float): _position.y += _y - position.y; _position.y = _y
+func set_pos(_pos: Vector2): position += _pos - _position; _position = _pos
+func set_angle(_angle: float): if rotation_degrees != _angle: rotation_degrees = _angle; _updatePos()
+func set_alpha(_alpha: float): modulate.a = _alpha
+func set_width(_width: float): image.region_rect.size.x = _width
+func set_height(_height: float): image.region_rect.size.y = _height
+func set_blend(_blend: CanvasItemMaterial.BlendMode): ShaderHelper.set_object_blend(self,_blend); blend = _blend
+func set_antialiasing(allow: bool): 
+	antialiasing = allow
+	texture_filter = CanvasItem.TEXTURE_FILTER_PARENT_NODE if allow else CanvasItem.TEXTURE_FILTER_NEAREST
+func set_graphic_scale(_scale: Vector2): 
+	_graphic_scale = _scale; 
+	_graphic_offset = image.pivot_offset*_scale
+func set_offset(_offset: Vector2): 
+	if offset_follow_rotation and rotation: position -= (_offset - offset).rotated(rotation)
+	else: position -= _offset - offset
+	offset = _offset
+func set_camera(_cam: Node):
+	if camera == _cam: return
+	var is_in_scene: bool =is_inside_tree()
+	if camera and camera is CameraCanvas: camera.remove.call(self)
+	camera = _cam
+	if !is_in_scene: return
+	if _cam is CameraCanvas: _cam.add(self)
+	else: reparent(_cam)
+#endregion
+
+#region Getters
+func get_x() -> float: return _position.x
+func get_y() -> float: return _position.y
+func get_angle() -> float: return rotation_degrees
+func get_alpha() -> float: return modulate.a
+func get_width() -> float:  return image.region_rect.size.x if is_animated else imageSize.x
+func get_height() -> float: return image.region_rect.size.y if is_animated else imageSize.y
+#endregion
 func _notification(what: int) -> void:
 	super._notification(what)
 	match what:

@@ -34,6 +34,8 @@ var vertical_alignment: VerticalAlignment = VERTICAL_ALIGNMENT_TOP
 var lettersPrefix: Dictionary = {}
 
 signal text_changed(new_text: String)
+
+
 func _init(curText: String = '', textWidth: float = -1.0):
 	Paths.image(imageFile)
 	if curText: text = curText
