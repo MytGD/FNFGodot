@@ -14,7 +14,7 @@
 	"downscroll": false,
 	"fixImageBorders": false,
 	"flashingLights": true,
-	"fps": 120.0,
+	"fps": 150,
 	"goodOffset": 130.0,
 	"hideHud": false,
 	"lowQuality": false,
@@ -180,5 +180,7 @@
 	"splashAlpha": 0.8,
 	"splashSkin": "NoteSplashes",
 	"splashesEnabled": true,
-	"timeBarType": "Disabled"
+	"timeBarType": "Disabled",
+	"vsync_mode": 1.0,
+	"window_mode": 0.0
 }

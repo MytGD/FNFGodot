@@ -51,29 +51,39 @@ static var data: Dictionary = {
 			[KEY_L]
 		]
 	},
-	
+	#region Gameplay Options
+	#Skins
 	'splashSkin': 'noteSplashes/noteSplashes',
 	'arrowSkin': 'noteSkins/NOTE_assets',
 	'noteSkin': 'Default',
 	
-	
-	#Gameplay Options
+	#Scrolls
 	'middlescroll': false,
 	'downscroll': false,
 	
-	'fps': 120,
-	'songOffset': 0,
 	'comboStacking': true,
-	
 	'playAsOpponent': false,
+	'notHitSustainWhenMiss': false,
+	#endregion
 	
 	
+	
+	#region Screen Options
+	'window_mode': DisplayServer.WINDOW_MODE_WINDOWED,
+	'vsync_mode': DisplayServer.VSYNC_ENABLED,
+	'fps': 120,
+	#endregion
+	
+	#region Audio Options
+	'songOffset': 0,
+	#endregion
+	
+	
+	#region Gameplay Options
 	'timeBarType': 'Disabled',
 	'hideHud': false,
 	'botPlay': false,
-	
-	
-	
+
 	'comboOffset': PackedInt64Array([700,-250,-500,-200]),
 	'miraculousRating': false,
 	'miraculousOffset': 25.0,
@@ -84,39 +94,33 @@ static var data: Dictionary = {
 	'splashesEnabled': true,
 	'opponentSplashes': false,
 	'splashAlpha': 0.8,
-
+	#endregion
 	
-	#Visual  Options
+	#region Visual  Options
 	'lowQuality': false,
-	'shadersEnabled': true,
-	'flashingLights': true,
 	
+	'flashingLights': true,
 	'antialiasing': true,
-
-	'camZooms': true,
 	'fixImageBorders': false,
-	'notHitSustainWhenMiss': false
+	#region Effect Options
+	'camZooms': true,
+	'shadersEnabled': true,
+	#endregion
+	
+	#endregion
 
 }
-"""
-'arrowRGB': [
-		[Vector3(0.76,0.294,0.6), Vector3.ONE, Vector3(0.23,0.12,0.33)],
-		[Vector3(0,1,1), Vector3.ONE, Vector3(0.08,0.25,0.71)],
-		[Vector3(0.07,0.98,0.02), Vector3.ONE, Vector3(0.03,0.26,0.27)],
-		[Vector3(0.97,0.22,0.24), Vector3.ONE, Vector3(0.4,0.06,0.22)]
-	],
-'arrowRGBPixel': [
-	[0xFFE276FF, 0xFFFFF9FF, 0xFF60008D],
-	[0xFF3DCAFF, 0xFFF4FFFF, 0xFF003060],
-	[0xFF71E300, 0xFFF6FFE6, 0xFF003100],
-	[0xFFFF884E, 0xFFFFFAF5, 0xFF6C0000]
-]
-"""
 
 static func _init() -> void:
 	var options = JSON.parse_string(FileAccess.get_file_as_string("res://data/options.json"))
-	if options: DictionaryHelper.merge_existing(data,options)
-
+	if options: 
+		DictionaryHelper.merge_existing(data,options)
+		setOptionValues()
+	
+static func setOptionValues():
+	Engine.max_fps = data.fps
+	DisplayServer.window_set_mode(data.window_mode)
+	DisplayServer.window_set_vsync_mode(data.vsync_mode)
 static func disableMod(mod_name: String):
 	data.modsEnabled[mod_name] = false
 	

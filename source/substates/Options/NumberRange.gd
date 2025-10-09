@@ -10,12 +10,11 @@ var int_value: bool = false
 var limit_max: bool = false
 var limit_min: bool = false
 
-
 signal value_changed(new_value: float)
 func set_value(number: float) -> void:
 	if limit_max and limit_min: number = clampf(number,value_min,value_max)
-	elif limit_max: number = min(number,value_max)
-	elif limit_max: number = max(number,value_min)
+	elif limit_max: number = minf(number,value_max)
+	elif limit_max: number = maxf(number,value_min)
 	if number == value: return
 	value = number
 	text = str(get_value())

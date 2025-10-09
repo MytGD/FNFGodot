@@ -8,7 +8,7 @@ static var screenHeight: int:
 static var screenSize: Vector2 = DisplayServer.window_get_size()
 
 static var screenCenter: Vector2 = Vector2.ZERO
-	
+
 static var screenOffset: Vector2 = Vector2.ZERO
 
 static var defaultSize: Vector2 = Vector2.ZERO
@@ -23,7 +23,6 @@ static var defaultScaleMode: Window.ContentScaleMode = getScreenScaleModeViaStri
 static var main_window: Window
 
 static func _init() -> void:
-	#ProjectSettings.set_setting("display/window/size/viewport_width")
 	defaultSize.x = ProjectSettings.get_setting('display/window/size/viewport_width')
 	defaultSize.y = ProjectSettings.get_setting('display/window/size/viewport_height')
 	defaultSizeCenter = defaultSize/2.0
@@ -34,6 +33,7 @@ static func _set_window():
 	main_window = Engine.get_main_loop().root.get_window()
 	main_window.size_changed.connect(updateScreenSize)
 	updateScreenSize()
+	
 static func updateScreenData():
 	screenSize = defaultSize - screenOffset
 	screenCenter = screenSize/2.0

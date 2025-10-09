@@ -23,6 +23,7 @@ func _start_clients():
 	ScreenUtils._init()
 func _ready() -> void:
 	scene = get_parent()
+	
 ##Swap the Tree for a new [Node]. [br][br]
 ##[param newTree] can be a [Node], [PackedScene] or [GDScript].
 func swapTree(newTree: Variant, transition: bool = true, remove_current_scene: bool = true) -> void:

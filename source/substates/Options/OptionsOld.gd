@@ -167,7 +167,6 @@ func createOptionControl(option_class,option_node, object_to_set: Variant, varia
 	return obj
 
 func exit():
-	Paths.saveFile(ClientPrefs.data,'res://data/options.json')
 	if !back_to: return
 	Global.swapTree(back_to.new())
 	Global.onSwapTree.connect(queue_free)

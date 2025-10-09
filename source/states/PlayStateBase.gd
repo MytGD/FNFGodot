@@ -58,6 +58,7 @@ var camZooming: bool = false##If [code]true[/code], the camera make a beat effec
 @export_subgroup('Events')
 var eventNotes: Array[Dictionary] = []
 @export var generateEvents: bool = true
+var _is_first_event_load: bool = true
 
 @export_group("Countdown Options")
 @export var countDownEnabled: bool = true
@@ -181,8 +182,12 @@ func _ready():
 			uiGroup.add(timeTxt)
 
 	
-	for event in eventNotes: FunkinGD.callOnScripts('onLoadEvent',[event.event,event.variables])
-	
+	for event in eventNotes: 
+		FunkinGD.callOnScripts('onLoadEvent',[event.event,event.variables,event.strumTime])
+		FunkinGD.callScript('custom_events/'+event.event,'onLoadThisEvent',[event.variables,event.strumTime])
+		if _is_first_event_load:
+			FunkinGD.callOnScripts('onInitEvent',[event.event,event.variables,event.strumTime])
+			FunkinGD.callScript('custom_events/'+event.event,'onInitLocalEvent',[event.variables,event.strumTime])
 	health = 1.0
 	
 	if splashesEnabled: 
@@ -340,6 +345,7 @@ func loadNotes():
 	super.loadNotes()
 	if _events_preload: 
 		eventNotes = _events_preload.duplicate()
+		_is_first_event_load = false
 		return
 	var events_to_load = SONG.get('events',[])
 	var events_json = Paths.loadJson(Song.folder+'/events.json')

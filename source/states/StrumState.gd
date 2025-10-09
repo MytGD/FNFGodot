@@ -101,7 +101,7 @@ var _splashes_loaded: Dictionary = {}
 
 var splashesEnabled: bool = ClientPrefs.data.splashesEnabled and ClientPrefs.data.splashAlpha > 0
 var opponentSplashes: bool = splashesEnabled and ClientPrefs.data.opponentSplashes
-
+var splashHoldSpeed: float = 0.0
 var grpNoteSplashes: SpriteGroup = SpriteGroup.new() ##Note Splashes Group.
 var grpNoteHoldSplashes: Array[NoteSplash] = [] ##Note Hold Splashes Group.
 
@@ -192,8 +192,6 @@ func _init(json_file: StringName = '', song_difficulty: StringName = ''):
 func _ready():
 	loadSong()
 	loadSongObjects()
-	
-	
 	if Paths.is_on_mobile: createMobileGUI()
 	
 	_precache_combo()
@@ -650,7 +648,7 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 			splash.animation.setAnimDataValue(
 				'splash-hold',
 				'speed_scale',
-				(100.0/stepCrochet)
+				minf(100.0/stepCrochet,1.5)
 			)
 			
 			splash.animation.play('splash',true)
