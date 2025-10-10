@@ -14,7 +14,7 @@
 	"downscroll": false,
 	"fixImageBorders": false,
 	"flashingLights": true,
-	"fps": 150,
+	"fps": 240.0,
 	"goodOffset": 130.0,
 	"hideHud": false,
 	"lowQuality": false,

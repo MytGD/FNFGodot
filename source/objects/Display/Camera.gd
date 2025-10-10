@@ -154,8 +154,6 @@ func removeFilter(shader: ShaderMaterial) -> void: ##Remove shaders.
 	
 	if filter_id == filtersArray.size():  prev_image = _shader_image
 	else:  prev_image = _viewports_created[filter_id+1].get_node('Sprite2D')
-	
-	prev_image.material = view_image.material
 	prev_image.texture = view_image.texture
 	_viewports_created.remove_at(filter_id)
 	shader_viewport.queue_free()
@@ -302,6 +300,9 @@ static func _get_new_viewport() -> SubViewport:
 	var view = SubViewport.new()
 	view.transparent_bg = true
 	view.disable_3d = true
+	view.own_world_3d = true
+	view.audio_listener_enable_2d = false
+	view.audio_listener_enable_3d = false
 	view.size = ScreenUtils.screenSize
 	#view.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	return view

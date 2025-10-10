@@ -193,9 +193,7 @@ func _ready():
 	loadSong()
 	loadSongObjects()
 	if Paths.is_on_mobile: createMobileGUI()
-	
 	_precache_combo()
-	
 	if autoStartSong: startSong()
 
 func createMobileGUI():
@@ -265,7 +263,7 @@ func loadSong(data: String = song_json_file, songDifficulty: String = difficulty
 
 ##Load song data. Used in PlayState
 func loadSongObjects():
-	var arrow_s = SONG.get('arrowSkin')
+	var arrow_s = SONG.get('arrowStyle')
 	var splash_s = SONG.get('splashType')
 	var hold_s = SONG.get('holdSplashType')
 	

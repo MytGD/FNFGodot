@@ -28,50 +28,8 @@ const key_actions: Array[PackedStringArray] = [
 static var _rating_offset: Array[float] = [-1.0,45.0,130.0,150.0]
 static var noteStylesLoaded: Dictionary = {}
 static var miraculousRating: bool = false
-const styleDataPsych: Dictionary = {
-	"notes": {
-		"assetPath": "noteSkins/NOTE_assets",
-		"scale": 0.7,
-		"data": {
-			"left": {"prefix": "purple0"},
-			"down": {"prefix": "blue0"},
-			"up": {"prefix": "green0"},
-			"right": {"prefix": "red0"}
-		}
-	},
-	"strums": {
-		"assetPath": "noteSkins/NOTE_assets",
-		"scale": 0.7,
-		"data": {
-			"leftStatic": {"prefix": "arrowLEFT"},
-			"downStatic": {"prefix": "arrowDOWN"},
-			"upStatic": {"prefix": "arrowUP"},
-			"rightStatic": {"prefix": "arrowRIGHT"},
-			"leftConfirm": {"prefix": "left confirm", "offsets": [40,40]},
-			"downConfirm": {"prefix": "down confirm",  "offsets": [37,37]},
-			"upConfirm": {"prefix": "up confirm", "offsets": [40,40]},
-			"rightConfirm": {"prefix": "right confirm", "offsets": [40,40]},
-			"leftPress": {"prefix": "left press", "offsets": [-5,-5]},
-			"downPress": {"prefix": "down press", "offsets": [-2,-5]},
-			"upPress": {"prefix": "up press", "offsets": [-1,-1]},
-			"rightPress": {"prefix": "right press", "offsets": [-3,-3]}
-		}
-	},
-	"holdNote": {
-		"assetPath": "noteSkins/NOTE_assets",
-		"offsets": [45,45],
-		"data": {
-			"left": "purple hold piece",
-			"down": "blue hold piece",
-			"up": "green hold piece",
-			"right": "red hold piece",
-			"leftEnd": "pruple end hold",
-			"downEnd": "blue hold end",
-			"upEnd": "green hold end",
-			"rightEnd": "red hold end"
-		}
-	}
-}
+
+
 #endregion
 
 #region Copy Strum Vars
@@ -228,7 +186,6 @@ func reloadNote() -> void: ##Reload the Note animation and his texture.
 	if prefix:
 		var fps = prefix.get('fps',24.0)
 		animation.addAnimByPrefix('static',prefix.prefix,fps,true)
-		#animation.addAnimByPrefix('static',styleDataPsych.notes.data[dir].prefix,fps,true)
 	else:
 		image.region_rect.size = imageSize/Vector2(Conductor.keyCount,5)
 		animation.addFrameAnim('static',[noteData + Conductor.keyCount])

@@ -337,9 +337,9 @@ static func setProperty(property: String, value: Variant, target: Variant = null
 			split = property.split('.')
 			var obj_name = split[0]
 			if split.size() > 1:
-				push_error('Error on setting property "'+property.right(-obj_name.length()-1)+'": '+obj_name+" not founded")
+				push_warning('Error on setting property "'+property.right(-obj_name.length()-1)+'": '+obj_name+" not founded")
 			else:
-				push_error('Error on setting property: '+obj_name+" not founded")
+				push_warning('Error on setting property: '+obj_name+" not founded")
 			return
 		split = target[1]
 		target = target[0]
@@ -1604,41 +1604,47 @@ static func callScript(script: Variant,function: String = '', parameters: Array 
 ##Calls a function for every script created, 
 ##returns a [Array] with the values returned from then if [code]return_values[/code] is true.
 static func callOnScripts(function: String, parameters: Array = [], return_values: bool = false) -> Variant:
+	if return_values: return _call_scripts_returns(function,parameters)
 	var func_args = method_list.get(function)
-	if !func_args: 
-		if return_values: return []
-		return null
+	if !func_args: return
+	for i in func_args: callScriptNoCheck(i,function,parameters)
+	return
 	
-	if !return_values:
-		for i in func_args: callScriptNoCheck(i,function,parameters)
-		return
-	
+static func _call_scripts_returns(function: String, parameters: Array = []):
+	var func_args = method_list.get(function)
+	if !func_args: return []
 	var returns: Array = []
 	for i in func_args: returns.append(callScriptNoCheck(i,function,parameters))
 	return returns
-
-static func callScriptNoCheck(script: Object, function: String, parameters: Array = []):
+	
+static func callScriptNoCheck(script: Object, function: String, parameters = []):
 	var script_id = script.get_instance_id()
 	var args = arguments.get(script_id)
-	if !args: return
-	if !args.has(function): return
+	if !args or !args.has(function): return
 	args = args[function]
 	if !args: return script.call(function)
 	
-	var param_size = parameters.size()
-	var index: int = -1
-	
-	var new_parameters: Array[Variant] = []
-	for i in args:
-		index +=1
-		if index >= param_size: new_parameters.append(i.default); continue
-		var variable = parameters[index]
-		
-		if i.type != TYPE_NIL and typeof(variable) != i.type: new_parameters.append(type_convert(variable,i.type))
-		else: new_parameters.append(variable)
-	
-	return script.callv(function,new_parameters)
+	return script.callv(function,_sign_parameters(args,parameters)) 
 
+static func _sign_parameters(args: Array,parameters) -> Array:
+	if !args: return args
+	var index: int = -1
+	var new_parameters: Array[Variant] = []
+	
+	if parameters is Array:
+		var param_size = parameters.size()
+		for i in args:
+			index +=1
+			if index >= param_size: new_parameters.append(i.default); continue
+			var variable = parameters[index]
+			if i.type != TYPE_NIL and typeof(variable) != i.type: 
+				new_parameters.append(type_convert(variable,i.type))
+			else: new_parameters.append(variable)
+	else:
+		for i in args: new_parameters.append(i.default)
+		if args[0].type == TYPE_NIL or typeof(parameters) == args[0].type:
+			new_parameters[0] = parameters
+	return new_parameters
 
 static func _detect_class(tag: StringName) -> String:
 	for folder in ['backend','gdscript','global','objects','states','substates']:

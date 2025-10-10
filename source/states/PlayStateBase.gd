@@ -13,16 +13,7 @@ const ChartEditorScene = preload("res://scenes/states/ChartEditor.tscn")
 static var back_state = preload("res://source/states/Menu/ModeSelect.gd")
 var stateLoaded: bool = false #Used in FunkinGD
 
-const game_events: Array = [
-	'Add Camera Zoom',
-	'Change Character',
-	'Camera Follow Pos',
-	'Play Animation',
-	'Change Scroll Speed',
-	'Screen Shake',
-	'Change Stage',
-	'Alt Idle Animation'
-]
+
 enum IconState{
 	NORMAL,
 	LOSING,
@@ -264,14 +255,7 @@ func _process(delta):
 	#Skip Cutscene
 	if inCutscene and videoPlayer and skipCutscene and Input.is_action_just_pressed('ui_accept'): skipVideo()
 
-func updateNotes() -> void: #Function from StrumState
-	super.updateNotes()
-	if !generateEvents: return
-	while eventNotes and eventNotes[0].strumTime <= songPos:
-		var event = eventNotes.pop_front()
-		triggerEvent(event.event,event.variables)
-
-#region Beat Methods
+#region Icon Methods
 func updateIconPos(icon: Icon) -> void:
 	var icon_pos: Vector2 
 	if icon.flipX: icon_pos = healthBar.get_process_position(healthBar.progress - 0.03)
@@ -296,7 +280,10 @@ func updateIconsPivot() -> void:
 		for i in icons:
 			if i.flipX: i.pivot_offset = Vector2(0,i.image.pivot_offset.y)
 			else: i.pivot_offset = Vector2(i.image.pivot_offset.x*2.0,i.image.pivot_offset.y)
-		
+#endregion
+
+#region Beat Methods
+
 func iconBeat() -> void:
 	if !can_process(): return #Do not beat if the game is not being processed.
 	for i in icons: i.scale += i.beat_value
@@ -327,6 +314,11 @@ func onBeatHit(beat: int = Conductor.beat) -> void:
 #endregion
 
 #region Note Methods
+func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
+	var strum = super.createStrum(i,opponent_strum,pos)
+	FunkinGD.callOnScripts('onLoadStrum',[strum,opponent_strum])
+	return strum
+
 func createSplash(note) -> NoteSplash:
 	var splash = super.createSplash(note)
 	FunkinGD.callOnScripts('onSplashCreate',[splash])
@@ -370,7 +362,14 @@ func updateNote(note):
 	var _return = super.updateNote(note)
 	FunkinGD.callOnScripts('onUpdateNote',[note])
 	return _return
-	
+
+func updateNotes() -> void: #Function from StrumState
+	super.updateNotes()
+	if !generateEvents: return
+	while eventNotes and eventNotes[0].strumTime <= songPos:
+		var event = eventNotes.pop_front()
+		triggerEvent(event.event,event.variables)
+
 func hitNote(note: Note, character: Variant = null) -> void:
 	if not note: return
 	super.hitNote(note)
@@ -379,7 +378,8 @@ func hitNote(note: Note, character: Variant = null) -> void:
 	if !note.mustPress: camZooming = true
 	if note.mustPress != playAsOpponent: health += note.hitHealth * note.ratingMod 
 	
-	var audio: AudioStreamPlayer = Conductor.get_node_or_null("Voice" if note.mustPress else "OpponentVoice")
+	var audio: AudioStreamPlayer = Conductor.get_node_or_null("PlayerVoice" if note.mustPress else "OpponentVoice")
+	if !audio: audio = Conductor.get_node_or_null("Voice")
 	if audio: audio.volume_db = 0
 	
 	FunkinGD.callOnScripts('goodNoteHit' if note.mustPress else 'opponentNoteHit',[note])
@@ -426,11 +426,6 @@ func startCountdown():
 	
 	if skipCountdown: startSong()
 
-func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
-	var strum = super.createStrum(i,opponent_strum,pos)
-	FunkinGD.callOnScripts('onLoadStrum',[strum,opponent_strum])
-	return strum
-
 func loadSong(data: String = song_json_file, songDifficulty: String = difficulty):
 	super.loadSong(data,songDifficulty)
 	loadStage(SONG.get('stage',''),false)
@@ -457,18 +452,18 @@ func loadSongObjects() -> void:
 	if !inModchartEditor:
 		DiscordRPC.state = 'Now Playing: '+Song.songName
 		DiscordRPC.refresh()
-		
+	
 func loadEventsScripts():
 	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i+'.gd')
 	for i in Paths.getFilesAt(Paths.exePath+'/assets/custom_events',false,'.gd',true):
 		FunkinGD.addScript('custom_events/'+i)
+		
 func startSong():
 	super.startSong()
 	if Conductor.songs: Conductor.songs[0].finished.connect(endSound)
 	isSongStarted = true
 	FunkinGD.callOnScripts('onSongStart')
-	
-	
+
 func resumeSong() -> void:
 	if isSongStarted: Conductor.resumeSongs()
 	generateMusic = true
@@ -668,7 +663,6 @@ func updateScore():
 	FunkinGD.callOnScripts('onUpdateScore')
 #endregion
 
-
 #region Section Methods
 func onSectionHit(sec: int = Conductor.section) -> void:
 	if sec < 0: return
@@ -689,7 +683,6 @@ func detectSection() -> StringName:
 #endregion
 
 #region Character Methods
-
 #Replaced in PlayState and PlayState3D
 func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 	updateIconsImage(healthBar_State)
@@ -731,44 +724,13 @@ func loadStage(stage: StringName, loadScript: bool = true):
 	
 #endregion
 
-#region Setters
-func _set_hide_hud(hide: bool):
-	hideHud = false
-	for i in get_hud_elements(): if i: i.visible = !hide
-	hideHud = hide
-	
-		
-func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
-	healthBar.flip = !isOpponent
-	super._set_play_opponent(isOpponent)
 
-#region Health Methods
-func set_health(value: float):
-	value = clamp(value,-1.0,2.0)
-	#if health == value: return
-	health = value
-	
-	if isGameOverEnabled(): gameOver(); return
-	
-	var progress_h = value/2.0
-	healthBar.progress = progress_h if playAsOpponent else 1.0 - progress_h
-	
-	var bar_state = 0.0
-	if progress_h >= 0.7: bar_state = IconState.WINNING
-	elif progress_h <= 0.3: bar_state = IconState.LOSING
-	else: bar_state = IconState.NORMAL
-	
-	if bar_state != healthBar_State:
-		healthBar_State = bar_state
-		updateIconsImage(healthBar_State)
-	#endregion
 
-##Set HealthBar angle(in degrees). See also [method @GlobalScope.rad_to_deg]
-func setHealthBarAngle(angle: float):
-	healthBar.rotation_degrees = angle
-	updateIconsPivot()
-#endregion
-
+#region Combo Methods
+func createCombo(rating: String) -> Combo:
+	var combo = super.createCombo(rating)
+	if combo: FunkinGD.callOnScripts('onComboCreated',[combo,rating])
+	return combo
 
 #region General Methods
 func get_hud_elements() -> Array[Node]:
@@ -791,15 +753,52 @@ func isGameOverEnabled() -> bool:
 	return canGameOver and health < 0.0 \
 			and not inGameOver\
 			and not FunkinGD.Function_Stop in FunkinGD.callOnScripts('onGameOver',[],true)
-#endregion
 
 func clear():
 	super.clear()
 	camHUD.removeFilters()
 	camOther.removeFilters()
+	
 static func _reset_values():
 	super._reset_values()
 	_events_preload.clear()
 	EventNote.eventsFounded.clear()
 	EventNote.event_variables.clear()
+#endregion
+
+#region Health Methods
+func set_health(value: float):
+	value = clamp(value,-1.0,2.0)
+	#if health == value: return
+	health = value
+	
+	if isGameOverEnabled(): gameOver(); return
+	
+	var progress_h = value/2.0
+	healthBar.progress = progress_h if playAsOpponent else 1.0 - progress_h
+	
+	var bar_state = 0.0
+	if progress_h >= 0.7: bar_state = IconState.WINNING
+	elif progress_h <= 0.3: bar_state = IconState.LOSING
+	else: bar_state = IconState.NORMAL
+	
+	if bar_state != healthBar_State:
+		healthBar_State = bar_state
+		updateIconsImage(healthBar_State)
+
+##Set HealthBar angle(in degrees). See also [method @GlobalScope.rad_to_deg]
+func setHealthBarAngle(angle: float):
+	healthBar.rotation_degrees = angle
+	updateIconsPivot()
+#endregion
+
+#region Setters
+func _set_hide_hud(hide: bool):
+	hideHud = false
+	for i in get_hud_elements(): if i: i.visible = !hide
+	hideHud = hide
+	
+func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
+	healthBar.flip = !isOpponent
+	super._set_play_opponent(isOpponent)
 #endregion
