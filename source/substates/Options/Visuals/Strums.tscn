@@ -17,9 +17,11 @@ var middle: bool = ClientPrefs.data.middlescroll:
 
 var downscroll: bool = ClientPrefs.data.downscroll: set = down_strums
 func _ready() -> void:
+	clip_contents = true
 	size = ScreenUtils.screenSize
 	for i in 4: 
 		var strum = StrumNote.new(i); 
+		#strum.show_behind_parent = true
 		strum.loadFromStyle('funkin')
 		if downscroll: strum.multSpeed = -1
 		strum._position = get_strum_pos(i)
@@ -31,11 +33,12 @@ func _ready() -> void:
 		add_child(note)
 		notes.append(note)
 		note.strumNote = strum
+		#note.show_behind_parent = true
 		note.distance = randf_range(ScreenUtils.screenHeight,ScreenUtils.screenHeight*2)
 		note.followStrum()
 		
 	scale = Vector2(0.45,0.45)
-	position = Vector2(ScreenUtils.screenWidth - size.x*scale.x - 10, 15)
+	position = Vector2(ScreenUtils.screenWidth - ScreenUtils.screenSize.x*scale.x - 10, 15)
 
 func get_strum_pos(index: int = 0) -> Vector2:
 	var center = ScreenUtils.screenCenter.x + (-112-66 if middle else (-112*5 if left_side else 112))
@@ -63,14 +66,11 @@ func _process(delta: float) -> void:
 			i.distance = randf_range(ScreenUtils.screenHeight,ScreenUtils.screenHeight*2)
 
 func _draw():
-	draw_rect(Rect2(Vector2.ZERO,Vector2(ScreenUtils.screenWidth,ScreenUtils.screenHeight)),Color.WHITE,false,10)
-#func _input(event: InputEvent) -> void:
-	#if event is InputEventKey and event.pressed and event.keycode == KEY_D:
-		#down_strums(!is_down_scroll)
+	draw_rect(Rect2(Vector2.ZERO,ScreenUtils.screenSize),Color.WHITE,false,10)
+	#draw_rect(Rect2(Vector2.ZERO,ScreenUtils.screenSize),Color.BLACK)
 "
 
 [node name="Strums" type="Control"]
-clip_contents = true
 layout_mode = 3
 anchors_preset = 0
 script = SubResource("GDScript_dciwt")

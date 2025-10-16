@@ -10,6 +10,8 @@ const replace_frag: Dictionary = {
 	'gl_FragColor': 'COLOR'
 }
 
+static var _blends_created: Dictionary[String,Material] = {}
+
 static func fragToGd(shaderCode: String) -> String:
 	for r in replace_frag:
 		shaderCode = shaderCode.replace(r,replace_frag[r])
@@ -27,27 +29,28 @@ static func fragToGd(shaderCode: String) -> String:
 	
 #region Blend Methods
 static func get_blend(blend: String) -> Material:
-	match blend.to_lower():
+	blend = blend.to_lower()
+	if _blends_created.has(blend): return _blends_created[blend]
+	
+	var canvas: Material
+	match blend:
 		'add':
-			var canvas = CanvasItemMaterial.new()
+			canvas = CanvasItemMaterial.new()
 			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-			return canvas
 		'mix':
-			var canvas = CanvasItemMaterial.new()
+			canvas = CanvasItemMaterial.new()
 			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
-			return canvas
 		'subtract':
-			var canvas = CanvasItemMaterial.new()
+			canvas = CanvasItemMaterial.new()
 			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_SUB
-			return canvas
+			
 		'premult_alpha':
-			var canvas = CanvasItemMaterial.new()
+			canvas = CanvasItemMaterial.new()
 			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_PREMULT_ALPHA
-			return canvas
 		'overlay':
-			var shader_material = ShaderMaterial.new()
-			shader_material.shader = Shader.new()
-			shader_material.shader.code = "
+			canvas = ShaderMaterial.new()
+			canvas.shader = Shader.new()
+			canvas.shader.code = "
 			shader_type canvas_item;
 			uniform sampler2D screen_texture : hint_screen_texture;
 			void fragment(){
@@ -56,9 +59,9 @@ static func get_blend(blend: String) -> Material:
 				COLOR = mix(2.0 * COLOR * tex, 1.0 - 2.0 * (1.0 - COLOR) * (1.0 - tex), step(0.5, tex));
 			}
 			"
-			return shader_material
-		_:
-			return null
+		_: return null
+	_blends_created[blend] = canvas
+	return canvas
 static func set_object_blend(object,blendMode: Variant) -> void:
 	if !object: return
 	var material: CanvasItemMaterial

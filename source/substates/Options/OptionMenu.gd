@@ -49,7 +49,7 @@ func loadInterators():
 			
 		text_n.modulate = Color.DARK_GRAY
 		if value_type:
-			text_n.text = data.name+':'
+			text_n.text = data.name+': '
 			createOptionInterator(data,value,text_n)
 			
 		else: text_n.text = data.name
@@ -68,9 +68,18 @@ static func createOptionInterator(option_data: Dictionary, value: Variant, at: F
 	var object
 	var pos = Vector2.ZERO
 	var value_options = option_data.get('options')
+	var min = option_data.get('min')
+	var max = option_data.get('max')
 	match typeof(value):
 		TYPE_BOOL: object = FunkinCheckBox.new(); pos.y -= 50
-		TYPE_FLOAT: object = NumberRange.new()
+		TYPE_FLOAT: 
+			object = NumberRange.new()
+			if min != null:
+				object.limit_min = true
+				object.value_min = min
+			if max != null:
+				object.limit_max = true
+				object.value_max = max
 		TYPE_INT:
 			if value_options:
 				object = TextRange.new()
@@ -79,6 +88,12 @@ static func createOptionInterator(option_data: Dictionary, value: Variant, at: F
 				object = NumberRange.new()
 				object.int_value = true
 				object.value_to_add = 1
+				if min != null:
+					object.limit_min = true
+					object.value_min = min
+				if max != null:
+					object.limit_max = true
+					object.value_max = max
 		_: return
 	
 	#Set Current Value

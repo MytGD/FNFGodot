@@ -33,7 +33,7 @@ var _shake_pos: Vector2 = Vector2.ZERO
 
 #region Shaders
 var filtersArray: Array = []
-var _viewport: SubViewport
+var viewport: SubViewport
 var _viewports_created: Array[SubViewport]
 var _last_viewport_added: SubViewport
 var _shader_image: Sprite2D
@@ -48,7 +48,7 @@ func _init() -> void:
 	#mouse_filter = Control.MOUSE_FILTER_IGNORE
 	clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 	
-	bg.modulate = Color(0.0,0.0,0.0,0.0)
+	bg.modulate = Color.TRANSPARENT
 	bg.name = 'bg'
 	width = ScreenUtils.screenWidth
 	height = ScreenUtils.screenHeight
@@ -70,7 +70,7 @@ func _update_camera_size():
 	#size = Vector2(width,height)
 	flashSprite.scale = size
 	bg.scale = size
-	if _viewport: _viewport.size = size
+	if viewport: viewport.size = size
 	pivot_offset = size/2.0
 	queue_redraw()
 	
@@ -84,10 +84,10 @@ func setFilters(shaders: Array = []) -> void: ##Set Shaders in the Camera
 	filtersArray.append_array(_convertFiltersToMaterial(shaders))
 	if !filtersArray: return
 	
-	_add_camera_to_viewport()
+	create_viewport()
 	_shader_image.material = filtersArray.front()
 	
-	if filtersArray.size() == 1: _shader_image.texture = _viewport.get_texture(); return
+	if filtersArray.size() == 1: _shader_image.texture = viewport.get_texture(); return
 	
 	var index: int = filtersArray.size()-2
 	while index >= 0:
@@ -99,7 +99,7 @@ func addFilters(shaders: Variant) -> void: ##Add shaders to the existing ones.
 	if !shaders is Array: shaders = [shaders]
 	shaders = _convertFiltersToMaterial(shaders)
 	
-	_add_camera_to_viewport()
+	create_viewport()
 	if _shader_image.material: _addViewportShader(_shader_image.material)
 	
 	
@@ -118,8 +118,7 @@ func _convertFiltersToMaterial(shaders: Array) -> Array[Material]:
 
 func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	if !_last_viewport_added: return
-	
-	_add_camera_to_viewport()
+	create_viewport()
 	
 	var viewport = _get_new_viewport()
 	add_child(viewport)
@@ -160,38 +159,46 @@ func removeFilter(shader: ShaderMaterial) -> void: ##Remove shaders.
 	
 
 func removeFilters(): ##Remove every shader created in this camera.
+	if !filtersArray: return
 	filtersArray.clear()
 	if _shader_image:
 		_shader_image.queue_free()
 		_shader_image = null
 	
-	if _viewport:
-		scroll_camera.reparent(self,false)
-		move_child(scroll_camera,0)
-		_viewport.queue_free()
-		_viewport = null
-	
+	if can_remove_viewport(): remove_viewport()
 	if _viewports_created:
 		for i in _viewports_created: i.queue_free()
 		_viewports_created.clear()
 	
 	
-func _add_camera_to_viewport():
-	if _viewport: return
+func create_viewport() -> void:
+	if viewport: return
 	
-	_viewport = _get_new_viewport()
-	add_child(_viewport)
-	scroll_camera.reparent(_viewport,false)
+	viewport = _get_new_viewport()
+	add_child(viewport)
+	flashSprite.reparent(viewport,false)
+	scroll_camera.reparent(viewport,false)
 	
-	_last_viewport_added = _viewport
+	_last_viewport_added = viewport
 	if _shader_image: return
 	
 	_shader_image = Sprite2D.new()
 	_shader_image.centered = false
-	_shader_image.texture = _viewport.get_texture()
+	_shader_image.texture = viewport.get_texture()
 	
 	add_child(_shader_image)
 	move_child(_shader_image,0)
+
+func remove_viewport() -> void:
+	if !viewport: return
+	flashSprite.reparent(self,false)
+	scroll_camera.reparent(self,false)
+	move_child(scroll_camera,0)
+	viewport.queue_free()
+	viewport = null
+
+func can_remove_viewport() -> bool:
+	return !filtersArray and not (viewport and viewport.world_3d)
 #endregion
 
 #region Effects Methods

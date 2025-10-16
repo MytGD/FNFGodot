@@ -151,16 +151,17 @@ func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 	if note.noAnimation: super.hitNote(note,character); return
 	
 	var mustPress: bool = note.mustPress
+	var target = boyfriend if mustPress else dad
 	var gfNote = note.gfNote or (gfSection and mustPress == mustHitSection)
 	var dance: bool = not (mustPress != playAsOpponent and not botplay)
 	
 	if gfNote:
-		if character: character.autoDance = false
+		if target: target.autoDance = true
 		if gf: gf.autoDance = dance
 	else:
-		if character: character.autoDance = dance
+		if target: target.autoDance = dance
 		if gf: gf.autoDance = true
-
+	
 	if !character: super.hitNote(note,character); return;
 	var animNote = singAnimations[note.noteData]
 	
@@ -175,10 +176,9 @@ func noteMiss(note: Note, character: Variant = getCharacterNote(note)):
 	if character: character.animation.play(singAnimations[note.noteData]+'miss',true)
 	super.noteMiss(note,character)
 
-#Set in scripts/cameraMoviment.gd in game's folder.
-#func moveCamera(target: StringName = 'boyfriend') -> void:
-	#camFollow = getCameraPos(get(target)) 
-	#super.moveCamera(target)
+func moveCamera(target: StringName = 'boyfriend') -> void:
+	camFollow = getCameraPos(get(target)) 
+	super.moveCamera(target)
 
 func screenBeat() -> void:
 	camGame.zoom += 0.015

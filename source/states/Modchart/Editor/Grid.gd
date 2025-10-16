@@ -1,9 +1,9 @@
 @tool
 extends ColorRect
-const ModchartEditor = preload("res://source/states/Modchart/ModchartEditor.gd")
+const ModchartEditor = preload("res://source/states/Modchart/Editor/ModchartEditor.gd")
 const ModchartState = preload("res://source/states/Modchart/ModchartState.gd")
 const KeyInterpolator = preload("res://source/states/Modchart/KeyInterpolator.gd")
-const KeyInterpolatorNode = preload("res://source/states/Modchart/KeyInterpolatorNode.gd")
+const KeyInterpolatorNode = preload("res://source/states/Modchart/Editor/KeyInterpolatorNode.gd")
 
 var keys: Dictionary[String,Array] = {}
 var keys_index: Dictionary[String,PackedInt64Array] = {}
@@ -11,8 +11,11 @@ var properties: Dictionary[String,Dictionary] = {}
 
 var _keys_created: Array = []
 
-var object: Variant
+var dropdownBox: DropdownBox
 
+var object: Variant
+var object_name: String
+var property_list: Dictionary
 func process_keys_front() -> void:
 	for i in keys:
 		var _k = keys[i]
@@ -65,6 +68,7 @@ func addKey(step: float, property: String, value: Variant, duration: float,trans
 	var key = key_node.data
 	
 	key.object = object
+	key.object_name = object_name
 	key.time = Conductor.get_step_time(step)
 	key.duration = duration
 	key.transition = transition
@@ -112,10 +116,11 @@ func insertKeyToArray(key_node: KeyInterpolatorNode) -> int:
 	_keys.insert(index,key)
 	spawn_key(key.key_node)
 	return index
-	
+
 func removeKey(key: KeyInterpolatorNode):
 	var data = key.data
 	var keys_array = keys[data.property]
+	
 	var index = keys_array.find(data)
 	var key_index = keys_index[data.property]
 	
@@ -123,27 +128,29 @@ func removeKey(key: KeyInterpolatorNode):
 	if key_index[0] and index <= key_index[0]: key_index[0] -= 1
 	if key_index[1] and index <= key_index[1]: key_index[1] -= 1
 	
-	
+	print(data)
 	keys_array.erase(data)
 	_keys_created.erase(key)
 	key.queue_free()
 	
-func createProperty(prop: String):
+func createProperty(prop: String) -> bool:
+	if properties.has(prop): return true
 	keys[prop] = []
 	keys_index[prop] = PackedInt64Array([0,0])
 	
-	if !properties.has(prop):
-		var obj = FunkinGD._find_object(object) if object is String else object
-		if !obj: return
-		
-		var value: Variant
-		if object is ShaderMaterial: 
-			value = RenderingServer.shader_get_parameter_default(object.shader.get_rid(),prop)
-		else:  
-			value = obj.get(prop)
-		properties[prop] = {'default': value,'type': typeof(value)}
+	var obj = object
+	if !obj: obj = FunkinGD._find_object(object_name)
+	if !obj: return false
+	
+	var value: Variant
+	if object is ShaderMaterial: value = RenderingServer.shader_get_parameter_default(object.shader.get_rid(),prop)
+	else: value = obj.get(prop)
+	properties[prop] = {'default': value,'type': typeof(value)}
 	updateSize()
+	return true
 
+func removeProperty(prop: String):
+	if properties.has(prop): return
 func updateSize():
 	size.y = keys.size()*ModchartEditor.grid_size.y
 	material.set_shader_parameter('parent_size',size)

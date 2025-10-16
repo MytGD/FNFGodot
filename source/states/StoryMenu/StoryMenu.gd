@@ -56,16 +56,15 @@ func _ready():
 	createWeeks()
 
 func loadWeeks():
-	var folders_to_look: PackedStringArray = ['assets/weeks']
-	
-	for i in Paths.modsEnabled: folders_to_look.append('mods/'+i+'/weeks')
+	var folders_to_look: PackedStringArray = ['/assets/weeks']
+	for i in Paths.modsEnabled: folders_to_look.append('/mods/'+i+'/weeks')
 	
 	for i in folders_to_look:
-		for json_s in Paths.getFilesAt(i,true,'.json'):
-			var json = Paths.loadJson(json_s)
+		for json_s in Paths.getFilesAtAbsolute(Paths.exePath+i,true,'.json',true):
+			var json = Paths.loadJsonNoCache(json_s)
 			json.mod = Paths.getModFolder(json_s)
 			
-			var json_name = json_s.get_file()
+			var json_name = json_s.get_file().get_basename()
 			weeks_data[json_name] = json
 			weeks_data_keys.append(json_name)
 
@@ -83,9 +82,9 @@ func createWeeks():
 		offset += 150
 
 func setWeekIndex(index: int):
+	if !weeks_data: return
 	if index < 0: index = weeks_data.size()-1
 	elif index >= weeks_data.size(): index = 0
-	
 	cur_week_data = weeks_data[weeks_data_keys[index]]
 	var text_weeks: String = ''
 	for i in cur_week_data.get('songs',[]): text_weeks += i[0]+'\n'
@@ -144,7 +143,8 @@ func createProp(data, prop_index:int =0):
 	
 	sprite.position += Vector2(
 		ScreenUtils.screenCenter.x - 650 + (300*prop_index),
-		300-(offset_y*sprite.scale.y)
+		#300-(offset_y*sprite.scale.y)
+		0
 	)
 	
 	return sprite
@@ -154,6 +154,7 @@ func exit():
 	if !back_to: return
 	set_process_input(false)
 	Global.swapTree(back_to,true)
+	
 func selectWeek(week: int = cur_week_selected):
 	pass
 func _input(event: InputEvent) -> void:

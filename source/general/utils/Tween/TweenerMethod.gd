@@ -4,8 +4,8 @@ var value: Variant
 var callable: Callable
 func _init(
 	_callable: Callable,
-	_init_val: float, 
-	to: float, 
+	_init_val: Variant, 
+	to: Variant, 
 	_duration: float, 
 	_transition: Tween.TransitionType = Tween.TRANS_LINEAR, 
 	_ease: Tween.EaseType = Tween.EASE_OUT

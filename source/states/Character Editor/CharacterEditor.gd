@@ -278,9 +278,7 @@ func updateDataInfo():
 	json_origin_offset[0].value = 0
 	json_origin_offset[1].value = 0
 	
-	gameplay_healtbar_color.color.r = character_node.healthBarColors[0]/255.0
-	gameplay_healtbar_color.color.g = character_node.healthBarColors[1]/255.0
-	gameplay_healtbar_color.color.b = character_node.healthBarColors[2]/255.0
+	gameplay_healtbar_color.color = character_node.healthBarColors
 	updateBarColor()
 	
 	gameplay_camera[0].value = character_node.cameraPosition[0]
@@ -306,6 +304,7 @@ func zoomBg(add: float):
 func updateBgPosition():
 	camera.scale = camera.scale.clamp(Vector2(0.45,0.45),Vector2(2,2))
 	camera.position.y = clampf(camera.position.y,-700,700)
+	
 func reloadCharacterAnim():
 	character_node.addCharacterAnimation(
 		cur_anim,
@@ -553,6 +552,7 @@ func _on_playable_character_toggled(toggled_on: bool) -> void:
 func _on_gf_character_toggled(toggle_on: bool) -> void:
 	character_node.isGF = toggle_on
 	updateCameraPosition()
+	
 func _on_flip_x_toggled(toggled_on: bool) -> void:
 	character_node.flipX = toggled_on != character_node.isPlayer
 	charJson.flipX = toggled_on

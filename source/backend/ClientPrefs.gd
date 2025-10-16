@@ -66,8 +66,6 @@ static var data: Dictionary = {
 	'notHitSustainWhenMiss': false,
 	#endregion
 	
-	
-	
 	#region Screen Options
 	'window_mode': DisplayServer.WINDOW_MODE_WINDOWED,
 	'vsync_mode': DisplayServer.VSYNC_ENABLED,
@@ -112,7 +110,7 @@ static var data: Dictionary = {
 }
 
 static func _init() -> void:
-	var options = JSON.parse_string(FileAccess.get_file_as_string("res://data/options.json"))
+	var options = Paths.loadJson("res://data/options.json")
 	if options: 
 		DictionaryHelper.merge_existing(data,options)
 		setOptionValues()

@@ -1,6 +1,6 @@
 @tool
 extends Node2D
-const ModchartEditor = preload("res://source/states/Modchart/ModchartEditor.gd")
+const ModchartEditor = preload("res://source/states/Modchart/Editor/ModchartEditor.gd")
 @export var timeline_offset: float = 20.0:
 	set(value):
 		timeline_offset = value

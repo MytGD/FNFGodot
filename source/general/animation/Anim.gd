@@ -167,7 +167,8 @@ func addAnimByPrefix(animName: String, prefix: String, fps: float = 24.0, loop: 
 
 func getFramesFromPrefix(prefix: String, indices: Variant = PackedInt32Array(), animation_file: String = _animFile) -> Array:
 	if indices is String: indices = get_indices_by_str(indices)
-	return AnimationService.getAnim(prefix,animation_file,indices)
+	if !indices: return AnimationService.getAnimFrames(prefix,animation_file)
+	return AnimationService.getAnimFramesIndices(prefix,animation_file,indices)
 	
 func addAnimation(animName: String, frames: Array, fps: float = 24.0, loop: bool = false) -> Dictionary:
 	if !frames: return {}

@@ -60,9 +60,6 @@ var imageFile: StringName:
 ##The [b]absolute[/b] Path from the current image
 var imagePath: StringName:
 	get(): return image.texture.resource_name if image.texture else ''
-
-##Set the blend of the Sprite, can be: [param add,subtract,mix]
-@export var blend: CanvasItemMaterial.BlendMode: set = set_blend
 #endregion
 
 ##[code]True[/code] to make the texture more smooth.
@@ -224,7 +221,6 @@ func set_angle(_angle: float): if rotation_degrees != _angle: rotation_degrees =
 func set_alpha(_alpha: float): modulate.a = _alpha
 func set_width(_width: float): image.region_rect.size.x = _width
 func set_height(_height: float): image.region_rect.size.y = _height
-func set_blend(_blend: CanvasItemMaterial.BlendMode): ShaderHelper.set_object_blend(self,_blend); blend = _blend
 func set_antialiasing(allow: bool): 
 	antialiasing = allow
 	texture_filter = CanvasItem.TEXTURE_FILTER_PARENT_NODE if allow else CanvasItem.TEXTURE_FILTER_NEAREST

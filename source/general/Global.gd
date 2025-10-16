@@ -67,7 +67,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_0:
 			AudioServer.set_bus_mute(0,not AudioServer.is_bus_mute(0))
 		elif event.keycode == KEY_F11:
-			if !f11_to_fullscreeen or !ScreenUtils.main_window: return
+			if !f11_to_fullscreeen or !ScreenUtils.main_window or ScreenUtils.main_window.unresizable: return
 			var mode = ScreenUtils.main_window.mode
 			if mode == Window.MODE_EXCLUSIVE_FULLSCREEN:ScreenUtils.main_window.mode = Window.MODE_WINDOWED
 			else: ScreenUtils.main_window.mode = Window.MODE_EXCLUSIVE_FULLSCREEN

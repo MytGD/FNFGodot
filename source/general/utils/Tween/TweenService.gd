@@ -24,13 +24,13 @@ const easings = {
 	'outin': Tween.EASE_OUT_IN
 }
 
-static func detect_trans(trans: String, default: int = Tween.TRANS_LINEAR) -> Tween.TransitionType:
+static func detect_trans(trans: String, default: Tween.TransitionType = Tween.TRANS_LINEAR) -> Tween.TransitionType:
 	trans = trans.to_lower()
 	for keys in transitions:
 		if trans.begins_with(keys): return transitions[keys]
 	return default
 
-static func detect_ease(easing: String, default: int = Tween.EASE_OUT) -> Tween.EaseType:
+static func detect_ease(easing: String, default: Tween.EaseType = Tween.EASE_OUT) -> Tween.EaseType:
 	easing = easing.to_lower()
 	for tweenEase in easings:
 		if easing.ends_with(tweenEase):return easings[tweenEase]
@@ -49,8 +49,7 @@ func tween_shader(shader_material: ShaderMaterial, parameter: StringName, value:
 func createTween(object: Object,properties: Dictionary, time: float = 1.0, easing: String = 'linear') -> TweenerObject:
 	if !object: return null
 	var new_tween = TweenerObject.new(object,time,detect_trans(easing),detect_ease(easing))
-	for property in properties: 
-		new_tween.tween_property(property,properties[property])
+	for property in properties: new_tween.tween_property(property,properties[property])
 	tweens_to_update.append(new_tween)
 	return new_tween
 

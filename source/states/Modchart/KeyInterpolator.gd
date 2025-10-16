@@ -5,6 +5,7 @@ var time: float: set = _set_time
 var length: float = 0.0
 
 var object: Variant
+var object_name: String
 var property: String
 var duration: float: set = _set_duration
 var init_val: Variant: set = _set_init_val
@@ -12,6 +13,7 @@ var prev_val: Variant: set = _set_prev_val
 var value: Variant: set = _set_value
 var transition: Tween.TransitionType: set = _set_trans
 var ease: Tween.EaseType: set = _set_ease
+
 var array: Array = [
 	time,
 	init_val,
@@ -28,16 +30,6 @@ var tween_started: bool = false
 var is_shader: bool = false
 var _need_to_find_obj: bool = false
 
-
-func set_object_value(value: Variant):
-	if _need_to_find_obj:
-		var obj = FunkinGD.getProperty(object)
-		if obj: _set_obj_value_no_check(obj,value)
-	elif object: _set_obj_value_no_check(object,value)
-
-func _set_obj_value_no_check(obj: Object, value: Variant):
-	if is_shader: obj.set_shader_parameter(property,value)
-	else: FunkinGD.setProperty(property,value,obj)
 
 #region Data
 func _set_time(_time: float):

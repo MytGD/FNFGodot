@@ -2,28 +2,36 @@ extends Node
 
 const GRID_SIZE = Vector2(40,24)
 
+const EditorMaterial = preload("res://source/states/Modchart/Shaders/EditorShader.gd")
+
+const Character = preload("res://source/objects/Sprite/Character.gd")
+const CameraCanvas = preload("res://source/objects/Display/Camera.gd")
+const PlayState = preload("res://source/states/PlayState.gd")
+
 const KeyInterpolator = preload("res://source/states/Modchart/KeyInterpolator.gd")
-const KeyInterpolatorNode = preload("res://source/states/Modchart/KeyInterpolatorNode.gd")
+const KeyInterpolatorNode = preload("res://source/states/Modchart/Editor/KeyInterpolatorNode.gd")
 
 const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")
 const ModchartState = preload("res://source/states/Modchart/ModchartState.gd")
-const Grid = preload("res://source/states/Modchart/Grid.gd")
+const Grid = preload("res://source/states/Modchart/Editor/Grid.gd")
+
+const PropertiesAvaliable: Dictionary[Object,PackedStringArray] = {
+	Character: ['x','y','alpha','angle','scale'],
+	CameraCanvas: ['x','y','alpha','zoom','rotation'],
+	PlayState: ['defaultCamZoom']
+}
 
 var modchart_keys = ModchartState.keys
-var modchart_upating = ModchartState.keys_updating
+var modchart_upating = ModchartState.keys_index
 
-@onready var dialog_bg = $BG
-@onready var dialog: FileDialog = $FileDialog
-@onready var confirm_dialog: ConfirmationDialog = $ConfirmationDialog
-@onready var playState = $SubViewport/PlayState
 
 var songPosition: float = 0.0: set = set_song_editor_position
-var properties: Dictionary = {}
+var grids: Dictionary[String,Grid] = {}
 
 #Song Data
 @onready var bpm: LineEdit = $"VSplit/HSplit/PanelContainer/Song Data/Bpm"
 
-#Property Area
+#region Tween Variables
 @onready var duration: ButtonRange = $VSplit/HSplit/HSplit/Property/List/Duration
 
 @onready var transition_menu: MenuButton = $VSplit/HSplit/HSplit/Property/List/Transition/Options
@@ -33,8 +41,30 @@ var cur_transition: Tween.TransitionType
 @onready var ease_menu: MenuButton = $VSplit/HSplit/HSplit/Property/List/Ease/Options
 var cur_ease: Tween.EaseType
 @onready var ease_popup: PopupMenu = ease_menu.get_popup()
+#endregion
 
-@onready var property_name = $PropertyName
+#region Nodes
+@onready var dialog_bg = $BG
+@onready var dialog: FileDialog = $FileDialog
+@onready var confirm_dialog: ConfirmationDialog = $ConfirmationDialog
+@onready var playState = $SubViewport/PlayState
+
+@onready var key_options = $KeyOptions
+@onready var object_options = $VSplit/HSplitP/Panel/HBox/Object/Name
+
+
+@onready var property_options = $PropertyOptions
+@onready var properties_names = $PropertyOptions/Properties
+@onready var property_remove = $PropertyOptions/PropertyRemove
+
+#region Timeline
+@onready var position_line = $VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine
+@onready var timeline_panel = $VSplit/HSplitP/HTimeline/Timeline
+@onready var timeline = $VSplit/HSplitP/HTimeline/Timeline/Time
+#endregion
+
+#region Property Editor Variables
+#region Nodes
 
 @onready var property_value = $VSplit/HSplit/HSplit/Property/List/Value
 @onready var property_value_x = $VSplit/HSplit/HSplit/Property/List/ValueX
@@ -47,6 +77,7 @@ var cur_ease: Tween.EaseType
 @onready var property_init_value_y = $VSplit/HSplit/HSplit/Property/List/initValY
 @onready var property_init_value_z = $VSplit/HSplit/HSplit/Property/List/initValZ
 @onready var property_init_value_w = $VSplit/HSplit/HSplit/Property/List/initValW
+#endregion
 
 @onready var property_values: Dictionary[Variant.Type,Array] = {
 	TYPE_FLOAT: [property_value],
@@ -61,24 +92,25 @@ var cur_ease: Tween.EaseType
 	TYPE_VECTOR3: [property_init_value_x,property_init_value_y,property_init_value_x,property_init_value_z],
 	TYPE_VECTOR4: [property_init_value_x,property_init_value_y,property_init_value_z,property_init_value_w],
 }
+#endregion
 
-#Timeline
-@onready var position_line = $VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine
-@onready var timeline_panel = $VSplit/HSplitP/HTimeline/Timeline
-@onready var timeline = $VSplit/HSplitP/HTimeline/Timeline/Time
+#endregion
 
-#Grid Area
+
+#region Grid Properties
+const grid_shader = preload("res://source/states/Modchart/Shaders/Grid.gdshader")
 var grid_x: float = 0.0
 var grid_real_x: float = 0.0
 
 static var grid_size: Vector2 = GRID_SIZE
 var grid_zoom: float = 1.0
+#endregion
 
+#region TimeLine Properties
 var is_moving_line: bool = false
 var last_position_line: Vector2 = Vector2.ZERO
 var position_line_offset: float = 0.0
-
-const grid_shader = preload("res://source/states/Modchart/Grid.gdshader")
+#endregion
 
 #region Grid
 @onready var grid_material = ShaderMaterial.new()
@@ -98,7 +130,7 @@ const grid_shader = preload("res://source/states/Modchart/Grid.gdshader")
 #region Keys Area
 var is_shift_pressed: bool = false
 
-var data_selected: Dictionary
+var grid_selected: Grid
 var keys_selected: Array[KeyInterpolatorNode] = []
 var is_key_mouse_pressed: bool = false
 var is_moving_keys: bool = false
@@ -118,10 +150,9 @@ var is_transition_different: bool = false
 var is_ease_different: bool = false
 #endregion
 
-@onready var key_options = $KeyOptions
-@onready var object_options = $VSplit/HSplitP/Panel/HBox/Object/Name
-@onready var property_options = $PropertyOptions
+#region PopupMenus
 
+#endregion
 func _ready() -> void:
 	DiscordRPC.state = 'In Modchart Editor'
 	DiscordRPC.refresh()
@@ -200,7 +231,7 @@ func load_json() -> void:
 func selected_json(file: String = ''):
 	if !file: return
 	
-	if properties:
+	if grids:
 		confirm_dialog.visible = true
 		confirm_dialog.confirmed.connect(func():
 			_load_song_from_json(file); dialog_bg.visible = false,ConnectFlags.CONNECT_ONE_SHOT
@@ -216,7 +247,7 @@ func _load_song_from_json(dir_absolute: String):
 	set_song_editor_position(0.0)
 	
 	Paths.curMod = Paths.getModFolder(dir_absolute)
-	
+	updateShadersPopup()
 	removeAllGrids()
 	playState.clear()
 	playState._reset_values()
@@ -228,11 +259,11 @@ func _load_song_from_json(dir_absolute: String):
 	if playState.process_mode != ProcessMode.PROCESS_MODE_DISABLED: playState.startSong()
 	
 	if playState.Song.songName: 
-		if Paths.curMod: DiscordRPC.details = 'Editing: '+playState.Song.songName+' of the '+Paths.curMod+" mod"
-		else: DiscordRPC.details = 'Editing: '+playState.Song.songName
-	else: DiscordRPC.details = ''
-	
+		if Paths.curMod: DiscordRPC.details = 'Editing Modchart of: '+playState.Song.songName+' of the '+Paths.curMod+" mod"
+		else: DiscordRPC.details = 'Editing Modchart of: '+playState.Song.songName
+	else: DiscordRPC.details = 'Editing Modchart'
 	DiscordRPC.refresh()
+	
 	timeline.steps = Conductor.get_step_count()
 #endregion
 
@@ -245,16 +276,17 @@ func selected_shader(file: String = ''):
 	
 func addShader(tag: String = shader_tag.text, file: String = shader_menu.text, objects: PackedStringArray = []):
 	var shader = EditorMaterial.new()
-	shader.shader = Paths.loadShaderCode(file)
+	shader.loadShader(file)
 	
 	if !shader.shader: return
+	if !tag: tag = shader_tag.placeholder_text
 	
 	if !objects:
 		if shader_objects.text: objects = StringHelper.split_no_space(shader_objects.text,',')
 		else: objects = StringHelper.split_no_space(shader_objects.placeholder_text,',')
-		
+	
+	shader.shader_name = file.get_base_dir().get_basename()
 	shader.objects = objects
-	if !tag: tag = shader_tag.placeholder_text
 	
 	for i in objects:
 		var obj = FunkinGD._find_object(i)
@@ -264,8 +296,8 @@ func addShader(tag: String = shader_tag.text, file: String = shader_menu.text, o
 		if obj is CanvasItem:
 			if obj.material: Global.show_label_error("Can't add shader to "+i+", object already as a material."); continue
 			obj.material = shader
-	addFileToGrid(tag,shader)
-	
+	addFileToEditor(tag,shader)
+
 func updateShadersPopup() -> void:
 	shader_menu_popup.clear()
 	var cur_mod: String = Paths.game_name
@@ -279,11 +311,16 @@ func updateShadersPopup() -> void:
 
 #region Modchart Area
 func _process(delta: float) -> void:
-	if Conductor.is_playing: set_song_editor_position(Conductor.songPosition)
+	if playState.process_mode != playState.PROCESS_MODE_DISABLED: 
+		set_song_editor_position(Conductor.songPosition)
 	
 func on_save_modchart_pressed():
 	show_dialog(true,FileDialog.FILE_MODE_SAVE_FILE)
 	connect_to_dialog(save_modchart)
+
+func on_load_modchart_pressed():
+	show_dialog(true)
+	
 func save_modchart(path_absolute: String):
 	Paths.saveFile(ModchartState.get_keys_data(),path_absolute)
 	
@@ -292,7 +329,8 @@ func save_modchart(path_absolute: String):
 func set_song_editor_position(new_pos: float) -> void:
 	if new_pos == songPosition: return
 	
-	grid_x = maxf(0,Conductor.step_float - 15)
+	if Conductor.step_float < 0: grid_x = -24
+	else: grid_x = maxf(0,Conductor.step_float - 15)
 	
 	grid_real_x = grid_x*grid_size.x
 	position_line.position.x = grid_size.x*Conductor.step_float
@@ -302,14 +340,11 @@ func set_song_editor_position(new_pos: float) -> void:
 	var is_processing_back: bool = new_pos < songPosition
 	songPosition = new_pos
 	
-	if is_processing_back: 
-		ModchartState.process_keys_back()
-		playState.updateRespawnNotes()
-	else: ModchartState.process_keys_front()
+	if is_processing_back: playState.updateRespawnNotes()
+	ModchartState.process_keys(is_processing_back)
 	
-	
-	for i in properties:
-		var grid = properties[i].grid
+	for i in grids:
+		var grid = grids[i]
 		updateGridX(grid)
 		updateGridKeys(grid,is_processing_back)
 	updateKeysPositions()
@@ -326,7 +361,7 @@ func set_song_position_from_line() -> void:
 #region Grid
 func createGrid(object: Variant) -> Grid:
 	var grid: Grid = Grid.new()
-	grid.object = object
+	if object is Object: grid.object = object
 	grid.material = grid_material.duplicate()
 	grid.size = Vector2(ScreenUtils.screenWidth,10)
 	
@@ -342,119 +377,139 @@ func updateGridX(grid: Grid, is_going_back: bool = false) -> void:
 	grid.material.set_shader_parameter('x',grid_x)
 	grid.position.x = grid_real_x
 
-func updateGridY(grid_data: Dictionary) -> void:
-	var grid = grid_data.grid
-	grid.position.y = grid_data.dropdownBox.position.y + 24.0
+func updateGridY(grid: Grid) -> void:
+	grid.position.y = grid.dropdownBox.position.y + 24.0
 
 func set_grid_zoom(new_zoom: float):
 	grid_size = Vector2(GRID_SIZE.x*new_zoom,GRID_SIZE.y)
-	for i in properties:
-		var grid = properties[i].grid
+	for i in grids:
+		var grid = grids[i]
 		grid.material.set_shader_parameter('grid_size',grid_size)
 		for key in grid._keys_created: key.updatePos()
 	timeline.queue_redraw()
 
 func updateAllGrids(update_size: bool = false) -> void: 
-	for i in properties:
-		updateGridY(properties[i])
-		if update_size: properties[i].grid.updateSize()
+	for i in grids:
+		var grid = grids[i]
+		updateGridY(grid)
+		if update_size: grid.updateSize()
 
 func removeAllGrids() -> void:
 	ModchartState.clear()
-	for i in properties:
-		properties[i].grid.queue_free()
-		properties[i].dropdownBox.queue_free()
-	properties.clear()
+	for i in grids:
+		var grid = grids[i]
+		grid.dropdownBox.queue_free()
+		grid.queue_free()
+	grids.clear()
 	keys_selected.clear()
 
 func removeGrid(grid: Grid) -> void:
+	if !grid: return
+	
 	for i in grid.keys.values(): for k in i: keys_selected.erase(k.key_node)
-	grid.queue_free()
-
-func addFileToGrid(object_name: String, property: Object) -> void:
-	var grid_data = properties.get(object_name)
-	if grid_data:
-		Global.show_label_error('Object "'+object_name+'" alredy exists!')
-		return
 	
-	var property_list: Dictionary[String,Dictionary]
-	
-	if property is ShaderMaterial:
-		var uniform_list = property.shader.get_shader_uniform_list(true)
-		if !uniform_list:
-			Global.show_label_error("Error on Loading Shader: Shader don't have uniforms.")
-			return
-			
-		for i in uniform_list:
-			var type = i.type
-			var default_value = property.get_shader_parameter(i.name)
-			if default_value == null: default_value = MathHelper.get_new_value(type)
-			property_list[i.name] = {'default': default_value,'type': type}
-		
-	var grid = createGrid(property) if property else createGrid(object_name)
-	ModchartState.keys[object_name] = grid.keys
-	
-	
-	var icon = Sprite2D.new()
-	icon.texture = load("res://icons/basic/"+("Shader.svg" if property is ShaderMaterial else "Object.svg"))
-	icon.position = Vector2(20,8)
-	
-	var dropdownBox = DropdownBox.new()
-	dropdownBox.add_child(icon)
-	dropdownBox.name = object_name
-	dropdownBox.button_pressed = true
-	dropdownBox.toggled.connect(
-		func(toggled):
-			grid.visible = toggled
-			call_deferred('call_deferred','updateAllGrids')
-	)
-	dropdownBox.text_name = '  '+object_name
-	
-	grid_data = {
-		'object_name': object_name,
-		'object': property,
-		'grid': grid,
-		'dropdownBox': dropdownBox,
-		'property_list': property_list
-	}
-	
-	dropdownBox.text_label.gui_input.connect(dropdown_box_input.bind(grid_data))
-	
-	for i in property_list: addPropertyToGridFromData(grid_data,i)
-	grid_property.add_child(dropdownBox)
-	properties[object_name] = grid_data
-	
-	updateGridX(grid)
-	grid.updateSize()
-	call_deferred('call_deferred','updateAllGrids')
-
-func addPropertyToGridFromData(data: Dictionary, prop: String):
-	data.grid.createProperty(prop)
-	data.dropdownBox.texts.append(prop)
-	data.dropdownBox.update_texts()
-	ModchartState.addProperty(data.object_name,prop)
-
-func removeObjectFromData(data: Dictionary):
-	if !data: return
-	
-	var obj = getObjectFromData(data)
-	var grid = data.grid
+	var obj = getGridObject(grid)
 	
 	if obj is EditorMaterial:
 		for i in obj.objects:
 			var node = FunkinGD._find_object(i)
 			if !node: continue
 			if node is CameraCanvas: node.removeFilter(obj)
-			elif node.material == obj: node.material = null
+			else: node.material = null
 	elif obj:
+		#Return value to default
 		var grid_keys = grid.properties
 		for i in grid_keys: obj.set(i,grid_keys[i].default)
 	
-	ModchartState.removeObject(data.object_name)
+	ModchartState.removeObject(grid.object_name)
+	grids.erase(grid.object_name)
+	grid.dropdownBox.queue_free()
+	grid.queue_free()
 	
-	removeGrid(grid)
-	data.dropdownBox.queue_free()
-	properties.erase(data.object_name)
+	
+
+func addFileToEditor(object_name: String, object: Object) -> void:
+	#Check if the name already exists.
+	var grid_data = grids.get(object_name)
+	if grid_data: Global.show_label_error('Object "'+object_name+'" alredy exists!'); return
+	
+	var is_material = object is EditorMaterial
+	
+	var grid = createGrid(object_name)
+	grid.object = object
+	grid.object_name = object_name
+	
+	var modchart_data = {'keys': grid.keys}
+	var icon_texture: Texture
+	
+	if is_material:
+		if !object.uniforms: Global.show_label_error("Error on Loading Shader: Shader don't have uniforms."); return
+		
+		modchart_data.shader_name = object.shader_name
+		modchart_data.objects = object.objects
+		
+		icon_texture = load("res://icons/basic/Shader.svg")
+		
+	else: icon_texture = load("res://icons/basic/Object.svg")
+	
+	var icon = Sprite2D.new()
+	icon.texture = icon_texture
+	icon.position = Vector2(20,8)
+	
+	ModchartState.keys[object_name] = modchart_data
+	ModchartState.keys_index[object_name] = {}
+	
+	var dropdownBox = DropdownBox.new()
+	dropdownBox.add_child(icon)
+	dropdownBox.name = object_name
+	dropdownBox.button_pressed = true
+	dropdownBox.toggled.connect(show_grid.bind(grid))
+	dropdownBox.text_name = '  '+object_name
+	dropdownBox.text_label.gui_input.connect(dropdown_box_input.bind(grid))
+	
+	grid.dropdownBox = dropdownBox
+	
+	grid_property.add_child(dropdownBox)
+	grids[object_name] = grid
+	
+	updateGridX(grid)
+	grid.updateSize()
+	call_deferred('call_deferred','updateAllGrids')
+
+func show_grid(show: bool, grid: Grid):
+	grid.visible = show
+	call_deferred('call_deferred','updateAllGrids')
+	
+func addPropertyToGrid(grid: Grid, prop: String):
+	var obj = getGridObject(grid)
+	if !obj: return
+	var value = getObjectProperty(obj,prop)
+	if value == null:
+		Global.show_label_error('Cannot add "'+prop+'" property: missing or undefined type.',1.0,600)
+		return
+	if not typeof(value) in MathHelper.math_types:
+		Global.show_label_error('Cannot add "'+prop+'" property: property is not a numeric type.',1.0,600)
+		return
+	
+	grid.createProperty(prop)
+	grid.dropdownBox.texts.append(prop)
+	grid.dropdownBox.update_texts()
+	ModchartState.addPropertyIndex(grid.object_name,prop)
+	grid.updateSize()
+
+func removeGridProperty(grid: Grid, prop: String):
+	var obj = getGridObject(grid)
+	var prop_keys = grid.keys[prop]
+	if prop_keys:
+		ModchartState.setObjectValue(obj,prop,prop_keys[0].prev_val)
+	
+	grid.keys.erase(prop)
+	grid.keys_index.erase(prop)
+	grid.properties.erase(prop)
+	grid.dropdownBox.texts.erase(prop)
+	grid.dropdownBox.update_texts()
+	ModchartState.keys_index[grid.object_name].erase(prop)
+	grid.updateSize()
 #endregion
 
 #region Key Interpolator
@@ -485,16 +540,12 @@ func update_key_properties():
 	
 	
 	#Show Values
-	if is_type_different: 
-		key_type = TYPE_NIL
-		return
+	if is_type_different: key_type = TYPE_NIL; return
 	
 	key_type = first_key_type as Variant.Type
 	
 	if !is_type_different: duration.set_value_no_signal(first_key.duration)
-	else: 
-		duration.text = '...'
-		return
+	else: duration.text = '...'; return
 	
 	var properties = property_values.get(first_key_type)
 	key_is_int = false
@@ -514,9 +565,7 @@ func update_key_properties():
 		set_property_values_from_key(first_key.init_val,property_init_values[key_type],key_type)
 
 func updateKeysPositions():
-	for i in properties:
-		var grid = properties[i].grid
-		for key in grid._keys_created: key.updatePos()
+	for i in grids: for key in grids[i]._keys_created: key.updatePos()
 
 func set_property_values_from_key(value: Variant,value_buttons: Array,value_type: Variant.Type):
 	match value_type:
@@ -569,6 +618,7 @@ func hide_properties():
 	property_value.visible = false
 	for i in property_values[TYPE_VECTOR4]: i.visible = false
 
+#region Key Setters
 func toggle_key(key: KeyInterpolatorNode, add: bool = is_shift_pressed):
 	if key in keys_selected: unselect_key(key)
 	else: select_key(key,add)
@@ -602,21 +652,21 @@ func addKeyToArray(key: KeyInterpolator, array: Array[KeyInterpolator]):
 		index -= 1
 	array.insert(index,key)
 
+func removeKey(key: KeyInterpolatorNode):
+	key.data.time = INF
+	ModchartState.update_key(key.data)
+	key.parent.removeKey(key)
+	
 func removeKeysSelected():
-	for i in keys_selected: 
-		i.data.time = INF
-		ModchartState.update_key(i.data)
-		i.parent.removeKey(i)
+	for i in keys_selected: removeKey(i)
 	keys_selected.clear()
 
-#region Key Setters
 func add_keys_step(step: float):
 	for i in keys_selected: 
 		i.step += step
 		i.data.time = Conductor.get_step_time(i.step)
 		i.updatePos()
-		if key_can_process(i.data): i.data._process()
-
+	ModchartState.process_keys(step > 0.0)
 func add_keys_duration(value: float):
 	var has_duration: bool = false
 	for i in keys_selected: 
@@ -677,12 +727,11 @@ func get_prev_key(key: KeyInterpolator) -> KeyInterpolator:
 	var index = grid_array.find(key)
 	return grid_array[index+1] if index < grid_array.size()-1 else null
 
-func disable_moving_keys(): is_moving_keys = false
-#endregion
-
 func get_keys_grid_from_key(key: KeyInterpolatorNode) -> Array: return key.parent.keys[key.data.property]
 
 func detect_key_index(key: KeyInterpolatorNode) -> int: return get_keys_grid_from_key(key).find(key.data)
+
+func disable_moving_keys(): is_moving_keys = false
 
 func copy_keys_selected() -> void:
 	keys_copied.clear()
@@ -713,57 +762,30 @@ func paste_keys(round_step: bool = !is_shift_pressed):
 	set_song_editor_position(last_key.time + last_key.duration)
 #endregion
 
-#region Input
+
 func getMouseXStep(mouse_pos: float, rounded: bool = !is_shift_pressed):
 	mouse_pos /= grid_size.x
 	return roundf(mouse_pos) if !is_shift_pressed else mouse_pos
-	
-func dropdown_box_input(event: InputEvent, data: Dictionary):
+
+#region Inputs
+func dropdown_box_input(event: InputEvent, grid: Grid):
 	if event is InputEventMouseButton:
 		if !event.pressed: return
 		match event.button_index:
 			2: 
 				property_options.visible = true
 				property_options.position = get_viewport().get_mouse_position()
-				property_options.set_item_disabled(0,data.object is ShaderMaterial)
-				data_selected = data
-	
-
-func object_submitted(obj_name: String):
-	object_options.release_focus()
-	object_options.visible = false
-	obj_name = obj_name.strip_edges()
-	if !obj_name: return
-	addFileToGrid(obj_name,null)
-	
-	
-func object_input(input: InputEvent):
-	pass
-
-const valid_types: PackedInt32Array = [
-	TYPE_FLOAT,TYPE_INT,TYPE_VECTOR2
-]
-
-func property_submitted(prop: String):
-	prop = prop.strip_edges()
-	property_name.release_focus()
-	property_name.visible = false
-	if !prop: return
-	
-	var obj = data_selected.object
-	if !obj: 
-		obj = FunkinGD._find_object(data_selected.object_name)
-		if !obj: return
-	
-	var value = obj.get(prop) 
-	if value == null:
-		Global.show_label_error('Cannot add "'+prop+'" property: missing or undefined type.',1.0,600)
-		return
-	
-	if not typeof(value) in MathHelper.math_types:
-		Global.show_label_error('Cannot add "'+prop+'" property: property is not a numeric type.',1.0,600)
-		return
-	addPropertyToGridFromData(data_selected,prop)
+				properties_names.clear()
+				property_remove.clear()
+				
+				for i in getGridObjectProperties(grid): if not i in grid.keys: properties_names.add_item(i)
+				
+				if !grid.keys: property_options.set_item_disabled(1,true)
+				else: 
+					for i in grid.keys: property_remove.add_item(i); 
+					property_options.set_item_disabled(1,false)
+				
+				grid_selected = grid
 
 func grid_input(event: InputEvent, grid: Grid):
 	if not event is InputEventMouseButton: return
@@ -813,13 +835,8 @@ func grid_input(event: InputEvent, grid: Grid):
 
 func grid_options_menu_pressed(index: int):
 	match index:
-		0:
-			property_name.text = ''
-			property_name.visible = true
-			property_name.position = get_viewport().get_mouse_position()
-			property_name.grab_focus()
-		1: removeObjectFromData(data_selected)
-		
+		1: removeGrid(grid_selected)
+
 func key_input(event: InputEvent,key: KeyInterpolatorNode):
 	if event is InputEventMouseButton:
 		match event.button_index:
@@ -837,23 +854,25 @@ func key_input(event: InputEvent,key: KeyInterpolatorNode):
 				key_options.position = get_viewport().get_mouse_position()
 
 func key_options_menu_pressed(index: int):
-	match index:
-		0: #Delete
-			removeKeysSelected()
+	match index: 
+		0: removeKeysSelected()
 
 func timeline_input(event: InputEvent):
 	if event is InputEventMouseButton:
 		if event.pressed:
-			match event.button_index:
-				4: 
-					var pos = floorf((position_line.position.x + grid_size.x)/grid_size.x)*grid_size.x
-					position_line.position.x = pos
+			var index = event.button_index
+			match index:
+				4,5: 
+					var pos = position_line.position.x
+					var size = grid_size.x
+					if index == 5: size = -size
+					if is_shift_pressed: pos += size*2
+					else: pos += size
+					var step = floorf(pos/grid_size.x)
+					step = maxf(-24,step)
+					position_line.position.x = step*grid_size.x
 					set_song_position_from_line()
-				5:
-					var pos = floorf((position_line.position.x - grid_size.x)/grid_size.x)*grid_size.x
-					position_line.position.x = pos
-					set_song_position_from_line()
-
+					
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		if !event.pressed: return
@@ -861,20 +880,23 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_SPACE,KEY_ENTER: pausePlaystate(Conductor.is_playing)
 			KEY_C: if Input.is_key_pressed(KEY_CTRL): copy_keys_selected()
 			KEY_V: if Input.is_key_pressed(KEY_CTRL): paste_keys()
+			KEY_LEFT: add_keys_step(-2.0 if is_shift_pressed else -1.0)
+			KEY_RIGHT: add_keys_step(2.0 if is_shift_pressed else 1.0)
 			KEY_DELETE: removeKeysSelected()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
-		if event.button_index == 1 and not event.pressed:
+		if event.button_index == 1 and !event.pressed:
 			is_key_mouse_pressed = false
 			is_moving_line = false
 			disable_moving_keys.call_deferred()
-			
-	elif event is InputEventKey: if event.keycode == KEY_SHIFT: is_shift_pressed = event.pressed
+	elif event is InputEventKey: 
+		if event.keycode == KEY_SHIFT: is_shift_pressed = event.pressed
 	elif event is InputEventMouseMotion:
 		if !is_key_mouse_pressed: return
 		var mouse_pos = getMouseXStep(event.position.x)
 		var pos_sub = (mouse_pos - key_moving_first_pos)
+		
 		if pos_sub >= 1.0 or pos_sub <= -1.0: is_moving_keys = true
 		if is_moving_keys and pos_sub:
 			add_keys_step(pos_sub)
@@ -882,11 +904,17 @@ func _input(event: InputEvent) -> void:
 #endregion
 
 #region Data
-func getObjectFromData(data: Dictionary) -> Object:
-	var obj: Object = data.object
-	if !obj: obj = FunkinGD._find_object(data.object_name)
+func getGridObject(grid: Variant) -> Object:
+	var obj = grid.object
+	if !obj: obj = FunkinGD._find_object(grid.object_name)
 	return obj
 
+func getGridObjectProperties(grid: Variant) -> Variant:
+	var obj = getGridObject(grid)
+	if !obj: return
+	if obj is EditorMaterial: return obj.uniforms
+	return PropertiesAvaliable.get(obj.get_script(),[])
+	
 func getObjectProperty(object: Variant, prop: String):
 	return object.get_shader_parameter(prop) if object is ShaderMaterial else object.get(prop)
 #endregion
@@ -900,6 +928,20 @@ func pausePlaystate(pause: bool) -> void:
 	else:
 		Conductor.resumeSongs()
 		playState.process_mode = Node.PROCESS_MODE_INHERIT
+
+func _set_playstate_value(value: Variant, property: String): playState.set(property,value)
+
 #endregion
-class EditorMaterial extends ShaderMaterial:
-	var objects: PackedStringArray = []
+
+#region Signals
+func object_submitted(obj_name: String):
+	object_options.release_focus()
+	object_options.visible = false
+	obj_name = obj_name.strip_edges()
+	if !obj_name: return
+	addFileToEditor(obj_name,null)
+
+func _on_property_index_selected(index: int): addPropertyToGrid(grid_selected,properties_names.get_item_text(index))
+
+func _on_property_remove_index_selected(index: int): removeGridProperty(grid_selected,property_remove.get_item_text(index))
+#endregion

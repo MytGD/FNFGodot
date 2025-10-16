@@ -418,7 +418,7 @@ static func _find_property_owner(property: String) -> Variant:
 	return null
 	
 static func _find_object(property: Variant, return_rest: bool = false) -> Variant:
-	if property is Object: return property
+	if not property is String: return property
 	#var split = get_as_property(property).split('.')
 	
 	var split = get_as_property(property).split('.')
@@ -669,7 +669,6 @@ static func addSprite(object: Variant, front: bool = false) -> void: ##Add [Spri
 	if !object is Node: return
 	var cam: Node = object.get('camera')
 	if !cam: cam = getProperty('camGame')
-	prints(object,cam)
 	if !cam:
 		push_error("Failed in addSprite: Camera of ",object,"don't found.")
 		return
@@ -1008,8 +1007,6 @@ static func startTween(tag: String, object: Variant, what: Dictionary[String,Var
 	for property in keys:
 		if property in object: continue
 		elif property.contains(':') and object.get_indexed(property) != null: continue
-		
-		
 		var alt_prop = alternative_variables.get(property)
 		if alt_prop: 
 			keys.append(alt_prop)
@@ -1034,9 +1031,9 @@ static func startTweenNoCheck(tag: String,object: Object, what: Dictionary[Strin
 static func startTweenMethod(tag: String, from: Variant, to: Variant, time, ease: String, method: Callable) -> TweenerMethod:
 	var tween = TweenService.createTweenMethod(method,from,to,time,ease)
 	tween.bind_node = game
-	if tag:
-		cancelTween(tag)
-		tweensCreated[tag] = tween
+	if !tag: return tween
+	cancelTween(tag)
+	tweensCreated[tag] = tween
 	return tween
 
 static func _tween_completed(tag: String):
@@ -1287,10 +1284,7 @@ static func getShaderParameter(shader: String, shaderVar: String) -> Variant:
 ##Sets Object Blend mode, can be: [code]add,subtract,mix[/code]
 static func setBlendMode(object: Variant, blend: String) -> void:
 	object = _find_object(object)
-	if not object is CanvasItem: return
-	
-	if object is Sprite: object.blend = blend; return
-	
+	if !object is CanvasItem: return
 	var material = ShaderHelper.get_blend(blend)
 	if material: object.material = material
 
@@ -1299,8 +1293,10 @@ static func _find_shader_material(shader: Variant) -> ShaderMaterial:
 	
 	var material = shadersCreated.get(shader)
 	if material: return material
+	
+	#Get material from object
 	material = _find_object(shader)
-	if material and material.get('material'): return material.material
+	if material: return material.get('material')
 	return null
 #endregion
 
@@ -1629,21 +1625,25 @@ static func callScriptNoCheck(script: Object, function: String, parameters = [])
 static func _sign_parameters(args: Array,parameters) -> Array:
 	if !args: return args
 	var index: int = -1
-	var new_parameters: Array[Variant] = []
 	
+	var new_parameters: Array[Variant] = []
+	var args_length: int = args.size()-1
 	if parameters is Array:
 		var param_size = parameters.size()
-		for i in args:
+		while index < args_length:
 			index +=1
-			if index >= param_size: new_parameters.append(i.default); continue
+			if index >= param_size: new_parameters.append(args[index].default); continue
 			var variable = parameters[index]
+			var i = args[index]
 			if i.type != TYPE_NIL and typeof(variable) != i.type: 
 				new_parameters.append(type_convert(variable,i.type))
 			else: new_parameters.append(variable)
 	else:
-		for i in args: new_parameters.append(i.default)
 		if args[0].type == TYPE_NIL or typeof(parameters) == args[0].type:
 			new_parameters[0] = parameters
+			index = 0
+		while index < args_length: index += 1; new_parameters.append(args[index].default); 
+		
 	return new_parameters
 
 static func _detect_class(tag: StringName) -> String:

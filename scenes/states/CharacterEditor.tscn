@@ -42,10 +42,11 @@ offset_right = 1280.0
 offset_bottom = 722.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
-current_tab = 0
+current_tab = 1
 tab_focus_mode = 0
 
 [node name="Animation Data" type="ScrollContainer" parent="TabContainer"]
+visible = false
 layout_mode = 2
 focus_mode = 2
 mouse_filter = 0
@@ -251,7 +252,6 @@ text = "FPS:"
 shift_value = 10.0
 
 [node name="Json Data" type="Panel" parent="TabContainer"]
-visible = false
 self_modulate = Color(1, 1, 1, 0.0705882)
 layout_mode = 2
 metadata/_tab_index = 1
@@ -265,30 +265,29 @@ offset_bottom = 33.0
 text = "Image File:"
 
 [node name="scale" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
-custom_minimum_size = Vector2(247, 40)
 layout_mode = 0
 offset_left = 4.0
 offset_top = 64.0
-offset_right = 251.0
-offset_bottom = 104.0
+offset_right = 61.0
+offset_bottom = 79.0
 text = "Scale:"
 value_to_add = 0.1
 
 [node name="antialiasing" type="CheckBox" parent="TabContainer/Json Data"]
 layout_mode = 0
-offset_left = 345.0
-offset_top = 68.0
-offset_right = 486.0
-offset_bottom = 99.0
+offset_left = 333.0
+offset_top = 62.0
+offset_right = 474.0
+offset_bottom = 93.0
 focus_mode = 0
 text = "Antialiasing"
 
 [node name="FlipX" type="CheckBox" parent="TabContainer/Json Data"]
 layout_mode = 0
-offset_left = 248.0
-offset_top = 67.0
-offset_right = 333.0
-offset_bottom = 98.0
+offset_left = 243.0
+offset_top = 60.0
+offset_right = 328.0
+offset_bottom = 91.0
 focus_mode = 0
 text = "Flip X"
 
@@ -317,57 +316,56 @@ offset_bottom = 263.0
 text = "=====Offsets=====
 
 Position Array:         Camera Position:     Origin Offset:"
+metadata/_edit_lock_ = true
 
 [node name="position_x" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
-custom_minimum_size = Vector2(219, 40)
 layout_mode = 0
-offset_left = 3.0
-offset_top = 177.0
-offset_right = 222.0
-offset_bottom = 217.0
-text = "x: "
+offset_left = 2.0
+offset_top = 226.0
+offset_right = 21.0
+offset_bottom = 241.0
+text = "x:"
 shift_value = 10.0
 
 [node name="position_y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
-custom_minimum_size = Vector2(219, 40)
 layout_mode = 0
-offset_left = 2.0
-offset_top = 227.0
-offset_right = 221.0
-offset_bottom = 267.0
-text = "y: "
+offset_left = 1.0
+offset_top = 267.0
+offset_right = 20.0
+offset_bottom = 282.0
+text = "y:"
 shift_value = 10.0
 
 [node name="Camera X" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
 layout_mode = 0
-offset_left = 215.0
-offset_top = 176.0
-offset_right = 375.0
-offset_bottom = 216.0
+offset_left = 223.0
+offset_top = 225.0
+offset_right = 224.0
+offset_bottom = 240.0
 shift_value = 10.0
 
 [node name="Camera Y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
 layout_mode = 0
-offset_left = 216.0
-offset_top = 228.0
-offset_right = 376.0
-offset_bottom = 268.0
+offset_left = 223.0
+offset_top = 268.0
+offset_right = 224.0
+offset_bottom = 283.0
 shift_value = 10.0
 
 [node name="Origin X" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
 layout_mode = 0
-offset_left = 418.0
-offset_top = 178.0
-offset_right = 578.0
-offset_bottom = 218.0
+offset_left = 419.0
+offset_top = 225.0
+offset_right = 420.0
+offset_bottom = 240.0
 shift_value = 10.0
 
 [node name="Origin Y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
 layout_mode = 0
-offset_left = 418.0
-offset_top = 229.0
-offset_right = 578.0
-offset_bottom = 269.0
+offset_left = 420.0
+offset_top = 267.0
+offset_right = 421.0
+offset_bottom = 282.0
 shift_value = 10.0
 
 [node name="HealthBar" type="Label" parent="TabContainer/Json Data"]

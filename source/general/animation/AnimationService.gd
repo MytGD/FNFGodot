@@ -24,39 +24,28 @@ static func getPrefixList(file: String) -> Dictionary[String,Array]:
 
 ##Get the Animation data using the prefix. [br][br]
 ##It will return the data and the [Animation] in [[Array][[Rect2]],[Animation]]
-static func getAnimFrames(prefix: String,file: String = '') -> Array:
+static func getAnimFrames(prefix: String,file: String = '') -> Array[Dictionary]:
+	if !file or !prefix: return []
+	
+	var data = _anims_created.get_or_add(file,{}).get(prefix)
+	if data: return data
+	
+	data = Array([],TYPE_DICTIONARY,'',null)
 	var fileFounded: Dictionary[String,Array] = getPrefixList(file)
 	if !fileFounded: return []
 	
 	if fileFounded.has(prefix): return fileFounded[prefix]
-	var data: Array[Dictionary] = []
-	for anims in fileFounded:
-		if (anims+'0000').begins_with(prefix): 
-			data.append_array(fileFounded[anims])
+	
+	for anims in fileFounded: if (anims+'0000').begins_with(prefix): data.append_array(fileFounded[anims])
+	_anims_created[file][prefix] = data
 	return data
 
-static func getAnim(prefix: String, file: String, indices: PackedInt32Array = []) -> Array:
-	var _animData: Dictionary = _anims_created.get_or_add(file,{})
-	
-	var tracks: Array
-	
-	
-	#Save anim if don't have indices set.
-	var already_exists = _animData.has(prefix)
-	if already_exists:
-		tracks = _anims_created[file][prefix]
-		if !indices: return tracks
-	else: 
-		tracks = getAnimFrames(prefix,file)
-		if !tracks: return []
 
+static func getAnimFramesIndices(prefix: String, file: String, indices: PackedInt32Array = []) -> Array:
+	var tracks: Array = getAnimFrames(prefix,file)
+	if !tracks: return tracks
+	
 	var frames: Array = []
-	
-	
-	if !indices:
-		if !already_exists: _anims_created[file][prefix] = frames
-		indices = PackedInt32Array(range(tracks.size()))
-	
 	var length = tracks.size()-1
 	for i in indices:
 		if i < 0 or i > length: continue
@@ -79,6 +68,7 @@ static func _clearAnims() -> void:
 	Atlas.atlas_loaded.clear()
 	Map.maps_created.clear()
 	_anims_file_founded.clear()
+	_anims_created.clear()
 	
 func _physics_process(delta: float):
 	if !anims_to_update: return

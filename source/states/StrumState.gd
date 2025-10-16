@@ -450,7 +450,7 @@ func updateNotes():
 	if respawnNotes:
 		while respawnIndex < unspawnIndex:
 			var note = unspawnNotes[respawnIndex]
-			var time = note.strumTime - songPos
+			#var time = note.strumTime - songPos
 			if !note.wasHit and !note.missed: break
 			respawnIndex += 1
 	

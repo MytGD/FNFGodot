@@ -1,3 +1,4 @@
+@abstract
 extends "res://source/states/StrumState.gd"
 ##PlayState Base.
 const GDText = preload("res://source/objects/Display/GDText.gd")
@@ -24,7 +25,6 @@ var stageJson: Dictionary = Stage.getStageBase()
 var curStage: StringName = ''
 
 
-
 @export_group('Camera')
 var camHUD: CameraCanvas = CameraCanvas.new()
 var camOther: CameraCanvas = CameraCanvas.new()
@@ -45,7 +45,10 @@ var defaultCamZoom: float = 1.0
 @export var canGameOver: bool = true
 
 var camZooming: bool = false##If [code]true[/code], the camera make a beat effect every [member bumpStrumBeat] beats and the zoom will back automatically.
-
+@export_subgroup('Scripts')
+@export var loadScripts: bool = true
+@export var loadStageScript: bool = true
+@export var loadSongScript: bool = true
 @export_subgroup('Events')
 var eventNotes: Array[Dictionary] = []
 @export var generateEvents: bool = true
@@ -102,7 +105,6 @@ var videoPlayer: VideoStreamPlayer
 var introSoundsSuffix: StringName = ''
 
 var altSection: bool = false
-
 
 func _ready():
 	Global.onSwapTree.connect(destroy)
@@ -396,16 +398,17 @@ func noteMiss(note, character: Variant = null) -> void:
 
 #region Script Methods
 func _load_song_scripts():
-	#Load Stage Script
-	print('Loading Scripts from Scripts Folder')
-	for i in Paths.getFilesAt('scripts',true,'.gd'): FunkinGD.addScript(i)
+	if loadScripts:
+		print('Loading Scripts from Scripts Folder')
+		for i in Paths.getFilesAt('scripts',true,'.gd'): FunkinGD.addScript(i)
 	
-	print('Loading Stage Script')
-	FunkinGD.addScript('stages/'+curStage+'.gd')
+	if loadStageScript:
+		print('Loading Stage Script')
+		FunkinGD.addScript('stages/'+curStage+'.gd')
 	
-	
-	print('Loading Song Folder Script')
-	if Song.folder: for i in Paths.getFilesAt(Song.folder,true,'.gd'): FunkinGD.addScript(i)
+	if loadSongScript and Song.folder:
+		print('Loading Song Folder Script')
+		for i in Paths.getFilesAt(Song.folder,true,'.gd'): FunkinGD.addScript(i)
 	
 	
 
@@ -436,6 +439,7 @@ func loadSongObjects() -> void:
 	
 	print('Loading Stage')
 	Stage.loadSprites()
+	
 	#Load Scripts
 	print('Loading Scripts')
 	_load_song_scripts()
@@ -455,7 +459,7 @@ func loadSongObjects() -> void:
 	
 func loadEventsScripts():
 	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i+'.gd')
-	for i in Paths.getFilesAt(Paths.exePath+'/assets/custom_events',false,'.gd',true):
+	for i in Paths.getFilesAtAbsolute(Paths.exePath+'/assets/custom_events',false,'.gd',true):
 		FunkinGD.addScript('custom_events/'+i)
 		
 func startSong():
@@ -697,18 +701,16 @@ static func get_character_type_name(type: int) -> StringName:
 		2: return 'gf'
 		_: return 'boyfriend'
 
- #Replaced in PlayState and PlayState3D
-func addCharacterToList(type,character) -> Node:return null
 
+func addCharacterToList(type,character) -> Node:return null #Replaced in PlayState and PlayState3D
 
-#Replaced in PlayState
 func moveCamera(target: StringName = 'boyfriend') -> void:
 	FunkinGD.callOnScripts('onMoveCamera',[target])
 #endregion
 
 
 #region Stage Methods
-func loadStage(stage: StringName, loadScript: bool = true):
+func loadStage(stage: StringName, loadScript: bool = loadStageScript):
 	if curStage == stage: return
 	#Remove old stage script
 	FunkinGD.removeScript('stages/'+curStage)
