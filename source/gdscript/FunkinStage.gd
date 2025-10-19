@@ -119,7 +119,7 @@ static func onBeatHit() -> void:
 		if sprite and fmod(Conductor.beat,i[0]) == 0:
 			sprite.animation.play(anim if i[2] else DANCE_ANIMATIONS[2])
 
-static func loadStage(stage: String, load_sprites: bool = false) -> Dictionary:
+static func loadStage(stage: String) -> Dictionary:
 	var stage_path = Paths.stage(stage)
 	json = getStageBase()
 	json.merge(convert_old_to_new(Paths.loadJson(stage_path)),true)

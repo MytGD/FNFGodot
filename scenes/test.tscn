@@ -1,3 +1,30 @@
-[gd_scene format=3 uid="uid://r43ug3iqri4f"]
+[gd_scene load_steps=4 format=3 uid="uid://r43ug3iqri4f"]
+
+[ext_resource type="Texture2D" uid="uid://11ak4nr2c5oi" path="res://assets/images/bfIdle.png" id="1_errlg"]
+[ext_resource type="Texture2D" uid="uid://vsthgll22i2n" path="res://assets/images/bfPixel.png" id="2_bl13t"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_errlg"]
+viewport_path = NodePath("SubViewport")
 
 [node name="Test" type="Node"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = SubResource("ViewportTexture_errlg")
+centered = false
+
+[node name="SubViewport" type="SubViewport" parent="."]
+disable_3d = true
+transparent_bg = true
+snap_2d_vertices_to_pixel = true
+size = Vector2i(1280, 720)
+size_2d_override = Vector2i(1280, 720)
+size_2d_override_stretch = true
+
+[node name="BfPixel" type="Sprite2D" parent="SubViewport"]
+texture_filter = 1
+position = Vector2(388, 159)
+texture = ExtResource("2_bl13t")
+
+[node name="BfIdle" type="Sprite2D" parent="SubViewport"]
+position = Vector2(500, 242)
+texture = ExtResource("1_errlg")

@@ -28,9 +28,8 @@ func _draw() -> void:
 	var rect_height = line_height/2.0
 	var pos_x: float = -timeline_space + timeline_offset
 	
-	var text_offset: float = 0.0
-	
-	var text_size = mini(16,(ModchartEditor.grid_size.x+6)/int(str(steps).length())) #24(GRID_SIZE) - 4
+	var text_size = 14
+	var count: int = 0
 	var text_space = text_size/3.25
 	while step < steps or draw_line:
 		if draw_line:
@@ -40,12 +39,15 @@ func _draw() -> void:
 			),Color.WHITE)
 		else:
 			step += 1
-			text_offset = int(str(step).length()-1)
+			var str_step = str(step)
+			var cur_step_length = int(str_step.length()-1)
+			if count != cur_step_length:
+				text_size = mini(text_size,(ModchartEditor.grid_size.x+6)/int(str(steps).length()))
 			pos_x += timeline_space
 			draw_string(
 				ThemeDB.fallback_font,
-				Vector2(pos_x - text_offset*text_space,line_height),
-				str(step),
+				Vector2(pos_x - cur_step_length*text_space,line_height),
+				str_step,
 				HORIZONTAL_ALIGNMENT_CENTER,
 				-1,text_size
 			)

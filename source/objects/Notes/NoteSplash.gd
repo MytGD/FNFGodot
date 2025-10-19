@@ -25,7 +25,10 @@ var angle: float: ##Similar to [member Node2D.rotation_degrees].
 	get():
 		return rotation_degrees
 
+@warning_ignore("unused_private_class_variable")
 var _is_custom_parent: bool = false #Used in StrumState.
+
+
 var strum: Node: ##The Splash strum.
 	set(value):
 		strum = value
@@ -91,7 +94,7 @@ func loadSplash(type: StringName, prefix: StringName) -> bool:
 	if prefixs_is_dict: data_offset = prefixs.get('offsets')
 	if !data_offset: data_offset = data.get('offsets')
 	
-	if data_offset: offset = VectorHelper.array_to_vec(data_offset)
+	if data_offset: offset = VectorUtils.array_to_vec(data_offset)
 	else: offset = Vector2(100,100)
 	
 	match splashType:
@@ -156,7 +159,7 @@ func _checkOffset(anim_name: StringName, anim_data: Dictionary):
 	if !offsets: 
 		if !_animsOffset: return
 		offsets = Vector2(95,95)
-	else: offsets = VectorHelper.array_to_vec(offsets) + Vector2(100,100)
+	else: offsets = VectorUtils.array_to_vec(offsets) + Vector2(100,100)
 	
 	if !_animsOffset:
 		animation.animation_started.connect(
@@ -172,7 +175,7 @@ func _checkOffset(anim_name: StringName, anim_data: Dictionary):
 	_animsOffset[anim_name] = offsets 
 	
 	
-func _process(delta: float) -> void:
+func _process(_d) -> void:
 	if visible and splashType == SplashType.HOLD_COVER and strum:
 		
 		_updatePos()

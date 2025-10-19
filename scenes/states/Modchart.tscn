@@ -1,15 +1,39 @@
-[gd_scene load_steps=10 format=3 uid="uid://dgigti34bmg6s"]
+[gd_scene load_steps=14 format=3 uid="uid://dgigti34bmg6s"]
 
 [ext_resource type="Script" uid="uid://blf6ig37np2mt" path="res://source/states/Modchart/Editor/ModchartEditor.gd" id="1_2kx6s"]
-[ext_resource type="Texture2D" uid="uid://dshtfnk38km3v" path="res://icons/basic/Object.svg" id="1_vxf07"]
+[ext_resource type="Texture2D" uid="uid://dshtfnk38km3v" path="res://icons/Object.svg" id="1_vxf07"]
 [ext_resource type="Script" uid="uid://cg2ig10imhwri" path="res://source/states/PlayState.gd" id="2_2kx6s"]
 [ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_c5smy"]
-[ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/basic/Shader.svg" id="3_n2vt6"]
+[ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/Shader.svg" id="3_n2vt6"]
+[ext_resource type="Script" uid="uid://du1rbf6kg1jmr" path="res://source/states/Modchart/Editor/Explorer.gd" id="3_rhtdg"]
 [ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="5_n2vt6"]
 [ext_resource type="Script" uid="uid://bwuthavuunu4c" path="res://source/states/Modchart/Editor/Timeline.gd" id="7_rhtdg"]
 
+[sub_resource type="GDScript" id="GDScript_rhtdg"]
+resource_name = "ExplorerIcons"
+script/source = "@tool
+extends TabContainer
+func _ready():
+	set_tab_icon(0,load(\"res://icons/Panels2.svg\"))
+	set_tab_icon(1,load(\"res://icons/Keyboard.svg\"))
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[sub_resource type="LabelSettings" id="LabelSettings_rhtdg"]
+font_size = 14
+
 [sub_resource type="ViewportTexture" id="ViewportTexture_vxf07"]
 viewport_path = NodePath("SubViewport")
+
+[sub_resource type="GDScript" id="GDScript_xr4tk"]
+resource_name = "PropertiesIcon"
+script/source = "@tool
+extends TabContainer
+func _ready() -> void:
+	set_tab_icon(0,load(\"res://icons/ListSelect.svg\"))
+	set_tab_icon(1,load(\"res://icons/KeyValue.svg\"))
+	if !Engine.is_editor_hint(): set_script(null)
+"
 
 [sub_resource type="GDScript" id="GDScript_c5smy"]
 resource_name = "Property"
@@ -33,237 +57,122 @@ canExitSong = false
 canPause = false
 canGameOver = false
 loadScripts = false
-loadStageScript = false
 loadSongScript = false
 countDownEnabled = false
+botplay = true
 showCombo = false
 showRating = false
 showComboNum = false
 
-[node name="VSplit" type="VSplitContainer" parent="."]
+[node name="Panel" type="Panel" parent="."]
 offset_right = 1282.0
-offset_bottom = 719.0
+offset_bottom = 30.0
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 268.0
+offset_bottom = 31.0
+
+[node name="Modchart" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "| Modchart"
+flat = true
+
+[node name="Song" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "| Song"
+flat = true
+
+[node name="Button" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+focus_mode = 0
+text = "| Edit |"
+flat = true
+
+[node name="VSplit" type="VSplitContainer" parent="."]
+offset_top = 30.0
+offset_right = 1282.0
+offset_bottom = 750.0
 split_offset = 520
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit"]
 layout_mode = 2
-split_offset = 313
+split_offset = 300
 
 [node name="PanelContainer" type="TabContainer" parent="VSplit/HSplit"]
 clip_contents = true
 layout_mode = 2
 current_tab = 0
 tab_focus_mode = 0
+script = SubResource("GDScript_rhtdg")
 
-[node name="Song Data" type="Panel" parent="VSplit/HSplit/PanelContainer"]
+[node name="Explorator" type="Panel" parent="VSplit/HSplit/PanelContainer"]
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="Titles" type="Label" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -150.0
-offset_right = 150.0
-offset_bottom = 537.0
-grow_horizontal = 2
-text = "==========Song Info=============
-
-
-
-
-
-
-==========PlayState=============
-
-
-
-
-
-===========Scripts==============
-
-
-
-
-
-============Audio===============
-
-
-
-
-
-
-
-
-
-"
-horizontal_alignment = 1
-clip_text = true
-
-[node name="Info" type="Label" parent="VSplit/HSplit/PanelContainer/Song Data"]
+[node name="ColorRect" type="ColorRect" parent="VSplit/HSplit/PanelContainer/Explorator"]
+clip_contents = true
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.47200003
-anchor_right = 0.47200003
-offset_left = -147.73601
-offset_top = -2.0
-offset_right = -53.736008
-offset_bottom = 69.0
-text = "
-Song Name:
-
-Bpm: "
-
-[node name="Bpm" type="LineEdit" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.46300003
-anchor_top = 0.10300001
-anchor_right = 0.46300003
-anchor_bottom = 0.10300001
-offset_left = -106.91901
-offset_top = -0.19100189
-offset_right = -36.919006
-offset_bottom = 22.808998
-placeholder_text = "120.0"
-
-[node name="LoadJson" type="Button" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.45600003
-anchor_top = 0.294
-anchor_right = 0.45600003
-anchor_bottom = 0.294
-offset_left = -142.72801
-offset_top = -0.117996216
-offset_right = 44.271988
-offset_bottom = 26.882004
-focus_mode = 0
-text = "Load Json From File"
-
-[node name="Botplay" type="CheckButton" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.453
-anchor_top = 0.40500003
-anchor_right = 0.453
-anchor_bottom = 0.40500003
-offset_left = -141.789
-offset_top = 0.21498108
-offset_right = -27.789001
-offset_bottom = 24.214981
-grow_vertical = 2
-focus_mode = 0
-text = "Botplay"
-
-[node name="HideHud" type="CheckButton" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.45000002
-anchor_top = 0.354
-anchor_right = 0.45000002
-anchor_bottom = 0.354
-offset_left = -140.85
-offset_top = 0.06199646
-offset_right = -17.850006
-offset_bottom = 24.061996
-focus_mode = 0
-text = "Hide Hud"
-
-[node name="Load Scripts" type="CheckButton" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.44900003
-anchor_top = 0.51100004
-anchor_right = 0.44900003
-anchor_bottom = 0.51100004
-offset_left = -140.537
-offset_top = 0.032974243
-offset_right = 20.462997
-offset_bottom = 24.032974
-tooltip_text = "Load scripts from \"scripts\" folder."
-focus_mode = 0
-text = "Load Scripts"
-
-[node name="Load Stage Script" type="CheckButton" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.44200003
-anchor_top = 0.63600004
-anchor_right = 0.44200003
-anchor_bottom = 0.63600004
-offset_left = -138.34601
-offset_top = -0.0920105
-offset_right = 69.65399
-offset_bottom = 23.90799
-tooltip_text = "Load the stage script."
-focus_mode = 0
-text = "Load Stage Script"
-
-[node name="Load Song Script" type="CheckButton" parent="VSplit/HSplit/PanelContainer/Song Data"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.45600003
-anchor_top = 0.57500005
-anchor_right = 0.45600003
-anchor_bottom = 0.57500005
-offset_left = -142.72801
-offset_top = 0.22497559
-offset_right = 65.27199
-offset_bottom = 24.224976
-tooltip_text = "Load scripts from the song's data folder."
-focus_mode = 0
-text = "Load Song Scripts"
-
-[node name="Modchart" type="Panel" parent="VSplit/HSplit/PanelContainer"]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 1
-
-[node name="Save" type="Button" parent="VSplit/HSplit/PanelContainer/Modchart"]
-layout_mode = 0
+anchor_right = 0.98700005
+anchor_bottom = 0.994
 offset_left = 4.0
-offset_top = 29.0
-offset_right = 134.0
-offset_bottom = 52.0
-focus_mode = 0
-text = "Save Modchart"
+offset_top = 4.0
+offset_right = -0.1000061
+offset_bottom = -0.018005371
+color = Color(0.011087579, 0.011087578, 0.01108758, 1)
 
-[node name="Load" type="Button" parent="VSplit/HSplit/PanelContainer/Modchart"]
-layout_mode = 0
-offset_left = 5.0
-offset_top = 61.0
-offset_right = 135.0
-offset_bottom = 84.0
-focus_mode = 0
-text = "Load Modchart
-"
-
-[node name="Label" type="Label" parent="VSplit/HSplit/PanelContainer/Modchart"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 15.0
-text = "============Data============"
+[node name="Explorer" type="ScrollContainer" parent="VSplit/HSplit/PanelContainer/Explorator/ColorRect" node_paths=PackedStringArray("object")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1.0
+offset_top = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_rhtdg")
+object = NodePath("../../../../../../SubViewport/PlayState")
 
 [node name="ShortCuts" type="Panel" parent="VSplit/HSplit/PanelContainer"]
 visible = false
 clip_contents = true
 layout_mode = 2
-metadata/_tab_index = 2
+metadata/_tab_index = 1
 
-[node name="Label" type="Label" parent="VSplit/HSplit/PanelContainer/ShortCuts"]
+[node name="BG" type="Panel" parent="VSplit/HSplit/PanelContainer/ShortCuts"]
+self_modulate = Color(0.017732391, 0.017732391, 0.01773239, 1)
+clip_contents = true
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = -1
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -0.1000061
+offset_bottom = -0.018005371
+
+[node name="Label" type="Label" parent="VSplit/HSplit/PanelContainer/ShortCuts/BG"]
+layout_mode = 1
+anchors_preset = -1
 anchor_right = 1.0
-offset_bottom = 141.0
+anchor_bottom = 0.92200005
+offset_left = -0.5
+offset_top = 5.0
+offset_right = 0.5
+offset_bottom = 0.2199707
 grow_horizontal = 2
-text = "==============Keys==============
-KEY_LEFT = Move Keys One Step Back
+text = "KEY_LEFT = Move Keys One Step Back
 KEY_RIGHT = Move Keys One Step Front
 
 Ctrl+C = Copy Keys Selected
 Ctrl+V = Paste Keys"
+label_settings = SubResource("LabelSettings_rhtdg")
 autowrap_mode = 2
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit/HSplit"]
@@ -277,96 +186,91 @@ expand_mode = 1
 stretch_mode = 5
 metadata/_edit_lock_ = true
 
-[node name="Property" type="PanelContainer" parent="VSplit/HSplit/HSplit"]
+[node name="Property" type="TabContainer" parent="VSplit/HSplit/HSplit"]
 layout_mode = 2
+current_tab = 0
+tab_focus_mode = 0
+script = SubResource("GDScript_xr4tk")
 
-[node name="List" type="VBoxContainer" parent="VSplit/HSplit/HSplit/Property"]
+[node name="Properties" type="Panel" parent="VSplit/HSplit/HSplit/Property"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="BG" type="Panel" parent="VSplit/HSplit/HSplit/Property/Properties"]
+modulate = Color(0.11119685, 0.11119684, 0.11119684, 1)
+clip_contents = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.012
+anchor_right = 0.994
+anchor_bottom = 0.994
+offset_left = 3.0
+offset_top = 0.035999775
+offset_right = -0.052001953
+offset_bottom = -0.024017334
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="InfoText" type="Label" parent="VSplit/HSplit/HSplit/Property/Properties"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.008
+anchor_top = 0.012
+anchor_right = 0.994
+anchor_bottom = 0.994
+offset_left = 0.13599992
+offset_top = 0.035999775
+offset_right = 0.14797974
+offset_bottom = -0.018005371
+text = "Select a Valid Object from Explorer"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="VSplit/HSplit/HSplit/Property/Properties"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.008
+anchor_top = 0.012
+anchor_right = 0.994
+anchor_bottom = 0.994
+offset_left = 0.13599992
+offset_top = 0.035999775
+offset_right = 0.14797974
+offset_bottom = -0.018005371
+
+[node name="Container" type="VBoxContainer" parent="VSplit/HSplit/HSplit/Property/Properties/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="Key" type="VBoxContainer" parent="VSplit/HSplit/HSplit/Property"]
+visible = false
 clip_contents = true
 layout_mode = 2
 theme_override_constants/separation = 34
 metadata/_edit_lock_ = true
+metadata/_tab_index = 1
 
-[node name="Title" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 0
-text = "=============Value Setter============="
-horizontal_alignment = 1
-clip_text = true
-
-[node name="Value" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-text = "Value: "
-
-[node name="ValueBool" type="CheckBox" parent="VSplit/HSplit/HSplit/Property/List"]
-layout_mode = 2
-size_flags_vertical = 0
-text = "Enabled"
-
-[node name="ValueX" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Value X:"
-
-[node name="ValueY" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Value Y: "
-
-[node name="ValueZ" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Value Z: "
-
-[node name="ValueW" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Value W: "
-
-[node name="initVal" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Init Value: "
-
-[node name="initValX" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Init Value X:"
-
-[node name="initValY" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Init Value Y: "
-
-[node name="initValZ" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Init Value Z: "
-
-[node name="initValW" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
-visible = false
-layout_mode = 2
-text = "Init Value W:"
-
-[node name="TitleTween" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
+[node name="TitleTween" type="Label" parent="VSplit/HSplit/HSplit/Property/Key"]
 layout_mode = 2
 size_flags_vertical = 0
 text = "=============Tween Options============"
 horizontal_alignment = 1
 clip_text = true
 
-[node name="Duration" parent="VSplit/HSplit/HSplit/Property/List" instance=ExtResource("3_c5smy")]
+[node name="Duration" parent="VSplit/HSplit/HSplit/Property/Key" instance=ExtResource("3_c5smy")]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "Duration: "
 
-[node name="Transition" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
+[node name="Transition" type="Label" parent="VSplit/HSplit/HSplit/Property/Key"]
 layout_mode = 2
 text = "Transition:"
 
-[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/List/Transition"]
+[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/Key/Transition"]
 layout_mode = 0
 offset_left = 103.0
 offset_top = -5.0
@@ -374,11 +278,11 @@ offset_right = 207.0
 offset_bottom = 21.0
 flat = false
 
-[node name="Ease" type="Label" parent="VSplit/HSplit/HSplit/Property/List"]
+[node name="Ease" type="Label" parent="VSplit/HSplit/HSplit/Property/Key"]
 layout_mode = 2
 text = "Ease: "
 
-[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/List/Ease"]
+[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/Key/Ease"]
 layout_mode = 0
 offset_left = 50.0
 offset_top = -4.0
@@ -399,6 +303,7 @@ popup/item_3/id = 3
 [node name="HSplitP" type="HSplitContainer" parent="VSplit"]
 layout_mode = 2
 split_offset = 140
+metadata/_edit_lock_ = true
 
 [node name="Panel" type="VBoxContainer" parent="VSplit/HSplitP"]
 layout_mode = 2
@@ -471,7 +376,7 @@ offset_bottom = 9.0
 rotation = 0.785398
 
 [node name="Line" type="Node2D" parent="VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine"]
-position = Vector2(1, 2.5)
+position = Vector2(0.9921875, 2.5000305)
 rotation = -0.785398
 scale = Vector2(2.25, 720)
 script = ExtResource("5_n2vt6")
@@ -585,9 +490,8 @@ offset_bottom = 111.0
 
 [node name="PropertyOptions" type="PopupMenu" parent="."]
 oversampling_override = 1.0
-position = Vector2i(573, 281)
+position = Vector2i(422, 29)
 size = Vector2i(133, 65)
-visible = true
 script = SubResource("GDScript_c5smy")
 
 [node name="Properties" type="PopupMenu" parent="PropertyOptions"]
@@ -603,14 +507,32 @@ item_count = 1
 item_0/text = "Delete"
 item_0/id = 0
 
-[connection signal="pressed" from="VSplit/HSplit/PanelContainer/Song Data/LoadJson" to="." method="load_json"]
-[connection signal="toggled" from="VSplit/HSplit/PanelContainer/Song Data/Botplay" to="SubViewport/PlayState" method="_set_botplay"]
-[connection signal="toggled" from="VSplit/HSplit/PanelContainer/Song Data/HideHud" to="SubViewport/PlayState" method="_set_hide_hud"]
-[connection signal="pressed" from="VSplit/HSplit/PanelContainer/Modchart/Save" to="." method="on_save_modchart_pressed"]
-[connection signal="pressed" from="VSplit/HSplit/PanelContainer/Modchart/Load" to="." method="on_load_modchart_pressed"]
-[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/Value" to="." method="set_keys_value"]
-[connection signal="value_changed" from="VSplit/HSplit/HSplit/Property/List/initVal" to="." method="set_keys_init_value"]
-[connection signal="value_added" from="VSplit/HSplit/HSplit/Property/List/Duration" to="." method="add_keys_duration"]
+[node name="ModchartOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+position = Vector2i(0, 30)
+size = Vector2i(106, 100)
+item_count = 2
+item_0/text = "Save"
+item_0/id = 0
+item_1/text = "Load"
+item_1/id = 1
+
+[node name="SongOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+position = Vector2i(100, 30)
+size = Vector2i(199, 100)
+item_count = 1
+item_0/text = "Load from Song Data"
+item_0/id = 0
+
+[node name="HSlider" type="HSlider" parent="."]
+offset_right = 8.0
+offset_bottom = 16.0
+
+[connection signal="pressed" from="Panel/HBoxContainer/Modchart" to="ModchartOptions" method="show"]
+[connection signal="pressed" from="Panel/HBoxContainer/Song" to="SongOptions" method="show"]
+[connection signal="on_button_selected" from="VSplit/HSplit/PanelContainer/Explorator/ColorRect/Explorer" to="." method="_on_explorer_button_selected"]
+[connection signal="value_added" from="VSplit/HSplit/HSplit/Property/Key/Duration" to="." method="add_keys_duration"]
 [connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="grab_focus"]
 [connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="show"]
 [connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="set_text" binds= [""]]
@@ -629,3 +551,5 @@ item_0/id = 0
 [connection signal="id_pressed" from="PropertyOptions/Properties" to="." method="_on_property_index_selected"]
 [connection signal="id_pressed" from="PropertyOptions/PropertyRemove" to="." method="_on_property_remove_index_selected"]
 [connection signal="index_pressed" from="KeyOptions" to="." method="key_options_menu_pressed"]
+[connection signal="index_pressed" from="ModchartOptions" to="." method="_on_modchart_options_index_selected"]
+[connection signal="index_pressed" from="SongOptions" to="." method="_on_song_options_index_selected"]

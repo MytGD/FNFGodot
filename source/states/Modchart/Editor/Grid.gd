@@ -2,7 +2,7 @@
 extends ColorRect
 const ModchartEditor = preload("res://source/states/Modchart/Editor/ModchartEditor.gd")
 const ModchartState = preload("res://source/states/Modchart/ModchartState.gd")
-const KeyInterpolator = preload("res://source/states/Modchart/KeyInterpolator.gd")
+const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
 const KeyInterpolatorNode = preload("res://source/states/Modchart/Editor/KeyInterpolatorNode.gd")
 
 var keys: Dictionary[String,Array] = {}

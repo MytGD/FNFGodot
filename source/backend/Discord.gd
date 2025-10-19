@@ -6,5 +6,5 @@ func _ready():
 	DiscordRPC.start_timestamp = 0
 	DiscordRPC.refresh()
 
-func _process(delta: float) -> void:
+func _process(_d) -> void:
 	DiscordRPC.run_callbacks()

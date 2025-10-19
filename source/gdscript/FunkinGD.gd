@@ -139,7 +139,7 @@ static var songStarted: bool:
 	get(): return !!Conductor.songs
 
 static var songLength: float:
-	get(): return game.songLength
+	get(): return game._songLength
 	
 static var difficulty: String: 
 	get(): return Song.difficulty
@@ -448,7 +448,7 @@ static func _get_variable(obj: Variant, variable: String) -> Variant:
 	var type = typeof(obj)
 	if ArrayHelper.is_array_type(type): return obj.get(int(variable))
 	
-	if VectorHelper.is_vector_type(type):
+	if VectorUtils.is_vector_type(type):
 		if variable.is_valid_int(): return obj[int(variable)]
 		return obj[variable]
 	
@@ -730,7 +730,7 @@ static func removeSprite(object: Variant, delete: bool = false) -> void:
 		modVars.erase(tag)
 
 ##Creates a [SpriteGroup].
-static func createSpriteGroup(tag: String, index: int = game.dadGroup.get_index()) -> SpriteGroup:
+static func createSpriteGroup(tag: String) -> SpriteGroup:
 	var group = SpriteGroup.new()
 	var group_found = groupsCreated.get(tag)
 	if group_found is Node: group_found.queue_free()
@@ -759,12 +759,16 @@ static func makeGraphic(object: Variant,width: float = 0.0,height: float = 0.0,c
 	
 
 ##Load image in the sprite.
-static func loadGraphic(object: Variant, image: String, width: float = -1, height: float = -1) -> void:
+static func loadGraphic(object: Variant, image: String, width: float = -1, height: float = -1) -> Texture:
 	object = _find_object(object)
 	if !object: return
 	if object is Sprite: object = object.image
-	object.texture = Paths.imageTexture(image)
-	#object.image.size = Vector2(width,height)
+	var tex = Paths.imageTexture(image)
+	object.texture = tex
+	if not (object is Sprite or object is NinePatchRect): return tex
+	if width != -1: object.region_rect.size.x = width
+	if height != -1: object.region_rect.size.y = height
+	return tex
 
 
 ##Changes the image size of the sprite.[br]
@@ -885,7 +889,8 @@ static func addAnimationByIndices(object: Variant, animName: StringName, xmlAnim
 static func playAnim(object: Variant, anim: StringName, force: bool = false, reverse: bool = false) -> void:
 	object = _find_object(object)
 	if not (object is Sprite and object.animation): return
-	object.animation.play(anim,force)
+	if reverse: object.animation.play_reverse(anim,force)
+	else: object.animation.play(anim,force)
 
 ##Add offset for the animation of the sprite.
 static func addOffset(object: Variant, anim: StringName, offsetX: float, offsetY: float)  -> void:
@@ -924,13 +929,23 @@ static func setTextBorder(text: Variant, border: float, color: Color = Color.BLA
 	text.label_settings.outline_size = border
 	
 ##Set the Font of the Text
-static func setTextFont(text: Variant, font = 'vcr.ttf') -> void:
+static func setTextFont(text: Variant, font: Variant = 'vcr.ttf') -> void:
 	text = _find_object(text)
-	if text is GDText: text.set_font(font)
-	elif text is Label:
-		var fontText = Paths.font(font)
-		if fontText != null: text.add_theme_font_override(fontText)
+	font = _find_font(font)
+	if not (font and text is Label): return
 	
+	if !text.label_settings: text.label_settings = LabelSettings.new()
+	text.label_settings.font = font
+
+static func getTextFont(text: Variant) -> FontFile:
+	text = _find_object(text)
+	if text is Label and text.label_settings: 
+		return text.label_settings.font if text.label_settings.font else ThemeDB.fallback_font
+	return null
+	
+static func _find_font(font: Variant) -> Font:
+	if font is String: return Paths.font(font)
+	return font as Font
 ##Set the Text Alignment
 static func setTextAlignment(tag: Variant, alignmentHorizontal: StringName = 'left', alignmentVertical: StringName = '') -> void:
 	var obj = _find_object(tag)
@@ -1432,8 +1447,7 @@ static func detectSection() -> String:  return game.detectSection()
 ##playSound(audio,1.0,'noise_sound2')
 ##[/codeblock]
 static func playSound(path, volume: float = 1.0, tag: String = "",force: bool = false, loop: bool = false) -> AudioStreamPlayer:
-	if !path:
-		return null
+	if !path: return null
 	var audio: AudioStreamPlayer
 	
 	if soundsPlaying.get(tag):
@@ -1450,6 +1464,7 @@ static func playSound(path, volume: float = 1.0, tag: String = "",force: bool = 
 	if audio.stream: audio.stream.loop = loop
 	
 	audio.play(0)
+	audio.volume_db = linear_to_db(volume)
 	return audio
 
 static func cancelSound(tag: StringName):
@@ -1735,10 +1750,9 @@ static func _get_color(color: Variant) -> Color:
 	return color
 ##Return [Color] using Hex
 static func getColorFromHex(color: String, default: Color = Color.WHITE) -> Color:
-	if !color: return Color.WHITE
+	if !color: return default
 	if color.begins_with('0x'): color = color.right(-4)
 	while color.length() < 6: color += '0'
-	
 	return Color.html(color.to_lower())
 
 ##Returns a [Color] using a [Array][[color=red]r[/color], [color=green]g[/color], [color=blue]b[/color]]:

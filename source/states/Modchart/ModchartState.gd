@@ -1,4 +1,4 @@
-const KeyInterpolator = preload("res://source/states/Modchart/KeyInterpolator.gd")
+const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
 const EditorShader = preload("res://source/states/Modchart/Shaders/EditorShader.gd")
 ##Keys to Update:
 ##Must be like that:
@@ -59,8 +59,7 @@ static func update_key(key: KeyInterpolator):
 			key.transition,
 			key.ease
 		)
-	if key.object:
-		setObjectValue(key.object,key.property,value)
+	if key.object: setObjectValue(key.object,key.property,value)
 	else: 
 		setObjectValue(FunkinGD._find_object(key.object_name),key.property,value)
 static func setObjectValue(obj: Variant, prop: String, value: Variant):
@@ -136,8 +135,7 @@ static func removeObject(obj_name: String):
 	keys.erase(obj_name)
 	keys_index.erase(obj_name)
 	
-static func removeProperty(obj_name: String, prop: String):
-	pass
+static func removeProperty(obj_name: String, prop: String): pass
 static func clear():
 	keys.clear()
 	keys_index.clear()

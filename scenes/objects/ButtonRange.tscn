@@ -3,8 +3,10 @@
 [ext_resource type="Script" uid="uid://bscbt2dibch22" path="res://scenes/objects/ButtonRange.gd" id="1_238s7"]
 
 [node name="ButtonRange" type="Label"]
-offset_right = 1.0
-offset_bottom = 15.0
+anchors_preset = -1
+anchor_bottom = 0.021000002
+offset_bottom = -0.12000084
+size_flags_horizontal = 0
 vertical_alignment = 1
 script = ExtResource("1_238s7")
 

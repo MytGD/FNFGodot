@@ -54,7 +54,7 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
 	name = 'Mouse Selection'
 	
-func _process(delta: float) -> void:
+func _process(_d) -> void:
 	if visible:
 		update_size()
 	

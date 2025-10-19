@@ -45,9 +45,6 @@ func _init():
 func set_variable(variable: String, value: Variant):
 	if not event_selected_variables.has(variable): return
 	event_selected_variables[variable] = value
-	
-func get_variable(variable: String, index: int = event_index):
-	event_selected_variables.get(variable)
 
 func selectEvent(index: int = event_index):
 	index = clamp(index,0,events.size()-1)

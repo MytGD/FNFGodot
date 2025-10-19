@@ -73,7 +73,7 @@ func killNote() -> void:
 ##Update the Note position from the his [param strumNote].
 func followStrum(strum: StrumNote = strumNote) -> void:
 	super.followStrum(strum)
-	angle = strumNote.direction
+	angle = -strumNote.direction
 
 func _update_note_speed() -> void:
 	super._update_note_speed()

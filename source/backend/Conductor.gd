@@ -431,7 +431,7 @@ static func getChangesBase() -> Dictionary:
 #endregion
 
 
-func _process(delta: float) -> void:
+func _process(_d) -> void:
 	if !songs:
 		if songPosition > 0: songPosition = 0.0; 
 		return

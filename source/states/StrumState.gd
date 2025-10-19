@@ -39,8 +39,7 @@ var exitingSong: bool = false
 var clear_song_after_exiting: bool = true
 
 var songSpeed: float: set = set_song_speed 
-
-var songLength: float = 0.0
+var _songLength: float = 0.0
 
 static var SONG: Dictionary:
 	set(dir): Conductor.songJson = dir
@@ -58,14 +57,8 @@ var keyCount: int = 4: ##The amount of notes that will be used, default is [b]4[
 var mustHitSection: bool = false ##When the focus is on the opponent.
 var gfSection: bool = false ##When the focus is on the girlfriend.
 
-
-var stepCrochet: float: ##The offset which every step.
-	get():
-		return Conductor.stepCrochet
 	
-var songPos: float: 
-	get(): return Conductor.songPositionDelayed
-
+var _songPos: float
 @export_group("Notes")
 var strumLineNotes := SpriteGroup.new()#Strum's Group.
 var opponentStrums: SpriteGroup = SpriteGroup.new() ##Strum's Oponnent Group.
@@ -79,29 +72,26 @@ var current_player_strum: Array = playerStrums.members
 var uiGroup: SpriteGroup = SpriteGroup.new() ##Hud Group.
 
 var unspawnNotes: Array[Note] = [] ##Unspawn notes, the array is reversed for more performace.
-var unspawnNotesLength: int = 0
-var unspawnIndex: int = 0
-var respawnIndex: int = 0
-var respawnTime: float = -200
+var _unspawnNotesLength: int = 0
+var _unspawnIndex: int = 0
+var _respawnIndex: int = 0
 var respawnNotes: bool = false
 var notes: SpriteGroup = SpriteGroup.new()
 
 
 const NOTE_SPAWN_TIME: float = 1000
 
-var noteSpawnTime = NOTE_SPAWN_TIME
+var noteSpawnTime: float = NOTE_SPAWN_TIME
 
 var hitNotes: Array[Note] = []
 var canHitNotes: bool = true
 
 static var _notes_preload: Array[Note]
-static var _events_preload: Array[Dictionary]
 
 var _splashes_loaded: Dictionary = {}
 
 var splashesEnabled: bool = ClientPrefs.data.splashesEnabled and ClientPrefs.data.splashAlpha > 0
 var opponentSplashes: bool = splashesEnabled and ClientPrefs.data.opponentSplashes
-var splashHoldSpeed: float = 0.0
 var grpNoteSplashes: SpriteGroup = SpriteGroup.new() ##Note Splashes Group.
 var grpNoteHoldSplashes: Array[NoteSplash] = [] ##Note Hold Splashes Group.
 
@@ -274,22 +264,22 @@ func loadSongObjects():
 	if splash_s: splashStyle = splash_s
 	if hold_s: splashHoldStyle = hold_s
 	_create_strums()
-	respawnIndex = 0
-	unspawnIndex = 0
+	_respawnIndex = 0
+	_unspawnIndex = 0
 	if !SONG: return
 	loadNotes()
 
 func loadNotes():
 	if !_notes_preload:  _notes_preload = getNotesFromData(SONG)
 	unspawnNotes = _notes_preload.duplicate()
-	unspawnNotesLength = unspawnNotes.size()
+	_unspawnNotesLength = unspawnNotes.size()
 	reloadNotes()
 	
 func clearSongNotes():
 	for i in notes.members: i.queue_free()
 	notes.members.clear()
-	respawnIndex = 0
-	unspawnIndex = 0
+	_respawnIndex = 0
+	_unspawnIndex = 0
 	unspawnNotes.clear()
 
 func set_song_speed(value):
@@ -313,7 +303,7 @@ func startSong() -> void:
 			audio.play(0.0)
 			songId += 1
 			pass
-		songLength = songsArray[0].stream.get_length()*1000.0
+		_songLength = songsArray[0].stream.get_length()*1000.0
 
 ##Seek the Song Position to [param time] in miliseconds.[br]
 ##If [param kill_notes] is [code]true[/code], the notes above the [param time] will be removed.
@@ -324,9 +314,9 @@ func seek_to(time: float, kill_notes: bool = true):
 	var time_offset: float = time + 1000
 	for i in notes.members: if i.strumTime < time_offset: i.kill()
 	
-	while unspawnIndex < unspawnNotes.size():
-		if unspawnNotes[unspawnIndex].strumTime > time_offset: break
-		unspawnIndex += 1
+	while _unspawnIndex < unspawnNotes.size():
+		if unspawnNotes[_unspawnIndex].strumTime > time_offset: break
+		_unspawnIndex += 1
 	
 #endregion
 
@@ -419,21 +409,21 @@ func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZER
 	strumLineNotes.add(strum)
 	return strum
 
-func _process(delta: float) -> void:
-	if generateMusic: updateNotes()
+func _process(_d) -> void: 
+	if generateMusic: _songPos = Conductor.songPositionDelayed; updateNotes()
 
 #region Note Functions
 func updateRespawnNotes():
-	while respawnIndex:
-		var note = unspawnNotes[respawnIndex-1]
-		if !note: respawnIndex -= 1; continue
-		var time = note.strumTime - songPos
+	while _respawnIndex:
+		var note = unspawnNotes[_respawnIndex-1]
+		if !note: _respawnIndex -= 1; continue
+		var time = note.strumTime - _songPos
 		
 		if time > 0 and time < noteSpawnTime: 
 			note.resetNote()
 			spawnNote(note)
 			updateNote(note)
-			respawnIndex -= 1
+			_respawnIndex -= 1
 			continue
 		break
 		
@@ -441,18 +431,18 @@ func updateRespawnNotes():
 
 func updateNotes():
 	if unspawnNotes:
-		while unspawnIndex < unspawnNotesLength:
-			var unspawn: Note = unspawnNotes[unspawnIndex]
-			if unspawn and unspawn.strumTime - songPos > noteSpawnTime: break
-			unspawnIndex += 1
+		while _unspawnIndex < _unspawnNotesLength:
+			var unspawn: Note = unspawnNotes[_unspawnIndex]
+			if unspawn and unspawn.strumTime - _songPos > noteSpawnTime: break
+			_unspawnIndex += 1
 			spawnNote(unspawn)
 	
 	if respawnNotes:
-		while respawnIndex < unspawnIndex:
-			var note = unspawnNotes[respawnIndex]
+		while _respawnIndex < _unspawnIndex:
+			var note = unspawnNotes[_respawnIndex]
 			#var time = note.strumTime - songPos
 			if !note.wasHit and !note.missed: break
-			respawnIndex += 1
+			_respawnIndex += 1
 	
 	#Detect notes that can hit
 	hitNotes.fill(null)
@@ -464,9 +454,9 @@ func updateNotes():
 		while note_index:
 			note_index -= 1
 			var note = members[note_index]
-			if note.strumTime - songPos > noteSpawnTime:
+			if note.strumTime - _songPos > noteSpawnTime:
 				note.kill()
-				unspawnIndex -= 1
+				_unspawnIndex -= 1
 			elif updateNote(note): continue
 			members.remove_at(note_index)
 	
@@ -484,6 +474,7 @@ func updateNotes():
 
 func spawnNote(note: Note) -> void: ##Spawns the note
 	if !note: return
+	if note.strumTime < note.missOffset: noteMiss(note); return
 	if !note.noteGroup: addNoteToGroup(note,notes); return
 	notes.members.append(note)
 	addNoteToGroup(note,note.noteGroup)
@@ -497,7 +488,6 @@ func addNoteToGroup(note: Note, group: Node) -> void:
 	group.add_child(note)
 	if note.isSustainNote and note.noteGroup == note.noteParent.noteGroup: 
 		group.move_child(note,note.noteParent.get_index())
-
 func updateNote(note: Note):
 	if !note or !note._is_processing: return false
 	
@@ -507,7 +497,7 @@ func updateNote(note: Note):
 	note.noteSpeed = songSpeed
 	note.updateNote()
 	
-	if not (note.isSustainNote and note.isBeingDestroyed) and note.strumTime - songPos <= note.missOffset:
+	if not (note.isSustainNote and note.isBeingDestroyed) and note.strumTime - _songPos <= note.missOffset:
 		if not note.missed and playerNote and not note.ignoreNote: noteMiss(note) 
 		return true
 	if !note.canBeHit: return true
@@ -535,7 +525,7 @@ func hitNote(note: Note) -> void:
 	var strumAnim = 'confirm'
 	
 	note.wasHit = true
-	note.judgementTime = songPos
+	note.judgementTime = _songPos
 	
 	var strum: StrumNote = note.strumNote
 	
@@ -582,11 +572,11 @@ func reloadNote(note: Note):
 
 
 ##Called when the player miss a [Note]
-func noteMiss(note) -> void:
+func noteMiss(note, kill_note: bool = true) -> void:
 	if !note:return
 	
 	note.missed = true
-	note.judgementTime = songPos
+	note.judgementTime = _songPos
 	
 	combo = 0
 	songMisses += 1
@@ -600,6 +590,7 @@ func noteMiss(note) -> void:
 		sus.blockHit = true
 		sus.ignoreNote = true
 		sus.modulate.a = 0.3
+	if kill_note: note.kill()
 #endregion
 
 #region Splash Methods
@@ -646,7 +637,7 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 			splash.animation.setAnimDataValue(
 				'splash-hold',
 				'speed_scale',
-				minf(100.0/stepCrochet,1.5)
+				minf(100.0/Conductor.stepCrochet,1.5)
 			)
 			
 			splash.animation.play('splash',true)

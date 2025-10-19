@@ -3,8 +3,6 @@ extends Node2D
 
 const AnimatedLetter = preload("res://source/objects/AlphabetText/AnimatedLetter.gd")
 
-var _letters_cache: Dictionary[StringName,AnimatedLetter]
-
 @export var text: String = '': set = set_text
 
 @export var x: float = 0.0: set = set_x
@@ -82,9 +80,7 @@ func _add_letter(_letter: StringName) -> AnimatedLetter:
 	newLetter.letter = _letter
 	return newLetter
 
-func update_letters_position(h_aligment: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT):
-	var cur_height: float = 0.0
-	
+func update_letters_position(h_aligment: HorizontalAlignment = horizontal_alignment):
 	width = 0
 	height = 0
 	
@@ -92,14 +88,12 @@ func update_letters_position(h_aligment: HorizontalAlignment = HORIZONTAL_ALIGNM
 	var line: int = 0
 	for i in letters_in_lines:
 		var curTextPos: float = 0.0
-		var lastLetter: AnimatedLetter
 		var cur_width: float
 		
 		var offset_y = height
 		for letter: AnimatedLetter in i: 
 			if !letter: 
 				curTextPos += 15 + letters_space
-				lastLetter = null
 				continue
 			
 			
@@ -114,13 +108,12 @@ func update_letters_position(h_aligment: HorizontalAlignment = HORIZONTAL_ALIGNM
 			
 			cur_width = curTextPos
 			if cur_width > width: width = cur_width
-			lastLetter = letter
 			
 			height = maxf(height,letter_size.y*(line+1))
 		line += 1
 		lines_sizes.append(cur_width)
 		
-	match horizontal_alignment:
+	match h_aligment:
 		HORIZONTAL_ALIGNMENT_CENTER: 
 			var _line: int = 0
 			for letters in letters_in_lines:

@@ -135,8 +135,6 @@ static func _get_value_data(value: Dictionary):
 	if options:
 		data.options = options
 	return data
-static func _get_property_type(line: String, at: int = 0, replace_to: Dictionary = {}):
-	return line.right(-at-1).replace(' ','')
 
 static func _replace_look_at_to_enum(string: String) -> String:
 	#Search for "LookAt" types

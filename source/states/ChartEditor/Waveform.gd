@@ -4,7 +4,6 @@ extends Node2D
 var _audio_capture: AudioEffectCapture
 var bus_capture_index: int = -1
 
-var _last_audio_bus: String
 var waveform_audio: AudioStreamPlayer:
 	set(value):
 		_audio_capture = null
@@ -34,9 +33,7 @@ var waveform_offset: Vector2 = Vector2(10,10)
 
 func _ready():
 	name = 'Waveform'
-func draw_waveform(from: float = 0, to: float = -1):
-	if !waveform_audio or !waveform_audio.stream:
-		return
-	if to == -1:
-		to = waveform_audio.stream.get_length()
+func draw_waveform(_from: float = 0, _to: float = -1):
+	if !waveform_audio or !waveform_audio.stream: return
+	if _to == -1: _to = waveform_audio.stream.get_length()
 	queue_redraw()

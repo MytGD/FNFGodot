@@ -1,3 +1,4 @@
+@tool
 class_name Paths extends Object
 const AnimationService = preload("res://source/general/animation/AnimationService.gd")
 const Character = preload("res://source/objects/Sprite/Character.gd")
@@ -71,6 +72,7 @@ static var _files_directories_cache: Dictionary[String,String] = {}
 static var _dir_exists_cache: Dictionary[String,DirAccess] = {}
 
 static var textFiles: Dictionary = {}
+static var fontFiles: Dictionary = {}
 
 static var imagesCreated: Dictionary[String,Image] = {}
 static var imagesTextures: Dictionary[String,ImageTexture] = {}
@@ -134,6 +136,15 @@ static func _detect_file_folder_case_sensive(path: String) -> String:
 	return ''
 
 #region Path File Methods
+static func font(path: String) -> Font:
+	var font_file = fontFiles.get(path)
+	if font_file: return font_file
+	var fontPath = fontPath(path)
+	if !fontPath: return ThemeDB.fallback_font
+	font_file = FontFile.new()
+	font_file.load_dynamic_font(fontPath)
+	return font_file
+
 static func image(path: String,imagesDirectory: bool = true) -> Image:
 	path = imagePath(path,imagesDirectory)
 	if imagesCreated.has(path): return imagesCreated[path]
@@ -242,13 +253,12 @@ static func text(path: String) -> String:
 	textFiles[path] = file
 	return file
 
-static func font(path: String) -> String:
+static func fontPath(path: String) -> String:
 	var fontPath = detectFileFolder('fonts/'+path)
 	if !fontPath:
 		fontPath = 'res://assets/fonts/'+path
 		if not FileAccess.file_exists(fontPath): return ''
 	return detectFileFolder('fonts/'+path)
-	
 	
 static func stage(path: String)-> String: return detectFileFolder('stages/'+path+'.json')
 
@@ -548,7 +558,7 @@ static func getModFolder(path: String, default: String = game_name) -> String:
 	if !path or path in commomFolders: return default
 	return path
 
-static func getRunningMods(location: bool = false, folder_name: bool = false) -> PackedStringArray:
+static func getRunningMods(location: bool = false) -> PackedStringArray:
 	var mods: PackedStringArray = []
 	if location: 
 		for mod in modsFounded: 

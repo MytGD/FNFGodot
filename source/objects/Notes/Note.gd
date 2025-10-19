@@ -158,14 +158,15 @@ func followStrum(strum: StrumNote = strumNote) -> void:
 	if strum.downscroll: dist = -dist
 	
 	var posX: float = strumNote.x + offsetX
-	var posY: float = strumNote.y + offsetY + dist
+	var posY: float = strumNote.y + offsetY
 	
-	if strumNote.direction:
-		if copyX: x = lerpf(posX,posY,cos(strumNote.direction))
-		if copyY: y = lerpf(posY,posX,sin(strumNote.direction))
+	if strumNote._direction_degress:
+		posX += dist*strumNote._direction_lerp.y
+		posY += dist*strumNote._direction_lerp.x
 	else:
-		if copyX: x = posX
-		if copyY: y = posY
+		posY += dist
+	if copyX: x = posX
+	if copyY: y = posY
 	if copyAlpha: modulate.a = strumNote.modulate.a * multAlpha
 
 func resetNote() -> void: ##Reset Note values when spawned.

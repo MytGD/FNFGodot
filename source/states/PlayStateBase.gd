@@ -8,8 +8,8 @@ const Character = preload("res://source/objects/Sprite/Character.gd")
 const Bar = preload("res://source/objects/UI/Bar.gd")
 const Stage = preload("res://source/gdscript/FunkinStage.gd")
 
-const CharacterEditor = preload("res://scenes/states/CharacterEditor.tscn")
-const ChartEditorScene = preload("res://scenes/states/ChartEditor.tscn")
+const CharacterEditor = preload("res://scenes/states/Editors/CharacterEditor.tscn")
+const ChartEditorScene = preload("res://scenes/states/Editors/ChartEditor.tscn")
 
 static var back_state = preload("res://source/states/Menu/ModeSelect.gd")
 var stateLoaded: bool = false #Used in FunkinGD
@@ -20,10 +20,6 @@ enum IconState{
 	LOSING,
 	WINNING
 }
-@export_group('Stage')
-var stageJson: Dictionary = Stage.getStageBase()
-var curStage: StringName = ''
-
 
 @export_group('Camera')
 var camHUD: CameraCanvas = CameraCanvas.new()
@@ -43,16 +39,27 @@ var defaultCamZoom: float = 1.0
 @export var canExitSong: bool = true
 @export var canPause: bool = true
 @export var canGameOver: bool = true
+var onPause: bool = false
 
+var inGameOver: bool = false
 var camZooming: bool = false##If [code]true[/code], the camera make a beat effect every [member bumpStrumBeat] beats and the zoom will back automatically.
+
+#region Scripts
+@export_group('Stage')
+var stageJson: Dictionary = Stage.getStageBase()
+var curStage: StringName = ''
+
 @export_subgroup('Scripts')
 @export var loadScripts: bool = true
 @export var loadStageScript: bool = true
 @export var loadSongScript: bool = true
+
 @export_subgroup('Events')
-var eventNotes: Array[Dictionary] = []
 @export var generateEvents: bool = true
+static var _events_preload: Array[Dictionary]
+var eventNotes: Array[Dictionary] = []
 var _is_first_event_load: bool = true
+#endregion
 
 @export_group("Countdown Options")
 @export var countDownEnabled: bool = true
@@ -61,18 +68,20 @@ var _is_first_event_load: bool = true
 var _countdown_started: bool = false
 var skipCountdown: bool = false
 
+#region Gui
 @export_group("Hud Elements")
 @export var hideHud: bool = ClientPrefs.data.hideHud: set = _set_hide_hud
 
 var hideTimeBar: bool = ClientPrefs.data.timeBarType == "Disabled"
 var timeBarType: StringName = ClientPrefs.data.timeBarType
-var pauseState: PauseSubstate
-var onPause: bool = false
+#endregion
 
-var inGameOver: bool = false
 
 @export_group('Objects')
+
 const Icon := preload("res://source/objects/UI/Icon.gd")
+
+
 
 var iconP1: Icon = Icon.new()
 var iconP2: Icon = Icon.new()
@@ -82,18 +91,22 @@ var scoreTxt = GDText.new()
 
 var healthBar: Bar = Bar.new('healthBar')
 var health: float: set = set_health
-var healthBar_State: IconState = IconState.NORMAL
+var _healthBar_State: IconState = IconState.NORMAL
 
 var timeBar: Bar
 var timeTxt: GDText
 
+var pauseState: PauseSubstate
+
+#region Game Options
 @export_category('Story Mode')
 var story_song_notes: Dictionary = {}
 var story_songs: PackedStringArray = []
 var isStoryMode: bool = false
+#endregion
 
 @export_category("Song Data")
-var isSongStarted: bool = false
+var _isSongStarted: bool = false
 var songName: StringName = ''
 
 @export_category("Cutscene")
@@ -153,7 +166,7 @@ func _ready():
 		
 		scoreTxt = GDText.new('Score: 0 | Misses: 0 | Accurancy: 0%(N/A)',ScreenUtils.screenWidth/2.0,ScreenUtils.screenHeight - 50.0)
 		scoreTxt.name = 'scoreTxt'
-		if isPixelStage: scoreTxt.font = 'pixel.otf'
+		if isPixelStage: FunkinGD.setTextFont(scoreTxt,'pixel.otf')
 			
 		uiGroup.add(scoreTxt)
 		
@@ -207,34 +220,14 @@ func createMobileGUI():
 	button.position.x = ScreenUtils.screenCenter.x
 	button.pressed.connect(pauseSong)
 	add_child(button)
-	
-func loadCharactersFromData(json: Dictionary = SONG):
+
+func loadCharactersFromData(json: Dictionary = SONG) -> void:
 	changeCharacter(2,json.get('gfVersion','gf'))
 	changeCharacter(0,json.get('player1','bf'))
 	changeCharacter(1,json.get('player2','bf'))
 
-func updateTimeBar():
-	if !timeBar: return
 
-	timeBar.progress = songPos/songLength
-	var songSeconds
-	
-	if ClientPrefs.data.timeBarType == 'TimeLeft': songSeconds = int((songLength-songPos)/1000)
-	else: songSeconds = int(songPos/1000.0)
-	
-	var songMinutes = songSeconds/60
-	songSeconds %= 60
-	
-	songMinutes = str(songMinutes)
-	songSeconds = str(songSeconds)
-	if songMinutes.length() <= 1: songMinutes = '0'+songMinutes
-	
-	if songSeconds.length() <= 1: songSeconds = '0'+songSeconds
-	
-	
-	timeTxt.text = songMinutes+':'+songSeconds
-	
-func _process(delta):
+func _process(delta: float) -> void:
 	if camZooming: camHUD.zoom = lerpf(camHUD.zoom,camHUD.defaultZoom,delta*3*zoomSpeed)
 	
 	#Count Down
@@ -256,6 +249,28 @@ func _process(delta):
 	
 	#Skip Cutscene
 	if inCutscene and videoPlayer and skipCutscene and Input.is_action_just_pressed('ui_accept'): skipVideo()
+
+#region Gui
+func updateTimeBar() -> void:
+	if !timeBar: return
+
+	timeBar.progress = _songPos/_songLength
+	var songSeconds
+	
+	if ClientPrefs.data.timeBarType == 'TimeLeft': songSeconds = int((_songLength-_songPos)/1000)
+	else: songSeconds = int(_songPos/1000.0)
+	
+	var songMinutes = songSeconds/60
+	songSeconds %= 60
+	
+	songMinutes = str(songMinutes)
+	songSeconds = str(songSeconds)
+	if songMinutes.length() <= 1: songMinutes = '0'+songMinutes
+	
+	if songSeconds.length() <= 1: songSeconds = '0'+songSeconds
+	
+	
+	timeTxt.text = songMinutes+':'+songSeconds
 
 #region Icon Methods
 func updateIconPos(icon: Icon) -> void:
@@ -283,9 +298,9 @@ func updateIconsPivot() -> void:
 			if i.flipX: i.pivot_offset = Vector2(0,i.image.pivot_offset.y)
 			else: i.pivot_offset = Vector2(i.image.pivot_offset.x*2.0,i.image.pivot_offset.y)
 #endregion
+#endregion
 
 #region Beat Methods
-
 func iconBeat() -> void:
 	if !can_process(): return #Do not beat if the game is not being processed.
 	for i in icons: i.scale += i.beat_value
@@ -303,10 +318,10 @@ func updateIconsImage(state: IconState):
 			if iconP1.hasWinningIcon: iconP1.animation.play('winning')
 			else: iconP1.animation.play('normal')
 			iconP2.animation.play('losing')
-			
+
 ##Do screen beat effect.
-func screenBeat() -> void: #Used also in "states/PlayState"
-	camHUD.zoom += 0.03
+#Replaced in states/PlayState.
+func screenBeat() -> void: camHUD.zoom += 0.03
 
 func onBeatHit(beat: int = Conductor.beat) -> void:
 	if !can_process(): return
@@ -368,7 +383,7 @@ func updateNote(note):
 func updateNotes() -> void: #Function from StrumState
 	super.updateNotes()
 	if !generateEvents: return
-	while eventNotes and eventNotes[0].strumTime <= songPos:
+	while eventNotes and eventNotes[0].strumTime <= _songPos:
 		var event = eventNotes.pop_front()
 		triggerEvent(event.event,event.variables)
 
@@ -423,7 +438,7 @@ func startCountdown():
 	if _countdown_started: return
 	_countdown_started = true
 	
-	Conductor.songPosition = -stepCrochet*24.0
+	Conductor.songPosition = -Conductor.stepCrochet*24.0
 	var results = FunkinGD.callOnScripts("onStartCountdown",[],true)
 	if FunkinGD.Function_Stop in results: return
 	
@@ -465,11 +480,11 @@ func loadEventsScripts():
 func startSong():
 	super.startSong()
 	if Conductor.songs: Conductor.songs[0].finished.connect(endSound)
-	isSongStarted = true
+	_isSongStarted = true
 	FunkinGD.callOnScripts('onSongStart')
 
 func resumeSong() -> void:
-	if isSongStarted: Conductor.resumeSongs()
+	if _isSongStarted: Conductor.resumeSongs()
 	generateMusic = true
 	process_mode = PROCESS_MODE_INHERIT
 	onPause = false
@@ -488,7 +503,6 @@ func pauseSong(menu: bool = true) -> void:
 	pauseState.restart_song.connect(restartSong.call_deferred)
 	pauseState.exit_song.connect(endSound.call_deferred)
 	
-	Global.show_label_error('Adding to Scene')
 	call_deferred('add_sibling',pauseState)
 
 func restartSong(absolute: bool = true):
@@ -496,7 +510,9 @@ func restartSong(absolute: bool = true):
 	if absolute: reloadPlayState(); return
 	
 	generateMusic = false
-	var tween = create_tween().tween_property(Conductor,'songPosition',-stepCrochet*24.0,1.0).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	var tween = create_tween().tween_property(
+		Conductor,'songPosition',-Conductor.stepCrochet*24.0,1.0
+	).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	tween.finished.connect(
 		func():
 			for note in notes.members: note.kill()
@@ -549,7 +565,7 @@ func countDownTick(beat: int) -> void:
 	sprite.position = ScreenUtils.screenSize/2.0
 	
 	var tween = create_tween()
-	tween.tween_property(sprite,'modulate:a',0.0,stepCrochet*0.004)
+	tween.tween_property(sprite,'modulate:a',0.0,Conductor.stepCrochet*0.004)
 	tween.tween_callback(sprite.queue_free)
 	camHUD.add(sprite)
 	
@@ -688,8 +704,8 @@ func detectSection() -> StringName:
 
 #region Character Methods
 #Replaced in PlayState and PlayState3D
-func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
-	updateIconsImage(healthBar_State)
+func changeCharacter(_t: int = 0, _character: StringName = 'bf') -> Object:
+	updateIconsImage(_healthBar_State)
 	return
 
 func onSectionHitOnce():
@@ -702,7 +718,7 @@ static func get_character_type_name(type: int) -> StringName:
 		_: return 'boyfriend'
 
 
-func addCharacterToList(type,character) -> Node:return null #Replaced in PlayState and PlayState3D
+func addCharacterToList(_type,_character) -> Node:return null #Replaced in PlayState and PlayState3D
 
 func moveCamera(target: StringName = 'boyfriend') -> void:
 	FunkinGD.callOnScripts('onMoveCamera',[target])
@@ -784,9 +800,9 @@ func set_health(value: float):
 	elif progress_h <= 0.3: bar_state = IconState.LOSING
 	else: bar_state = IconState.NORMAL
 	
-	if bar_state != healthBar_State:
-		healthBar_State = bar_state
-		updateIconsImage(healthBar_State)
+	if bar_state != _healthBar_State:
+		_healthBar_State = bar_state
+		updateIconsImage(bar_state)
 
 ##Set HealthBar angle(in degrees). See also [method @GlobalScope.rad_to_deg]
 func setHealthBarAngle(angle: float):

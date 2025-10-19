@@ -4,22 +4,39 @@ const GRID_SIZE = Vector2(40,24)
 
 const EditorMaterial = preload("res://source/states/Modchart/Shaders/EditorShader.gd")
 
+const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
+const Sprite = preload("res://source/objects/Sprite/Sprite.gd")
 const Character = preload("res://source/objects/Sprite/Character.gd")
 const CameraCanvas = preload("res://source/objects/Display/Camera.gd")
+const SpriteGroup = preload("res://source/general/groups/SpriteGroup.gd")
 const PlayState = preload("res://source/states/PlayState.gd")
 
-const KeyInterpolator = preload("res://source/states/Modchart/KeyInterpolator.gd")
+const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
 const KeyInterpolatorNode = preload("res://source/states/Modchart/Editor/KeyInterpolatorNode.gd")
 
 const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")
+const ButtonRangeScene = preload("res://scenes/objects/ButtonRange.tscn")
 const ModchartState = preload("res://source/states/Modchart/ModchartState.gd")
 const Grid = preload("res://source/states/Modchart/Editor/Grid.gd")
 
-const PropertiesAvaliable: Dictionary[Object,PackedStringArray] = {
-	Character: ['x','y','alpha','angle','scale'],
-	CameraCanvas: ['x','y','alpha','zoom','rotation'],
-	PlayState: ['defaultCamZoom']
+var PropertiesAvaliable: Dictionary = {
+	PlayState: {
+		'defaultCamZoom': {'range': [-5,5]},
+		'cameraSpeed': {'range': [0.2,10]},
+		'scrollSpeed':  {'range': [0.2,10]}
+	},
+	CameraCanvas:{
+		'scrollOffset': null,
+		'angle': {'range': [-360,360]}
+	},
+	Sprite:{
+		'scale': {'type': TYPE_FLOAT,'range': [-12,12]},
+		'x': null,
+		'y': null,
+	},
+	StrumNote:{'direction': {'range': [-360,360]}}
 }
+#var PropertiesAvaliable: Dictionary[Script,Dictionary] = {}
 
 var modchart_keys = ModchartState.keys
 var modchart_upating = ModchartState.keys_index
@@ -29,16 +46,14 @@ var songPosition: float = 0.0: set = set_song_editor_position
 var grids: Dictionary[String,Grid] = {}
 
 #Song Data
-@onready var bpm: LineEdit = $"VSplit/HSplit/PanelContainer/Song Data/Bpm"
-
 #region Tween Variables
-@onready var duration: ButtonRange = $VSplit/HSplit/HSplit/Property/List/Duration
+@onready var duration: ButtonRange = $"VSplit/HSplit/HSplit/Property/Key/Duration"
 
-@onready var transition_menu: MenuButton = $VSplit/HSplit/HSplit/Property/List/Transition/Options
+@onready var transition_menu: MenuButton = $"VSplit/HSplit/HSplit/Property/Key/Transition/Options"
 var cur_transition: Tween.TransitionType
 @onready var transition_popup = transition_menu.get_popup()
 
-@onready var ease_menu: MenuButton = $VSplit/HSplit/HSplit/Property/List/Ease/Options
+@onready var ease_menu: MenuButton = $"VSplit/HSplit/HSplit/Property/Key/Ease/Options"
 var cur_ease: Tween.EaseType
 @onready var ease_popup: PopupMenu = ease_menu.get_popup()
 #endregion
@@ -64,38 +79,12 @@ var cur_ease: Tween.EaseType
 #endregion
 
 #region Property Editor Variables
-#region Nodes
-
-@onready var property_value = $VSplit/HSplit/HSplit/Property/List/Value
-@onready var property_value_x = $VSplit/HSplit/HSplit/Property/List/ValueX
-@onready var property_value_y = $VSplit/HSplit/HSplit/Property/List/ValueY
-@onready var property_value_z = $VSplit/HSplit/HSplit/Property/List/ValueZ
-@onready var property_value_w = $VSplit/HSplit/HSplit/Property/List/ValueW
-
-@onready var property_init_value = $VSplit/HSplit/HSplit/Property/List/initVal
-@onready var property_init_value_x = $VSplit/HSplit/HSplit/Property/List/initValX
-@onready var property_init_value_y = $VSplit/HSplit/HSplit/Property/List/initValY
-@onready var property_init_value_z = $VSplit/HSplit/HSplit/Property/List/initValZ
-@onready var property_init_value_w = $VSplit/HSplit/HSplit/Property/List/initValW
-#endregion
-
-@onready var property_values: Dictionary[Variant.Type,Array] = {
-	TYPE_FLOAT: [property_value],
-	TYPE_VECTOR2: [property_value_x,property_value_y],
-	TYPE_VECTOR3: [property_value_x,property_value_y,property_value_x,property_value_z],
-	TYPE_VECTOR4: [property_value_x,property_value_y,property_value_z,property_value_w],
-}
-
-@onready var property_init_values: Dictionary[Variant.Type,Array] = {
-	TYPE_FLOAT: [property_init_value],
-	TYPE_VECTOR2: [property_init_value_x,property_init_value_y],
-	TYPE_VECTOR3: [property_init_value_x,property_init_value_y,property_init_value_x,property_init_value_z],
-	TYPE_VECTOR4: [property_init_value_x,property_init_value_y,property_init_value_z,property_init_value_w],
-}
-#endregion
+@onready var explorer_nodes = $VSplit/HSplit/PanelContainer/Explorator/ColorRect/Explorer
+var properties_created: Array[Dictionary]
+@onready var properties_tab = $VSplit/HSplit/HSplit/Property/Properties/Scroll/Container
+@onready var properties_select_obj_text = $VSplit/HSplit/HSplit/Property/Properties/InfoText
 
 #endregion
-
 
 #region Grid Properties
 const grid_shader = preload("res://source/states/Modchart/Shaders/Grid.gdshader")
@@ -141,6 +130,11 @@ var key_is_int: bool = false
 var keys_copied: Array[KeyInterpolator] = []
 
 var key_moving_first_pos: float = 0
+
+
+#Textures
+const KeyNormalTexture = preload("res://icons/KeyBezierHandle.svg")
+const KeySelectedTexture = preload("res://icons/KeySelected.svg")
 #endregion
 
 #region Different values
@@ -150,9 +144,22 @@ var is_transition_different: bool = false
 var is_ease_different: bool = false
 #endregion
 
-#region PopupMenus
-
+#region Explorer
+var explorer_object_selected: Node
+var explorer_object_last_modulate: Color
+var explorer_select_effect: bool = false
+var explorer_modulate_delta: float = 0.0
+func _on_explorer_button_selected(button) -> void:
+	if explorer_object_selected: explorer_object_selected.modulate = explorer_object_last_modulate
+	var obj = button.object
+	explorer_select_effect = obj is CanvasItem
+	
+	if explorer_select_effect: explorer_object_last_modulate = obj.modulate
+	else: explorer_modulate_delta = 0.0
+	explorer_object_selected = obj
+	show_object_properties(obj)
 #endregion
+
 func _ready() -> void:
 	DiscordRPC.state = 'In Modchart Editor'
 	DiscordRPC.refresh()
@@ -171,7 +178,7 @@ func _ready() -> void:
 		shader_tag.placeholder_text = shader.get_file().get_basename()
 	)
 	
-	dialog.file_selected.connect(func(file): show_dialog(false))
+	dialog.file_selected.connect(func(_f): show_dialog(false))
 	#endregion
 	
 	#region Transition
@@ -205,6 +212,8 @@ func _ready() -> void:
 	
 	Conductor.bpm_changes.connect(bpm_changes)
 
+
+#region Dialog
 func show_dialog(show: bool = true, mode: FileDialog.FileMode = FileDialog.FILE_MODE_OPEN_FILE) -> void:
 	if show: 
 		dialog.clear_filters()
@@ -217,16 +226,114 @@ func connect_to_dialog(callable: Callable) -> void:
 
 func disconnect_to_dialog(callable: Callable) -> void: 
 	dialog.file_selected.disconnect(callable)
+#endregion
 
+#region Properties
+
+func show_object_properties(object: Object):
+	if object is ShaderMaterial: return
+	
+	for i in properties_tab.get_children(): i.queue_free()
+	var script: Script = object.get_script()
+	
+	var properties: Dictionary = {}
+	if script:
+		while script:
+			var props = PropertiesAvaliable.get(script)
+			if props: 
+				var _class_n = script.resource_path.get_basename().get_file()
+				properties[_class_n] = [props,explorer_nodes._get_class_icon(_class_n)]
+			script = script.get_base_script()
+
+	var base_class_props = PropertiesAvaliable.get(ClassDB.instantiate(object.get_class()))
+	#if base_class_props: properties.append_array(base_class_props)
+	
+	if !properties: properties_select_obj_text.visible = true; return
+	properties_select_obj_text.visible = false
+	
+	for i in properties:
+		var data = properties[i]
+		var separator = _create_property_separator(i,data[1])
+		
+		var _props = data[0]
+		for p in _props: 
+			var property = _create_property_buttons(object,p,_props[p])
+			if property: separator.properties_to_hide.append_array(property)
+
+func _create_property_separator(text: String, icon: Texture):
+	var separator = PropertySeparator.new()
+	separator.class_text = text
+	separator.button.icon = icon
+	properties_tab.add_child(separator)
+	return separator
+		
+func _create_property_buttons(object: Node, property: String, data = null) -> Array[Node]:
+	var value = object.get(property)
+	var type = typeof(value)
+	var nodes: Array[Node] = []
+	
+	match type:
+		TYPE_FLOAT,TYPE_INT:
+			var int_val = type == TYPE_INT
+			var range = data.get('range') if data else null
+			var button
+			if range:
+				button = HSlider.new()
+				button.min_value = range[0]
+				button.max_value = range[1]
+				if range.size() >= 3: button.step = range[2]
+				elif not int_val: button.step = 0.1
+			else:
+				button = _create_property_button()
+				button.text = property+': '
+				button.value = value
+				if int_val: button.int_value = true
+				else: button.value_to_add = 0.1
+			button.value_changed.connect(func(_v): object[property] = _v)
+			nodes.append(button)
+		
+		TYPE_VECTOR2,TYPE_VECTOR3,TYPE_VECTOR4,TYPE_VECTOR2I,TYPE_VECTOR3I,TYPE_VECTOR4I:
+			var int_val = (type == TYPE_VECTOR2I or type == TYPE_VECTOR3I or type == TYPE_VECTOR4I)
+			var length = VectorUtils.get_vector_length_from_type(type)
+			var vector_index = VectorUtils.vectors_index[length-1]
+			for i in vector_index:
+				var button = _create_property_button()
+				button.text = property+' '+i+': '
+				button.int_value = int_val
+				if not int_val: button.value_to_add = 0.1
+					
+				button.value = value[i]
+				match i:
+					'x': button.value_changed.connect(func(_v): object[property].x = _v)
+					'y': button.value_changed.connect(func(_v): object[property].y = _v)
+					'z': button.value_changed.connect(func(_v): object[property].z = _v)
+					'w': button.value_changed.connect(func(_v): object[property].w = _v)
+				nodes.append(button)
+	if !nodes: return []
+	for i in nodes: 
+		properties_tab.add_child(i)
+		_create_interpolator_key_to_button(i)
+	return nodes
+
+func _create_property_button():
+	var button: ButtonRange = ButtonRangeScene.instantiate()
+	button.update_min_size_x = true
+	button.update_min_size_y = true
+	return button
+
+func _create_interpolator_key_to_button(button: Control) -> void:
+	var key = KeyValue.new()
+	button.minimum_size_changed.connect(_update_interpolator_key_pos.bind(key).call_deferred)
+	button.add_child(key)
+	_update_interpolator_key_pos.call_deferred(key)
+
+func _update_interpolator_key_pos(key: Control):
+	key.position = Vector2(key.get_parent().size.x + 15,key.get_parent().size.y/2.0 - 8)
 #region Song
 func bpm_changes() -> void:
-	bpm.text = str(Conductor.bpm)
-	bpm.placeholder_text = bpm.text
-
-func load_json() -> void:
-	show_dialog()
-	dialog.add_filter('*.json')
-	connect_to_dialog(selected_json)
+	#bpm.text = str(Conductor.bpm)
+	#bpm.placeholder_text = bpm.text
+	pass
 
 func selected_json(file: String = ''):
 	if !file: return
@@ -240,6 +347,11 @@ func selected_json(file: String = ''):
 	show_dialog(false)
 	confirm_dialog.visible = false
 	_load_song_from_json(file)
+
+func load_json() -> void:
+	show_dialog()
+	dialog.add_filter('*.json')
+	connect_to_dialog(selected_json)
 
 func _load_song_from_json(dir_absolute: String):
 	Conductor.clearSong(true)
@@ -311,20 +423,20 @@ func updateShadersPopup() -> void:
 
 #region Modchart Area
 func _process(delta: float) -> void:
-	if playState.process_mode != playState.PROCESS_MODE_DISABLED: 
-		set_song_editor_position(Conductor.songPosition)
+	if playState.process_mode != playState.PROCESS_MODE_DISABLED: set_song_editor_position(Conductor.songPosition)
 	
-func on_save_modchart_pressed():
-	show_dialog(true,FileDialog.FILE_MODE_SAVE_FILE)
-	connect_to_dialog(save_modchart)
+	if explorer_select_effect and explorer_object_selected:
+		explorer_modulate_delta += delta
+		explorer_object_selected.modulate = Color.WHITE.lerp(
+			Color.CYAN,
+			abs(sin(explorer_modulate_delta*3.0))
+		)
 
-func on_load_modchart_pressed():
-	show_dialog(true)
-	
 func save_modchart(path_absolute: String):
 	Paths.saveFile(ModchartState.get_keys_data(),path_absolute)
-	
+
 #endregion
+
 #region Song Position
 func set_song_editor_position(new_pos: float) -> void:
 	if new_pos == songPosition: return
@@ -350,6 +462,7 @@ func set_song_editor_position(new_pos: float) -> void:
 	updateKeysPositions()
 
 func set_song_position(pos: float):
+	if pos == songPosition: return
 	Conductor.setSongPosition(pos)
 	playState.updateNotes()
 	set_song_editor_position(pos)
@@ -373,7 +486,7 @@ func updateGridKeys(grid: Grid, from_back: bool = false) -> void:
 	if from_back: grid.process_keys_behind()
 	else: grid.process_keys_front()
 
-func updateGridX(grid: Grid, is_going_back: bool = false) -> void:
+func updateGridX(grid: Grid) -> void:
 	grid.material.set_shader_parameter('x',grid_x)
 	grid.position.x = grid_real_x
 
@@ -425,8 +538,6 @@ func removeGrid(grid: Grid) -> void:
 	grids.erase(grid.object_name)
 	grid.dropdownBox.queue_free()
 	grid.queue_free()
-	
-	
 
 func addFileToEditor(object_name: String, object: Object) -> void:
 	#Check if the name already exists.
@@ -448,9 +559,9 @@ func addFileToEditor(object_name: String, object: Object) -> void:
 		modchart_data.shader_name = object.shader_name
 		modchart_data.objects = object.objects
 		
-		icon_texture = load("res://icons/basic/Shader.svg")
+		icon_texture = load("res://icons/Shader.svg")
 		
-	else: icon_texture = load("res://icons/basic/Object.svg")
+	else: icon_texture = load("res://icons/Object.svg")
 	
 	var icon = Sprite2D.new()
 	icon.texture = icon_texture
@@ -502,6 +613,7 @@ func removeGridProperty(grid: Grid, prop: String):
 	var prop_keys = grid.keys[prop]
 	if prop_keys:
 		ModchartState.setObjectValue(obj,prop,prop_keys[0].prev_val)
+		for i in prop_keys: keys_selected.erase(i); i.key_node.queue_free()
 	
 	grid.keys.erase(prop)
 	grid.keys_index.erase(prop)
@@ -511,112 +623,8 @@ func removeGridProperty(grid: Grid, prop: String):
 	ModchartState.keys_index[grid.object_name].erase(prop)
 	grid.updateSize()
 #endregion
-
-#region Key Interpolator
-func update_key_properties():
-	if !keys_selected: return
-	var first_key = keys_selected[0].data
-	
-	duration.value_to_add = 0
-	is_type_different = false
-	is_duration_different = false
-	is_transition_different = false
-	is_ease_different = false
-	
-	var first_key_type = typeof(first_key.value)
-	duration.value_to_add = Conductor.stepCrochet
-	for i in keys_selected:
-		var key = i.data
-		var bpm_change = Conductor.get_bpm_changes_from_pos(key.time)
-		if bpm_change: duration.value_to_add = maxf(duration.value_to_add,Conductor.get_step_crochet(bpm_change.bpm))
-		if !is_type_different: is_type_different = first_key_type != typeof(key.value)
-		if !is_duration_different: is_duration_different = first_key.duration != key.duration
-		if !is_transition_different: is_transition_different = first_key.transition != key.transition
-		if !is_ease_different: is_duration_different = first_key.ease != key.ease
-	
-	if !duration.value_to_add: duration.value_to_add = Conductor.stepCrochet
-	hide_properties()
-	hide_init_properties()
-	
-	
-	#Show Values
-	if is_type_different: key_type = TYPE_NIL; return
-	
-	key_type = first_key_type as Variant.Type
-	
-	if !is_type_different: duration.set_value_no_signal(first_key.duration)
-	else: duration.text = '...'; return
-	
-	var properties = property_values.get(first_key_type)
-	key_is_int = false
-	if !properties:
-		match first_key_type:
-			TYPE_INT: properties = property_values[TYPE_FLOAT]; key_is_int = true; key_type = TYPE_FLOAT
-			TYPE_VECTOR2I: properties = property_values[TYPE_VECTOR2]; key_is_int = true; key_type = TYPE_VECTOR2
-			TYPE_VECTOR3I: properties = property_values[TYPE_VECTOR3]; key_is_int = true; key_type = TYPE_VECTOR3
-			TYPE_VECTOR4I: properties = property_values[TYPE_VECTOR4]; key_is_int = true; key_type = TYPE_VECTOR4
-			TYPE_COLOR: properties = property_values[TYPE_VECTOR4]; key_type = TYPE_VECTOR4
-			_: return
-	
-	show_properties(key_type)
-	set_property_values_from_key(first_key.value,properties,key_type)
-	if !is_duration_different and first_key.duration: 
-		show_init_properties()
-		set_property_values_from_key(first_key.init_val,property_init_values[key_type],key_type)
-
 func updateKeysPositions():
 	for i in grids: for key in grids[i]._keys_created: key.updatePos()
-
-func set_property_values_from_key(value: Variant,value_buttons: Array,value_type: Variant.Type):
-	match value_type:
-		TYPE_FLOAT: value_buttons[0].set_value_no_signal(value)
-		TYPE_VECTOR2: 
-			value_buttons[0].set_value_no_signal(value.x)
-			value_buttons[1].set_value_no_signal(value.y)
-		TYPE_VECTOR3:
-			value_buttons[0].set_value_no_signal(value.x)
-			value_buttons[1].set_value_no_signal(value.y)
-			value_buttons[2].set_value_no_signal(value.z)
-		TYPE_VECTOR4:
-			value_buttons[0].set_value_no_signal(value.x)
-			value_buttons[1].set_value_no_signal(value.y)
-			value_buttons[2].set_value_no_signal(value.z)
-			value_buttons[3].set_value_no_signal(value.w)
-
-func show_init_properties():
-	match key_type:
-		TYPE_NIL: return
-		TYPE_FLOAT,TYPE_INT:
-			property_init_value.int_value = key_is_int
-			property_init_value.set_value_no_signal(keys_selected[0].data.init_val)
-			property_init_value.visible = true
-		_:
-			var index: int = 0
-			for i in property_init_values[key_type]: 
-				i.int_value = key_is_int
-				i.set_value_no_signal(keys_selected[0].data.init_val[index])
-				i.visible = true
-				index += 1
-
-func hide_init_properties():
-	property_init_value.visible = false
-	for i in property_init_values[TYPE_VECTOR4]: i.visible = false
-
-func show_properties(type: Variant.Type):
-	match type:
-		TYPE_NIL: return
-		TYPE_FLOAT,TYPE_INT: property_value.visible = true
-		_: 
-			var index: int = 0
-			for i in property_values[type]: 
-				i.visible = true
-				i.int_value = key_is_int
-				i.set_value_no_signal(keys_selected[0].data.value[index])
-				index += 1
-
-func hide_properties():
-	property_value.visible = false
-	for i in property_values[TYPE_VECTOR4]: i.visible = false
 
 #region Key Setters
 func toggle_key(key: KeyInterpolatorNode, add: bool = is_shift_pressed):
@@ -627,7 +635,6 @@ func select_key(key: KeyInterpolatorNode,add: bool = is_shift_pressed):
 	if !add: unselect_keys()
 	key.modulate = Color.CYAN
 	keys_selected.append(key)
-	update_key_properties()
 
 func select_keys(keys: Array[KeyInterpolatorNode], add: bool = is_shift_pressed):
 	if !add:
@@ -645,13 +652,6 @@ func unselect_keys():
 	for i in keys_selected: i.modulate = Color.WHITE
 	keys_selected.clear()
 
-func addKeyToArray(key: KeyInterpolator, array: Array[KeyInterpolator]):
-	var index: int = array.size()
-	while index:
-		if array[index].time <= key.time: break
-		index -= 1
-	array.insert(index,key)
-
 func removeKey(key: KeyInterpolatorNode):
 	key.data.time = INF
 	ModchartState.update_key(key.data)
@@ -667,14 +667,12 @@ func add_keys_step(step: float):
 		i.data.time = Conductor.get_step_time(i.step)
 		i.updatePos()
 	ModchartState.process_keys(step > 0.0)
+
 func add_keys_duration(value: float):
 	var has_duration: bool = false
 	for i in keys_selected: 
 		i.data.duration += value
 		if !has_duration: has_duration = !!i.data.duration
-	
-	if !has_duration: hide_init_properties()
-	else: show_init_properties()
 	
 	if is_duration_different: duration.text = '...'
 
@@ -735,8 +733,7 @@ func disable_moving_keys(): is_moving_keys = false
 
 func copy_keys_selected() -> void:
 	keys_copied.clear()
-	for i in keys_selected:
-		keys_copied.append(i.data)
+	for i in keys_selected: keys_copied.append(i.data)
 
 func paste_keys(round_step: bool = !is_shift_pressed):
 	if !keys_copied: return
@@ -744,28 +741,32 @@ func paste_keys(round_step: bool = !is_shift_pressed):
 	if round_step: time_add = roundf(time_add)
 	var keys_created: Array[KeyInterpolatorNode]
 	var last_key: KeyInterpolator
+	
+	var max_time: float = songPosition
 	for i in keys_copied:
 		var grid = i.key_node.parent
+		var time = i.key_node.step + time_add
 		var index = grid.addKey(
-			i.key_node.step + time_add,
+			time,
 			i.property,
 			i.value,
 			i.duration,
 			i.transition,
 			i.ease
 		)
+		max_time = maxf(max_time,time+i.duration)
 		last_key = grid.keys[i.property][index]
 		last_key.init_val = i.init_val
 		keys_created.append(last_key.key_node)
 	
 	select_keys(keys_created,false)
-	set_song_editor_position(last_key.time + last_key.duration)
+	set_song_editor_position(max_time)
 #endregion
 
 
 func getMouseXStep(mouse_pos: float, rounded: bool = !is_shift_pressed):
 	mouse_pos /= grid_size.x
-	return roundf(mouse_pos) if !is_shift_pressed else mouse_pos
+	return roundf(mouse_pos) if !rounded else mouse_pos
 
 #region Inputs
 func dropdown_box_input(event: InputEvent, grid: Grid):
@@ -773,18 +774,20 @@ func dropdown_box_input(event: InputEvent, grid: Grid):
 		if !event.pressed: return
 		match event.button_index:
 			2: 
+				var properties = getGridObjectProperties(grid)
+				if !properties:
+					Global.show_label_error("Error on Properties: Object don't exists or don't have any property.")
+					return
 				property_options.visible = true
 				property_options.position = get_viewport().get_mouse_position()
 				properties_names.clear()
 				property_remove.clear()
-				
-				for i in getGridObjectProperties(grid): if not i in grid.keys: properties_names.add_item(i)
+				for i in properties: if not i in grid.keys: properties_names.add_item(i)
 				
 				if !grid.keys: property_options.set_item_disabled(1,true)
 				else: 
 					for i in grid.keys: property_remove.add_item(i); 
 					property_options.set_item_disabled(1,false)
-				
 				grid_selected = grid
 
 func grid_input(event: InputEvent, grid: Grid):
@@ -930,7 +933,6 @@ func pausePlaystate(pause: bool) -> void:
 		playState.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _set_playstate_value(value: Variant, property: String): playState.set(property,value)
-
 #endregion
 
 #region Signals
@@ -944,4 +946,42 @@ func object_submitted(obj_name: String):
 func _on_property_index_selected(index: int): addPropertyToGrid(grid_selected,properties_names.get_item_text(index))
 
 func _on_property_remove_index_selected(index: int): removeGridProperty(grid_selected,property_remove.get_item_text(index))
+
+func _on_modchart_options_index_selected(index: int):
+	match index:
+		0:
+			show_dialog(true,FileDialog.FILE_MODE_SAVE_FILE)
+			connect_to_dialog(save_modchart)
+		1: show_dialog(true,FileDialog.FILE_MODE_SAVE_FILE)
+			#connect_to_dialog(load_modchart)
+
+func _on_song_options_index_selected(index: int):
+	match index:
+		0: load_json()
 #endregion
+
+
+class PropertySeparator extends VBoxContainer:
+	var button: Button = Button.new()
+	var properties_to_hide: Array = []
+	var class_text: String = ''
+	func _init() -> void:
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+	func _ready() -> void:
+		button.toggle_mode = true
+		button.button_pressed = true
+		add_child(button)
+		button.focus_mode = Control.FOCUS_NONE
+		button.toggled.connect(func(_t): for i in properties_to_hide: i.visible = _t; update_text())
+		update_text()
+	
+	func update_text(): button.text = class_text+(' v' if button.button_pressed else ' >')
+class KeyValue extends TextureButton:
+	func _init() -> void:
+		texture_normal = KeyNormalTexture
+		texture_pressed = KeySelectedTexture
+		toggle_mode = true
+	func _draw() -> void:
+		draw_string(ThemeDB.fallback_font,Vector2(-15,16),'<   >')

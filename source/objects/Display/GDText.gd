@@ -43,13 +43,7 @@ var alpha: float = 1.0:
 	get():
 		return modulate.a
 
-var font: String: 
-	set(value):
-		set_font(value)
-		font = value
-
 func _init(textT:String = '',posX: float = 0, posY: float = 0,textWidth: float = ScreenUtils.screenWidth):
-	set_font('vcr.ttf')
 	label_settings = LabelSettings.new()
 	label_settings.outline_size = 7
 	label_settings.outline_color = Color.BLACK
@@ -102,17 +96,6 @@ func _process(_delta):
 		_scroll_offset = Vector2.ZERO
 	_updatePos()
 
-func set_font(font):
-	var fontDetect = Paths.font(font)
-	var fontSource: FontFile = FontFile.new()
-	if fontDetect.is_empty():
-		fontDetect =  "res://assets/fonts/vcr.ttf"
-	fontSource.load_dynamic_font(fontDetect)
-	if fontSource == null:
-		fontSource = FontFile.new()
-	if fontSource != null:
-		add_theme_font_override('font',fontSource)
-
 func _update_alignment_offset():
 	match horizontal_alignment:
 		HORIZONTAL_ALIGNMENT_CENTER:
@@ -137,6 +120,3 @@ func _notification(what: int) -> void:
 			parent = null
 		NOTIFICATION_DRAW:
 			_update_alignment_offset()
-
-func screenCenter(type: StringName = 'xy'):
-	pass

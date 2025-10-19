@@ -98,7 +98,7 @@ static func fixChart(json: Dictionary):
 	for section: Dictionary in json.notes: section.merge(getSectionBase(),false)
 	return json
 
-static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, difficulty: String = '', folder_song: StringName = '') -> Dictionary:
+static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, difficulty: String = '') -> Dictionary:
 	var oldJson = getChartBase()
 	var json_bpm = 0.0
 	var bpms = []

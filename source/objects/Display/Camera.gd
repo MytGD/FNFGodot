@@ -1,3 +1,4 @@
+@icon("res://icons/Camera2D.svg")
 class_name CameraCanvas extends Node2D
 const SolidSprite = preload("res://source/objects/Sprite/SolidSprite.gd")
 
@@ -53,6 +54,7 @@ func _init() -> void:
 	width = ScreenUtils.screenWidth
 	height = ScreenUtils.screenHeight
 	
+	scroll_camera.name = 'Camera'
 	add_child(scroll_camera)
 	
 	flashSprite.name = 'flashSprite'
@@ -85,6 +87,8 @@ func setFilters(shaders: Array = []) -> void: ##Set Shaders in the Camera
 	if !filtersArray: return
 	
 	create_viewport()
+	create_shader_image()
+	
 	_shader_image.material = filtersArray.front()
 	
 	if filtersArray.size() == 1: _shader_image.texture = viewport.get_texture(); return
@@ -100,30 +104,24 @@ func addFilters(shaders: Variant) -> void: ##Add shaders to the existing ones.
 	shaders = _convertFiltersToMaterial(shaders)
 	
 	create_viewport()
+	create_shader_image()
+	
 	if _shader_image.material: _addViewportShader(_shader_image.material)
-	
-	
-	_shader_image.material = shaders.pop_back()
-	for i in shaders: _addViewportShader(i)
+	_shader_image.material = shaders[0]
+	var index: int = 1
+	while index < shaders.size(): _addViewportShader(shaders[index]); index += 1
 	if shaders: filtersArray.append_array(shaders)
 	filtersArray.append(_shader_image.material)
 
-func _convertFiltersToMaterial(shaders: Array) -> Array[Material]:
-	var array: Array[Material] = []
-	for i in shaders:
-		var shader: Material = (Paths.loadShader(i) if i is String else i)
-		if !shader or shader in array: continue
-		array.append(shader)
-	return array
 
 func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	if !_last_viewport_added: return
 	create_viewport()
 	
-	var viewport = _get_new_viewport()
-	add_child(viewport)
+	var shader_view = _get_new_viewport()
+	add_child(shader_view)
 	
-	if filter.shader.resource_name: viewport.name = filter.shader.resource_name
+	if filter.shader.resource_name: shader_view.name = filter.shader.resource_name
 	
 	var tex = Sprite2D.new()
 	tex.name = 'Sprite2D'
@@ -131,12 +129,11 @@ func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	tex.texture = _last_viewport_added.get_texture()
 	tex.material = filter
 	
-	viewport.add_child(tex)
-	_viewports_created.append(viewport)
+	shader_view.add_child(tex)
+	_viewports_created.append(shader_view)
 	
-	_shader_image.texture = viewport.get_texture()
-	
-	_last_viewport_added = viewport
+	_shader_image.texture = shader_view.get_texture()
+	_last_viewport_added = shader_view
 	return tex
 	
 
@@ -173,13 +170,14 @@ func removeFilters(): ##Remove every shader created in this camera.
 	
 func create_viewport() -> void:
 	if viewport: return
-	
 	viewport = _get_new_viewport()
 	add_child(viewport)
 	flashSprite.reparent(viewport,false)
 	scroll_camera.reparent(viewport,false)
 	
 	_last_viewport_added = viewport
+
+func create_shader_image():
 	if _shader_image: return
 	
 	_shader_image = Sprite2D.new()
@@ -188,7 +186,6 @@ func create_viewport() -> void:
 	
 	add_child(_shader_image)
 	move_child(_shader_image,0)
-
 func remove_viewport() -> void:
 	if !viewport: return
 	flashSprite.reparent(self,false)
@@ -303,13 +300,19 @@ func get_angle() -> float:return scroll_camera.rotation_degrees
 func get_color() -> Color: return scroll_camera.modulate
 #endregion
 
+static func _convertFiltersToMaterial(shaders: Array) -> Array[Material]:
+	var array: Array[Material] = []
+	for i in shaders:
+		var shader: Material = (Paths.loadShader(i) if i is String else i)
+		if !shader or shader in array: continue
+		array.append(shader)
+	return array
+
+
 static func _get_new_viewport() -> SubViewport:
 	var view = SubViewport.new()
 	view.transparent_bg = true
 	view.disable_3d = true
-	view.own_world_3d = true
-	view.audio_listener_enable_2d = false
-	view.audio_listener_enable_3d = false
 	view.size = ScreenUtils.screenSize
 	#view.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	return view

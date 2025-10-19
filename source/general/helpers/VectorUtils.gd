@@ -1,4 +1,4 @@
-class_name VectorHelper
+class_name VectorUtils
 
 const vectors: Dictionary = {
 	TYPE_VECTOR2: true,
@@ -8,6 +8,11 @@ const vectors: Dictionary = {
 	TYPE_VECTOR4: true,
 	TYPE_VECTOR4I: true
 }
+const vectors_index: Array[PackedStringArray] =[
+	['x','y'],
+	['x','y','z'],
+	['x','y','z','w']
+]
 static func is_vector(variable) -> bool: return typeof(variable) in vectors
 
 static func is_vector_type(type: int):return type in vectors
@@ -40,3 +45,13 @@ static func vector_to_array(vector: Variant) -> PackedFloat64Array:
 		TYPE_VECTOR3,TYPE_VECTOR3I: return [vector.x, vector.y, vector.z]
 		TYPE_VECTOR4,TYPE_VECTOR4I: return [vector.x, vector.y, vector.z, vector.w]
 		_:return [0,0]
+
+static func get_vector_length(vector: Variant) -> int:
+	return get_vector_length_from_type(typeof(vector))
+
+static func get_vector_length_from_type(type: Variant.Type):
+	match type:
+		TYPE_VECTOR2,TYPE_VECTOR2I: return 1
+		TYPE_VECTOR3,TYPE_VECTOR3I: return 2
+		TYPE_VECTOR4,TYPE_VECTOR4I: return 3
+		_: return 0

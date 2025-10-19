@@ -1158,12 +1158,11 @@ func createEventVariables(event_name: String, variables: Dictionary = {}):
 					variable_node.size.x = 110
 					variable_node.placeholder_text = str(default)
 					variable_node.text = str(value)
-					variable_node.text_submitted.connect(func(t):
+					variable_node.text_submitted.connect(func(_t):
 						variable_node.release_focus()
 					)
 					variable_node.text_changed.connect(func(t):
-						if event_selected:
-							event_selected.set_variable(i,t)
+						if event_selected: event_selected.set_variable(i,t)
 					)
 					type = TYPE_STRING
 				
@@ -1296,7 +1295,7 @@ func enableStrums(enable: bool):
 	for i in range(keyCount*2):
 		var strum = StrumNote.new(i%keyCount)
 		var group = chess_opponent if i < keyCount else chess_player
-		strum.texture_changed.connect(func(old_tex,new_tex):
+		strum.texture_changed.connect(func(_o,_n):
 			updateStrumScale(strum)
 		)
 		strum.texture = arrowSkin
@@ -1332,17 +1331,13 @@ func detectNotesToHit():
 		hit_times.sort_custom(ArrayHelper.sort_array_from_first_index)
 #endregion
 
-func _process(delta: float) -> void:
-	if song_playing:
-		set_song_position(Conductor.songPosition,false)
+func _process(_d) -> void:
+	if song_playing: set_song_position(Conductor.songPosition,false)
 
 	var selected_color = Color.WHITE * (1.0 - abs(cos(Time.get_ticks_msec()/400.0))/2.0)
 	
-	if event_selected:
-		event_selected.modulate = selected_color
-	else:
-		for i in notes_selected:
-			i.modulate = selected_color
+	if event_selected: event_selected.modulate = selected_color
+	else: for i in notes_selected: i.modulate = selected_color
 	
 	if mouse_erase_notes:
 		removeEventFromSong(getEventAtMouse())

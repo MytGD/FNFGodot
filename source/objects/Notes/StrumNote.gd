@@ -1,4 +1,4 @@
-@icon("res://icons/strum.png")
+@icon("res://icons/StrumNote.png")
 extends Sprite ##Strum Note
 const Note = preload("res://source/objects/Notes/Note.gd")
 const default_offset = [0,0]
@@ -24,8 +24,11 @@ var prefixs: Dictionary = {
 ##Example: [code]deg_to_rad(90)[/code] makes the notes come from the left,
 ##while [code]deg_to_rag(180)[/code] makes come from the top.[br]
 ##[b]Obs:[/b] If [param downscroll] is [code]true[/code], the direction is inverted.
-var direction: float = 0.0
-
+var direction: float = 0.0:
+	set(value): direction = value; _direction_degress = deg_to_rad(value)
+var _direction_degress: float = 0.0:
+	set(value): _direction_degress = value; _direction_lerp = Vector2(cos(_direction_degress),sin(_direction_degress))
+var _direction_lerp: Vector2 = Vector2(0,1)
 var mustPress: bool = false ##Player Strum
 var hit_action: String = '' ##Hit Key
 

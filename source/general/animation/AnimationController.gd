@@ -99,8 +99,6 @@ var paused: bool = false: set = pause
 
  ##A multiplier for the speed of the animation.
 @export var speed_scale: float = 1.0: set = set_speed_scale
-
-var _is_processing: bool = false
 var can_process: bool = false
 
 ##If [code]true[/code], the animation will restarts when it finishes.

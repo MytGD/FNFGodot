@@ -13,9 +13,6 @@ extends Control
 			return
 		flip_v = flip
 		scale.y = -1 if flip else 1
-		
-var _updating_pos: bool = false
-
 @export var texture: Texture2D:
 	set(tex):
 		graphic.texture = tex

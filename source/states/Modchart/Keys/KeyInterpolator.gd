@@ -1,5 +1,5 @@
 extends Object
-const KeyInterpolator = preload("res://source/states/Modchart/KeyInterpolator.gd")
+const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
 #Key Data
 var time: float: set = _set_time
 var length: float = 0.0
@@ -27,9 +27,6 @@ var key_node: CanvasItem
 
 #EditorProperties
 var tween_started: bool = false
-var is_shader: bool = false
-var _need_to_find_obj: bool = false
-
 
 #region Data
 func _set_time(_time: float):

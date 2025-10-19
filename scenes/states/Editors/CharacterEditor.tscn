@@ -1,11 +1,11 @@
 [gd_scene load_steps=4 format=3 uid="uid://droixhbemd0xd"]
 
-[ext_resource type="Script" uid="uid://dkyvojm86n535" path="res://source/states/Character Editor/CharacterEditor.gd" id="1_o1kg5"]
-[ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="2_m3xwo"]
-[ext_resource type="Script" uid="uid://cdw8oloedo54f" path="res://source/states/Character Editor/Marker.gd" id="2_v213h"]
+[ext_resource type="Script" uid="uid://dkyvojm86n535" path="res://source/states/CharacterEditor/CharacterEditor.gd" id="1_qbwox"]
+[ext_resource type="Script" uid="uid://cdw8oloedo54f" path="res://source/states/CharacterEditor/Marker.gd" id="2_6y1bd"]
+[ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_atq18"]
 
 [node name="Character Editor" type="Node"]
-script = ExtResource("1_o1kg5")
+script = ExtResource("1_qbwox")
 
 [node name="BG_Image" type="Sprite2D" parent="."]
 modulate = Color(0.270222, 0.270222, 0.270222, 1)
@@ -21,14 +21,14 @@ scale = Vector2(0.8, 0.8)
 [node name="Marker_Origin" type="Node2D" parent="BG"]
 z_index = 1
 position = Vector2(611.25, 5.00002)
-script = ExtResource("2_v213h")
+script = ExtResource("2_6y1bd")
 v_color = Color(0, 1, 0, 1)
 h_color = Color(1, 0, 0, 1)
 
 [node name="Marker_Camera" type="Node2D" parent="BG"]
 z_index = 1
 position = Vector2(557.5, 5)
-script = ExtResource("2_v213h")
+script = ExtResource("2_6y1bd")
 
 [node name="Ground" type="Sprite2D" parent="BG"]
 position = Vector2(-600, -850)
@@ -91,7 +91,7 @@ Indices:
 Name:"
 autowrap_mode = 3
 
-[node name="LoopFrom" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
+[node name="LoopFrom" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 1.0
 offset_top = 292.0
@@ -99,6 +99,8 @@ offset_right = 95.0
 offset_bottom = 307.0
 text = "Loop From:"
 int_value = true
+update_min_size_x = null
+update_min_size_y = null
 
 [node name="Offset Follow Flip" type="CheckBox" parent="TabContainer/Animation Data/Container/Label"]
 layout_mode = 0
@@ -224,7 +226,7 @@ offset_bottom = 455.0
 focus_mode = 0
 text = "Replay"
 
-[node name="anim_offset_x" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
+[node name="anim_offset_x" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 5.0
 offset_top = 342.0
@@ -232,8 +234,10 @@ offset_right = 90.0
 offset_bottom = 357.0
 text = "Offset X:"
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
-[node name="anim_offset_y" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
+[node name="anim_offset_y" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 288.0
 offset_top = 350.0
@@ -241,8 +245,10 @@ offset_right = 373.0
 offset_bottom = 365.0
 text = "Offset Y:"
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
-[node name="FrameRate" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("2_m3xwo")]
+[node name="FrameRate" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 295.0
 offset_top = 249.0
@@ -250,6 +256,8 @@ offset_right = 333.0
 offset_bottom = 264.0
 text = "FPS:"
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
 [node name="Json Data" type="Panel" parent="TabContainer"]
 self_modulate = Color(1, 1, 1, 0.0705882)
@@ -264,7 +272,7 @@ offset_right = 109.0
 offset_bottom = 33.0
 text = "Image File:"
 
-[node name="scale" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+[node name="scale" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 4.0
 offset_top = 64.0
@@ -272,6 +280,8 @@ offset_right = 61.0
 offset_bottom = 79.0
 text = "Scale:"
 value_to_add = 0.1
+update_min_size_x = null
+update_min_size_y = null
 
 [node name="antialiasing" type="CheckBox" parent="TabContainer/Json Data"]
 layout_mode = 0
@@ -318,7 +328,7 @@ text = "=====Offsets=====
 Position Array:         Camera Position:     Origin Offset:"
 metadata/_edit_lock_ = true
 
-[node name="position_x" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+[node name="position_x" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 2.0
 offset_top = 226.0
@@ -326,8 +336,10 @@ offset_right = 21.0
 offset_bottom = 241.0
 text = "x:"
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
-[node name="position_y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+[node name="position_y" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 1.0
 offset_top = 267.0
@@ -335,38 +347,48 @@ offset_right = 20.0
 offset_bottom = 282.0
 text = "y:"
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
-[node name="Camera X" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+[node name="Camera X" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 223.0
 offset_top = 225.0
 offset_right = 224.0
 offset_bottom = 240.0
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
-[node name="Camera Y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+[node name="Camera Y" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 223.0
 offset_top = 268.0
 offset_right = 224.0
 offset_bottom = 283.0
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
-[node name="Origin X" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+[node name="Origin X" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 419.0
 offset_top = 225.0
 offset_right = 420.0
 offset_bottom = 240.0
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
-[node name="Origin Y" parent="TabContainer/Json Data" instance=ExtResource("2_m3xwo")]
+[node name="Origin Y" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
 offset_left = 420.0
 offset_top = 267.0
 offset_right = 421.0
 offset_bottom = 282.0
 shift_value = 10.0
+update_min_size_x = null
+update_min_size_y = null
 
 [node name="HealthBar" type="Label" parent="TabContainer/Json Data"]
 layout_mode = 0

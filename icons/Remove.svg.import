@@ -2,22 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ch3c07tawwa8r"
-path="res://.godot/imported/Shader.svg-2498dd2de58812b58ba79acd6607ca70.ctex"
+uid="uid://d3ler7oyh2kc5"
+path="res://.godot/imported/Remove.svg-235bb63fe9d30d51ba429283810d8502.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://icons/basic/Shader.svg"
-dest_files=["res://.godot/imported/Shader.svg-2498dd2de58812b58ba79acd6607ca70.ctex"]
+source_file="res://icons/Remove.svg"
+dest_files=["res://.godot/imported/Remove.svg-235bb63fe9d30d51ba429283810d8502.ctex"]
 
 [params]
 
 compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=1.0
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=1
 compress/channel_pack=1
@@ -25,6 +27,10 @@ mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=1
 roughness/src_normal=""
+process/channel_remap/red=0
+process/channel_remap/green=1
+process/channel_remap/blue=2
+process/channel_remap/alpha=3
 process/fix_alpha_border=true
 process/premult_alpha=false
 process/normal_map_invert_y=false

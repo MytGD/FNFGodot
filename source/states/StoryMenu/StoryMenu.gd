@@ -136,15 +136,10 @@ func createProp(data, prop_index:int =0):
 			sprite.animation.addAnimByPrefix(i.name,i.prefix,i.get('frameRate',24.0),true)
 		sprite.animation.play('idle')
 	
-	sprite.position = VectorHelper.array_to_vec(data.get('offsets',[0,0]))
-	var offset_y: float
-	if sprite.animation._midpoint_is_rotated: offset_y = sprite.pivot_offset.x*2.0
-	else: offset_y = sprite.pivot_offset.y*2.0
-	
+	sprite.position = VectorUtils.array_to_vec(data.get('offsets',[0,0]))
 	sprite.position += Vector2(
 		ScreenUtils.screenCenter.x - 650 + (300*prop_index),
-		#300-(offset_y*sprite.scale.y)
-		0
+		10
 	)
 	
 	return sprite

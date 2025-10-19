@@ -10,7 +10,6 @@ static var opponentCameraOffset: Vector2 = Vector2.ZERO
 
 
 var camFollow: Vector2 = Vector2(0.0,0.0)
-var camFollowOffset: Vector2 = ScreenUtils.defaultSize/2.0
 @export_category('Groups')
 var boyfriendGroup: SpriteGroup = SpriteGroup.new() #Added in Stage.loadSprites()
 var dadGroup: SpriteGroup = SpriteGroup.new()# Added in Stage.loadSprites()
@@ -69,9 +68,9 @@ func gameOver():
 func loadStage(stage: StringName,loadScript: bool = true):
 	super.loadStage(stage,loadScript)
 	
-	boyfriendCameraOffset = VectorHelper.array_to_vec(stageJson.characters.bf.cameraOffsets)
-	girlfriendCameraOffset = VectorHelper.array_to_vec(stageJson.characters.gf.cameraOffsets)
-	opponentCameraOffset = VectorHelper.array_to_vec(stageJson.characters.dad.cameraOffsets)
+	boyfriendCameraOffset = VectorUtils.array_to_vec(stageJson.characters.bf.cameraOffsets)
+	girlfriendCameraOffset = VectorUtils.array_to_vec(stageJson.characters.gf.cameraOffsets)
+	opponentCameraOffset = VectorUtils.array_to_vec(stageJson.characters.dad.cameraOffsets)
 	
 	defaultCamZoom = stageJson.cameraZoom
 	cameraSpeed = stageJson.cameraSpeed
@@ -222,7 +221,7 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 		1:
 			healthBar.set_colors(newCharacter.healthBarColors)
 			iconP2.reloadIconFromCharacterJson(newCharacter.json)
-	updateIconsImage(healthBar_State)
+	updateIconsImage(_healthBar_State)
 	
 	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
 	updateIconsPivot()

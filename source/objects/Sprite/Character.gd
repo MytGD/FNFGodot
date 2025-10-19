@@ -144,12 +144,12 @@ func loadData():
 	healthIcon = json.healthIcon.id
 	imageFile = json.assetPath
 	antialiasing = not json.isPixel
-	positionArray = VectorHelper.array_to_vec(json.offsets)
-	cameraPosition = VectorHelper.array_to_vec(json.camera_position)
+	positionArray = VectorUtils.array_to_vec(json.offsets)
+	cameraPosition = VectorUtils.array_to_vec(json.camera_position)
 	jsonScale = json.scale
 	offset_follow_flip = json.offset_follow_flip
 	offset_follow_scale = json.offset_follow_scale
-	origin_offset = VectorHelper.array_to_vec(json.origin_offset)
+	origin_offset = VectorUtils.array_to_vec(json.origin_offset)
 	scale = Vector2(json.scale,json.scale)
 
 func getCameraPosition() -> Vector2: 
@@ -187,7 +187,6 @@ func reloadAnims():
 	hasMissAnimations = false
 	animation.animations_use_textures = false
 	
-	print(_flipped_sing_anims)
 	for anims in json.animations:
 		var animName: String = anims.name
 		#Invert singLEFT and singRIGHT if "sing_follow_flip" are true and the character is flipped.

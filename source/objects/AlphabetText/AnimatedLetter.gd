@@ -2,8 +2,6 @@
 extends Sprite2D
 const Anim = preload("res://source/general/animation/Anim.gd")
 
-
-static var _letters_cache: Dictionary = {}
 var imageFile: StringName:
 	set(path):
 		texture = Paths.imageTexture(path)
