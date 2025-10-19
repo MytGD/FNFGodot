@@ -13,6 +13,7 @@ static var is_system_case_sensitive: bool = curDevice in ['macOS','Linux',"FreeB
 
 #region Paths
 static var exePath: StringName = get_exe_path()
+static var _exe_dir: DirAccess
 static var replace_paths: PackedStringArray = [exePath+'/','assets/mods','assets/','mods/']
 #endregion
 
@@ -101,22 +102,26 @@ static func get_exe_path() -> String:
 
 static func _init() -> void:
 	if is_on_mobile: OS.request_permissions()
+	_exe_dir = get_dir(exePath)
 	_detect_mods()
 	modsEnabled = getRunningMods()
 	updateDirectories()
+	
+	
 
 static func detectFileFolder(path: String, case_sensive: bool = false) -> String:
 	var path_cache = _files_directories_cache.get(path)
 	if path_cache: return path_cache
 	if case_sensive: return _detect_file_folder_case_sensive(path)
 	
-	if FileAccess.file_exists(path): 
-		_files_directories_cache[path] = path
+	if _exe_dir.file_exists(path): 
+		_files_directories_cache[path] = exePath+'/'+path
 		return path
 	
 	for d in dirsToSearch:
 		var curPath: String = d+path
-		if FileAccess.file_exists(curPath):
+		if _exe_dir.file_exists(curPath):
+			curPath = exePath+'/'+curPath
 			_files_directories_cache[path] = curPath
 			return curPath
 	return ''
@@ -456,10 +461,13 @@ static func updateDirectories(): ##Update the folders that the [method detectFil
 		var searchIn = modsFounded
 		if !searchAllMods: searchIn = getRunningMods()
 		
-		for i in searchIn: new_dirs.append(exePath+'/mods/'+i+'/')
-		new_dirs.append(exePath+'/mods/')
+		#for i in searchIn: new_dirs.append(exePath+'/mods/'+i+'/')
+		#new_dirs.append(exePath+'/mods/')
+		for i in searchIn: new_dirs.append('mods/'+i+'/')
+		new_dirs.append('mods/')
 	
-	new_dirs.append(exePath+'/assets/')
+	#new_dirs.append(exePath+'/assets/')
+	new_dirs.append('assets/')
 	new_dirs.append('res://assets/')
 	
 	for i in new_dirs: 

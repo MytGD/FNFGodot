@@ -14,13 +14,13 @@ var error_prints: Array[Label]
 
 var f11_to_fullscreeen: bool = true
 
-func _init(): 
-	_start_clients()
+func _init(): _start_clients()
 	
 func _start_clients():
 	Paths._init()
 	ClientPrefs._init()
 	ScreenUtils._init()
+	
 func _ready() -> void:
 	scene = get_parent()
 	
