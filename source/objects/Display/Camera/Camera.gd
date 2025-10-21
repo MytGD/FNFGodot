@@ -8,9 +8,7 @@ const FlashSprite = preload("res://source/objects/Display/Camera/FlashSprite.gd"
 @export var zoom: float = 1.0: set = set_zoom
 @export var alpha: float: set = set_alpha,get = get_alpha
 
-var _scroll_position: Vector2 = Vector2.ZERO
-var _scroll_pivot_offset: Vector2 = Vector2.ZERO
-var _real_scroll_position: Vector2 = Vector2.ZERO
+
 var color: Color: set = set_color,get = get_color
 var angle: float: set = set_angle, get = get_angle
 var angle_degrees: float = 0.0: set = set_angle_degress
@@ -22,16 +20,21 @@ var pivot_offset: Vector2 = Vector2.ZERO
 #region Camera
 var bg: SolidSprite = SolidSprite.new()
 var _first_index: int = 0
+
 var scroll_camera: Node2D = Node2D.new()
-var scroll: Vector2 = Vector2.ZERO
-var scrollOffset: Vector2 = Vector2.ZERO
+var scroll: Vector2 = Vector2.ZERO: set = set_scroll
+var scrollOffset: Vector2 = Vector2.ZERO: set = set_scroll_offset
+var _scroll_position: Vector2 = Vector2.ZERO: set = _set_scroll_position
+var _scroll_pivot_offset: Vector2 = Vector2.ZERO: set = _set_scroll_pivot_offset
+var _real_scroll_position: Vector2 = Vector2.ZERO
+
 var flashSprite: FlashSprite = FlashSprite.new()
 @export var defaultZoom: float = 1.0 #Used in PlayState
 #region Shake
 @export_category("Shake")
 var shakeIntensity: float = 0.0
 var shakeTime: float = 0.0
-var _shake_pos: Vector2 = Vector2.ZERO
+var _shake_pos: Vector2 = Vector2.ZERO: set = _set_shake_pos
 #endregion
 
 #endregion
@@ -166,8 +169,6 @@ func removeFilters(): ##Remove every shader created in this camera.
 	if _viewports_created:
 		for i in _viewports_created: i.queue_free()
 		_viewports_created.clear()
-	
-	
 func create_viewport() -> void:
 	if viewport: return
 	viewport = _get_new_viewport()
@@ -268,7 +269,6 @@ func _insert_object_to_camera(node: Node):
 
 func _process(delta: float) -> void:
 	_updateShake(delta)
-	_update_scroll_transform()
 
 #region Camera Transform
 func _update_pivot() -> void:
@@ -276,7 +276,7 @@ func _update_pivot() -> void:
 	var _scroll_pivot_cal = _scroll_pivot
 	if angle_degrees: _scroll_pivot = _scroll_pivot.rotated(angle_degrees)
 	_scroll_pivot_offset = (_scroll_pivot*zoom - _scroll_pivot_cal)
-	_update_scroll_transform()
+
 func _update_angle()  -> void:
 	if viewport: 
 		viewport.canvas_transform.x.y = -angle_degrees
@@ -290,9 +290,9 @@ func _update_zoom() -> void:
 		viewport.canvas_transform.y.y = zoom
 	else: scroll_camera.scale = Vector2(zoom,zoom)
 	_update_pivot()
-	
+
+func _update_scroll_pos(): _scroll_position = -scroll + scrollOffset
 func _update_scroll_transform():
-	_scroll_position = -scroll + scrollOffset
 	_real_scroll_position = _scroll_position - _scroll_pivot_offset + _shake_pos
 	if viewport: viewport.canvas_transform.origin = _real_scroll_position
 	else: scroll_camera.position = _real_scroll_position
@@ -301,14 +301,19 @@ func _update_scroll_transform():
 func _draw() -> void: draw_rect(Rect2(Vector2.ZERO,Vector2(width,height)),Color.WHITE)
 
 #region Setters
-func set_x(_x: float): position.x = _x
-func set_y(_y: float): position.y = _y
-func set_width(value: int): width = value; _update_camera_size()
-func set_height(value: int): height = value; _update_camera_size()
-func set_alpha(value: float): scroll_camera.modulate.a = value
-func set_zoom(value: float): zoom = value; _update_zoom()
-func set_angle(value: float): set_angle_degress(deg_to_rad(value))
-func set_pivot_offset(value: Vector2): pivot_offset = value; _update_pivot()
+func set_x(_x: float) -> void: position.x = _x
+func set_y(_y: float) -> void: position.y = _y
+func set_width(value: int) -> void: width = value; _update_camera_size()
+func set_height(value: int) -> void: height = value; _update_camera_size()
+func set_alpha(value: float) -> void: scroll_camera.modulate.a = value
+func set_zoom(value: float) -> void: zoom = value; _update_zoom()
+func set_angle(value: float) -> void: set_angle_degress(deg_to_rad(value))
+func set_pivot_offset(value: Vector2) -> void: pivot_offset = value; _update_pivot()
+func set_scroll(val: Vector2) -> void: scroll = val; _update_scroll_pos()
+func set_scroll_offset(val: Vector2): scrollOffset = val; _update_scroll_transform()
+func _set_scroll_position(val: Vector2) -> void: _scroll_position = val; _update_scroll_transform()
+func _set_scroll_pivot_offset(val: Vector2) -> void: _scroll_pivot_offset = val; _update_scroll_transform()
+func _set_shake_pos(val: Vector2): _shake_pos = val; _update_scroll_transform()
 func set_angle_degress(value: float):
 	if value == angle_degrees: return
 	angle_degrees = value

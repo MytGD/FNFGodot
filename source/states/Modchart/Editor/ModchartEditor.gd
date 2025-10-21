@@ -33,10 +33,11 @@ var PropertiesAvaliable: Dictionary = {
 	CameraCanvas:{
 		'x': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
 		'y': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
+		'shakeIntensity': {'range': [0,1,0.001]},
 		'scroll': null,
 		'zoom': null,
 		'defaultZoom': null,
-		'angle': {'range': [-360,360,0.2]}
+		'angle': {'range': [-360,360,0.1]}
 	},
 	Sprite:{
 		'x': null,
@@ -415,7 +416,7 @@ func _create_property_hslider(range_data: Array, rounded: bool = false) -> HSlid
 	button.min_value = range_data[0]
 	button.int_value = rounded
 	button.max_value = range_data[1]
-	if range_data.size() >= 3: button.step = range_data[2]
+	if range_data.size() >= 3: print(range_data); button.step = range_data[2]
 	return button
 
 func _create_property_box_button(obj: Node, property: String) -> CheckBox:

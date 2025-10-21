@@ -385,14 +385,15 @@ layout_mode = 2
 texture_filter = 1
 custom_minimum_size = Vector2(48, 24)
 layout_mode = 2
+metadata/_edit_lock_ = true
 
 [node name="Time" type="Node2D" parent="VSplit/HSplitP/HTimeline/Timeline"]
 script = ExtResource("7_rhtdg")
 
 [node name="PositionLine" type="ColorRect" parent="VSplit/HSplitP/HTimeline/Timeline/Time"]
 z_index = 1
-offset_left = 14.0
-offset_right = 23.0
+offset_left = 15.440002
+offset_right = 24.440002
 offset_bottom = 9.0
 rotation = 0.785398
 

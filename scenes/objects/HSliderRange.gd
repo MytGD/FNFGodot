@@ -40,7 +40,7 @@ func set_maximum_value(val: float):
 	line_edit.max_value = val
 
 func set_value(_v: float):
-	_v = snappedf(clampf(_v,min_value,max_value),0.01)
+	_v = snappedf(clampf(_v,min_value,max_value),0.001)
 	if _v == value: return
 	value = _v
 	if !is_node_ready(): return
@@ -64,7 +64,7 @@ func _draw() -> void:
 
 #region Setters
 func set_int_value(_int: bool) -> void: int_value = _int; if slider: slider.rounded = _int
-func set_step(step: float) -> void:
-	step = step
+func set_step(_s: float) -> void:
+	step = _s
 	if slider: slider.step = step
 #endregion
