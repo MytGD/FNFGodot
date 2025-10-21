@@ -1,15 +1,19 @@
 @icon("res://icons/Camera2D.svg")
 class_name CameraCanvas extends Node2D
-const SolidSprite = preload("res://source/objects/Sprite/SolidSprite.gd")
+const FlashSprite = preload("res://source/objects/Display/Camera/FlashSprite.gd")
 
 #region Transform
 @export var x: float: set = set_x, get = get_x
 @export var y: float: set = set_y, get = get_y
 @export var zoom: float = 1.0: set = set_zoom
 @export var alpha: float: set = set_alpha,get = get_alpha
-var _position: Vector2 = Vector2.ZERO
+
+var _scroll_position: Vector2 = Vector2.ZERO
+var _scroll_pivot_offset: Vector2 = Vector2.ZERO
+var _real_scroll_position: Vector2 = Vector2.ZERO
 var color: Color: set = set_color,get = get_color
 var angle: float: set = set_angle, get = get_angle
+var angle_degrees: float = 0.0: set = set_angle_degress
 var width: int: set = set_width
 var height: int: set = set_height
 var pivot_offset: Vector2 = Vector2.ZERO
@@ -21,7 +25,7 @@ var _first_index: int = 0
 var scroll_camera: Node2D = Node2D.new()
 var scroll: Vector2 = Vector2.ZERO
 var scrollOffset: Vector2 = Vector2.ZERO
-var flashSprite: SolidSprite = SolidSprite.new()
+var flashSprite: FlashSprite = FlashSprite.new()
 @export var defaultZoom: float = 1.0 #Used in PlayState
 #region Shake
 @export_category("Shake")
@@ -54,7 +58,7 @@ func _init() -> void:
 	width = ScreenUtils.screenWidth
 	height = ScreenUtils.screenHeight
 	
-	scroll_camera.name = 'Camera'
+	scroll_camera.name = 'Scroll'
 	add_child(scroll_camera)
 	
 	flashSprite.name = 'flashSprite'
@@ -75,7 +79,7 @@ func _update_camera_size():
 	if viewport: viewport.size = size
 	pivot_offset = size/2.0
 	queue_redraw()
-	
+
 func _update_viewport_size():
 	for i in _viewports_created: i.size = Vector2.ONE * ScreenUtils.screenWidth/get_viewport().size.xj
 #endregion
@@ -98,13 +102,11 @@ func setFilters(shaders: Array = []) -> void: ##Set Shaders in the Camera
 		_addViewportShader(filtersArray[index])
 		index -= 1
 
-
 func addFilters(shaders: Variant) -> void: ##Add shaders to the existing ones.
 	if !shaders is Array: shaders = [shaders]
 	shaders = _convertFiltersToMaterial(shaders)
 	
 	create_viewport()
-	create_shader_image()
 	
 	if _shader_image.material: _addViewportShader(_shader_image.material)
 	_shader_image.material = shaders[0]
@@ -112,7 +114,6 @@ func addFilters(shaders: Variant) -> void: ##Add shaders to the existing ones.
 	while index < shaders.size(): _addViewportShader(shaders[index]); index += 1
 	if shaders: filtersArray.append_array(shaders)
 	filtersArray.append(_shader_image.material)
-
 
 func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	if !_last_viewport_added: return
@@ -135,7 +136,6 @@ func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	_shader_image.texture = shader_view.get_texture()
 	_last_viewport_added = shader_view
 	return tex
-	
 
 func removeFilter(shader: ShaderMaterial) -> void: ##Remove shaders.
 	var filter_id = filtersArray.find(shader)
@@ -172,23 +172,31 @@ func create_viewport() -> void:
 	if viewport: return
 	viewport = _get_new_viewport()
 	add_child(viewport)
-	flashSprite.reparent(viewport,false)
+	scroll_camera.transform = Transform2D(Vector2.RIGHT,Vector2.DOWN,Vector2.ZERO)
 	scroll_camera.reparent(viewport,false)
+	_update_angle()
+	_update_zoom()
+	_update_pivot()
+	_update_scroll_transform()
 	
+	#flashSprite.reparent(viewport,false)
 	_last_viewport_added = viewport
-
+	
+	create_shader_image()
+	
 func create_shader_image():
 	if _shader_image: return
 	
 	_shader_image = Sprite2D.new()
+	_shader_image.name = 'ViewportTexture'
 	_shader_image.centered = false
 	_shader_image.texture = viewport.get_texture()
 	
 	add_child(_shader_image)
 	move_child(_shader_image,0)
+
 func remove_viewport() -> void:
 	if !viewport: return
-	flashSprite.reparent(self,false)
 	scroll_camera.reparent(self,false)
 	move_child(scroll_camera,0)
 	viewport.queue_free()
@@ -200,8 +208,8 @@ func can_remove_viewport() -> bool:
 
 #region Effects Methods
 #region Shake
-func shake(intensity: float, time: float) -> void: ##Shake the Camera
-	shakeIntensity = intensity; shakeTime = time
+##Shake the Camera
+func shake(intensity: float, time: float) -> void: shakeIntensity = intensity; shakeTime = time
 
 func _updateShake(delta: float):
 	if shakeTime:
@@ -224,7 +232,6 @@ func fade(color: Variant = Color.BLACK,time: float = 1.0, _force: bool = true, _
 	if !time: FunkinGD.cancelTween(tag); flashSprite.modulate.a = target
 	else: FunkinGD.startTweenNoCheck(tag,flashSprite,{'modulate:a': target},time,'linear')
 
-
 func flash(color: Color = Color.WHITE, time: float = 1.0, force: bool = false) -> void: ##Flash bang
 	if time <= 0.0: return
 	var tag = 'flash'+name
@@ -234,12 +241,11 @@ func flash(color: Color = Color.WHITE, time: float = 1.0, force: bool = false) -
 #endregion
 
 #region Insert/Remove Nodes Methods
-##Add a node to the camera, if [code]front = false[/code], the node will be added behind of the first node added.
-func add(node: Node,front: bool = true) -> void:
+func add(node: Node,front: bool = true) -> void: ##Add a node to the camera, if [code]front = false[/code], the node will be added behind of the first node added.
 	if !node: return
 	_insert_object_to_camera(node)
 	if not front: move_to_order(node,_first_index)
-	
+
 func move_to_order(node: Node, order: int):
 	if !node: return
 	var old_index = node.get_index()
@@ -262,30 +268,51 @@ func _insert_object_to_camera(node: Node):
 
 func _process(delta: float) -> void:
 	_updateShake(delta)
-	_updatePos()
+	_update_scroll_transform()
 
-func _updatePos():
-	_position = -scroll + scrollOffset
-	var real_pivot_offset = pivot_offset - _position
-	var pivot = real_pivot_offset
-	
-	if scroll_camera.rotation: pivot = pivot.rotated(scroll_camera.rotation)
-	
-	pivot *= zoom
-	scroll_camera.position = _position - (pivot - real_pivot_offset) + _shake_pos
+#region Camera Transform
+func _update_pivot() -> void:
+	var _scroll_pivot = pivot_offset - _scroll_position
+	var _scroll_pivot_cal = _scroll_pivot
+	if angle_degrees: _scroll_pivot = _scroll_pivot.rotated(angle_degrees)
+	_scroll_pivot_offset = (_scroll_pivot*zoom - _scroll_pivot_cal)
+	_update_scroll_transform()
+func _update_angle()  -> void:
+	if viewport: 
+		viewport.canvas_transform.x.y = -angle_degrees
+		viewport.canvas_transform.y.x = angle_degrees
+	else: scroll_camera.rotation = angle_degrees
+	_update_pivot()
 
-func _draw() -> void:
-	#RenderingServer.canvas_item_set_clip(get_canvas_item(),true)
-	draw_rect(Rect2(Vector2.ZERO,Vector2(width,height)),Color.WHITE)
+func _update_zoom() -> void:
+	if viewport: 
+		viewport.canvas_transform.x.x = zoom
+		viewport.canvas_transform.y.y = zoom
+	else: scroll_camera.scale = Vector2(zoom,zoom)
+	_update_pivot()
+	
+func _update_scroll_transform():
+	_scroll_position = -scroll + scrollOffset
+	_real_scroll_position = _scroll_position - _scroll_pivot_offset + _shake_pos
+	if viewport: viewport.canvas_transform.origin = _real_scroll_position
+	else: scroll_camera.position = _real_scroll_position
+#endregion
+
+func _draw() -> void: draw_rect(Rect2(Vector2.ZERO,Vector2(width,height)),Color.WHITE)
 
 #region Setters
 func set_x(_x: float): position.x = _x
 func set_y(_y: float): position.y = _y
 func set_width(value: int): width = value; _update_camera_size()
 func set_height(value: int): height = value; _update_camera_size()
-func set_angle(value: float): if value != angle: scroll_camera.rotation_degrees = value
 func set_alpha(value: float): scroll_camera.modulate.a = value
-func set_zoom(value: float): zoom = value; scroll_camera.scale = Vector2(value,value); _updatePos()
+func set_zoom(value: float): zoom = value; _update_zoom()
+func set_angle(value: float): set_angle_degress(deg_to_rad(value))
+func set_pivot_offset(value: Vector2): pivot_offset = value; _update_pivot()
+func set_angle_degress(value: float):
+	if value == angle_degrees: return
+	angle_degrees = value
+	_update_angle()
 func set_color(_color: Variant): 
 	scroll_camera.modulate.r = _color.r; 
 	scroll_camera.modulate.g = _color.g; 
@@ -296,7 +323,7 @@ func set_color(_color: Variant):
 func get_x() -> float: return position.x
 func get_y() -> float: return position.y
 func get_alpha() -> float: return scroll_camera.modulate.a
-func get_angle() -> float:return scroll_camera.rotation_degrees
+func get_angle() -> float: return deg_to_rad(angle_degrees)
 func get_color() -> Color: return scroll_camera.modulate
 #endregion
 
@@ -313,6 +340,15 @@ static func _get_new_viewport() -> SubViewport:
 	var view = SubViewport.new()
 	view.transparent_bg = true
 	view.disable_3d = true
+	view.gui_snap_controls_to_pixels = false
 	view.size = ScreenUtils.screenSize
 	#view.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	return view
+
+func _get_property_revert(property: String):
+	match property:
+		'zoom': return defaultZoom
+		'defaultZoom': return 1.0
+		'scrollOffset': return Vector2.ZERO
+		'angle': return 0.0
+	return null

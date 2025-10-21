@@ -17,6 +17,7 @@ var gfGroup: SpriteGroup = SpriteGroup.new()# Also added in Stage.loadSprites()
 
 var camGame: CameraCanvas = CameraCanvas.new()
 
+var cameras: Array[CameraCanvas] = [camGame,camHUD,camOther]
 @export_category('Game Over')
 const GameOverSubstate := preload("res://source/substates/GameOverSubstate.gd")
 
@@ -51,9 +52,7 @@ func loadSongObjects():
 		GameOverSubstate.endSoundName = 'gameplay/gameover/gameOverEnd'
 	super.loadSongObjects()
 
-func destroy(absolute: bool = true):
-	super.destroy(absolute)
-	camGame.removeFilters()
+func destroy(absolute: bool = true): super.destroy(absolute); camGame.removeFilters()
 
 func gameOver():
 	var state = GameOverSubstate.new()
@@ -62,7 +61,7 @@ func gameOver():
 	state.isOpponent = playAsOpponent
 	state.character = dad if playAsOpponent else boyfriend
 	Global.scene.add_child(state)
-	for cams in [camGame,camHUD,camOther]: cams.visible = false
+	for cams in cameras: cams.visible = false
 	super.gameOver()
 
 func loadStage(stage: StringName,loadScript: bool = true):
@@ -83,8 +82,7 @@ func loadStage(stage: StringName,loadScript: bool = true):
 	gfGroup.x = stageJson.characters.gf.position[0]
 	gfGroup.y = stageJson.characters.gf.position[1]
 	
-	if stageJson.get('hide_girlfriend'): 
-		gfGroup.visible = false
+	if stageJson.get('hide_girlfriend'): gfGroup.visible = false
 	else: gfGroup.visible = true
 	
 	
@@ -105,7 +103,6 @@ func onBeatHit(beat: int = Conductor.beat) -> void:
 		if !character or character.specialAnim or character.holdTimer > 0 or character.heyTimer > 0: continue
 		if fmod(beat,character.danceEveryNumBeats) == 0.0: character.dance()
 	super.onBeatHit(beat)
-
 
 func insertCharacterInGroup(character: Character,group: SpriteGroup) -> void:
 	if !character or !group: return
@@ -144,7 +141,6 @@ func addCharacterToList(type: int = 0,charFile: StringName = 'bf') -> Character:
 	newCharacter.process_mode = Node.PROCESS_MODE_DISABLED
 	return newCharacter
 
-	
 func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 	if not note: return
 	if note.noAnimation: super.hitNote(note,character); return
@@ -170,7 +166,7 @@ func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 	character.specialAnim = false
 	if !note.animSuffix or !anim.play(animNote+note.animSuffix,true): anim.play(animNote,true)
 	super.hitNote(note,character)
-	
+
 func noteMiss(note: Note, character: Variant = getCharacterNote(note)):
 	if character: character.animation.play(singAnimations[note.noteData]+'miss',true)
 	super.noteMiss(note,character)
@@ -232,12 +228,19 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 func clear():
 	super.clear()
 	camGame.removeFilters()
-	for g in [boyfriendGroup,gfGroup,dadGroup]:
-		for i in g.members: i.queue_free()
-		g.members.clear()
+	
+	boyfriendGroup.queue_free_members()
 	boyfriend = null
+	dadGroup.queue_free_members()
 	dad = null
+	gfGroup.queue_free_members()
 	gf = null
+
+#region Setters
+func set_default_zoom(value: float) -> void: defaultCamZoom = value; camGame.defaultZoom = value;
+#endregion
+
+func getCharacterNote(note: Note) -> Character: return gf if note.gfNote else (boyfriend if note.mustPress else dad)
 
 static func getCameraPos(obj: Node, add_camera_json_offset: bool = true) -> Vector2:
 	if !obj: return Vector2(0.0,0.0)
@@ -256,8 +259,3 @@ static func getCameraOffset(obj: Node) -> Vector2:
 	if obj.isGF: return girlfriendCameraOffset
 	if obj.isPlayer: return boyfriendCameraOffset
 	else: return opponentCameraOffset
-	
-func getCharacterNote(note: Note) -> Character:
-	if note.gfNote: return gf
-	if note.mustPress: return boyfriend
-	return dad

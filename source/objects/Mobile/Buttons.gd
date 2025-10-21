@@ -30,10 +30,10 @@ class ButtonMobile extends Sprite2D:
 			if pressed == value:
 				return
 			if pressed:
-				InputHelper.set_key_just_pressed_and_just_pressed(key)
+				InputUtils.set_key_just_pressed_and_just_pressed(key)
 				modulate.a = 1
 			else:
-				InputHelper.set_key_just_released(key)
+				InputUtils.set_key_just_released(key)
 				modulate.a = 0.2
 			pressed = value
 		
@@ -52,7 +52,7 @@ class ButtonMobile extends Sprite2D:
 		key = button_key
 		
 	func _process(delta: float):
-		pressed = InputHelper.is_touching_object(self)
+		pressed = InputUtils.is_touching_object(self)
 	
 
 func _ready():

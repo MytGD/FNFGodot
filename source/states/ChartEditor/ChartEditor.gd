@@ -1,4 +1,4 @@
-extends Node2D
+extends Node
 #region Consts
 const SolidSprite = preload("res://source/objects/Sprite/SolidSprite.gd")
 const BLOCK_SIZE = Vector2(16,16)
@@ -22,8 +22,8 @@ const EventChart = preload("res://source/states/ChartEditor/Event.gd")
 
 const Waveform = preload("res://source/states/ChartEditor/Waveform.gd")
 
-const ButtonRange = preload("res://scenes/objects/ButtonRange.tscn")
-const ButtonRangeType = preload("res://scenes/objects/ButtonRange.gd")
+const ButtonRangeScene = preload("res://scenes/objects/ButtonRange.tscn")
+const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")
 
 const EVENT_VARIABLES_OFFSET: Vector2 = Vector2(180,50)
 const EVENT_VARIABLES_LIMIT_Y: float = 100
@@ -52,11 +52,13 @@ var mouse_pos: Vector2 = Vector2.ZERO
 var mouse_song_position: float = 0
 
 @onready var line_rect: SolidSprite = SolidSprite.new()
-@onready var mouse_rect_follow: SolidSprite = SolidSprite.new()
+@onready var mouse_rect_follow: SolidSprite = $ChessControl/MouseRect
+
+var is_shift_pressed: bool = false
 #endregion
 
 #region Chess
-@onready var chess_control: Control
+@onready var chess_control: Node2D = $ChessControl
 @onready var chess_opponent: Chess = Chess.new()
 @onready var chess_player: Chess = Chess.new()
 @onready var chess_events: Chess = Chess.new()
@@ -126,8 +128,7 @@ var cur_note_index: int = 0
 @export var song_folder: StringName
 
 var SONG: Dictionary:
-	get():
-		return Conductor.songJson
+	get(): return Conductor.songJson
 
 static var songPosition: float
 var keyCount: int = 4
@@ -173,7 +174,7 @@ var event_selected: EventChart
 @onready var events_menu := $"TabContainer/Event/Events"
 @onready var events_popup: PopupMenu = events_menu.get_popup()
 @onready var event_description := $"TabContainer/Event/EventDescription"
-@onready var event_variable_container := $"TabContainer/Event/VariablesContainer/Control"
+@onready var event_variable_container := $"TabContainer/Event/VariablesContainer/Grid"
 @onready var event_index := $"TabContainer/Event/EventIndex"
 #endregion
 
@@ -249,17 +250,7 @@ func _ready():
 	Conductor.beat_hit.connect(icon_beat)
 	Conductor.bpm_changes.connect(updateBpm)
 	
-	chess_control = Control.new()
-	chess_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	chess_control.size = ScreenUtils.screenSize
-	chess_control.position = CHESS_OFFSET
-	
 	mouse_rect_follow.scale = CHESS_REAL_SIZE
-	mouse_rect_follow.modulate.a = 0
-	#chess_control.clip_contents = true
-	add_child(chess_control)
-	move_child(chess_control,0)
-	
 	add_child(mouse_selection)
 	var bg = Sprite2D.new()
 	bg.texture = Paths.imageTexture('menuDesat')
@@ -318,10 +309,6 @@ func _ready():
 	
 	chess_control.add_child(line_rect)
 	
-	#mouse_rect_follow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mouse_rect_follow.name = 'Mouse Rect'
-	chess_control.add_child(mouse_rect_follow)
-	
 	add_child(iconP1)
 	add_child(iconP2)
 	
@@ -330,38 +317,10 @@ func _ready():
 	
 	
 	#Add connections to Popup's
-	#Load Note Types
-	loadPopus(Paths.getFilesAt('custom_notetypes',true,'.gd'),note_type_popup)
-	note_type_popup.index_pressed.connect(func(i):
-		var type = note_type_popup.get_item_text(i)
-		note_type_menu.text = type
-		for n in notes_selected:
-			n.noteType = type
-	)
-	
-	#Load Events
-	_load_events_popus()
-	events_popup.index_pressed.connect(func(i):
-		var event_name = events_popup.get_item_text(i)
-		setEvent(event_name)
-		if event_selected:
-			var index = event_selected.event_index
-			event_selected.removeEvent(index)
-			event_selected.addEvent(event_name,{},index)
-	)
-	
-	#Load Waveform
-	add_child(chart_waveform)
-	chart_waveform_pop.index_pressed.connect(func(i):
-		setWaveform(chart_waveform_pop.get_item_text(i))
-	)
+	note_type_popup.index_pressed.connect(_on_note_type_index_pressed)
+	events_popup.index_pressed.connect(_on_event_index_pressed)
 	
 	#Load Characters
-	var character_pops: Array[PopupMenu] = [bfCharactersPop,dadCharactersPop,gfCharactersPop]
-	var char_files = Paths.getFilesAt('characters',true,'.json')
-	
-	for i in character_pops: loadPopus(char_files,i)
-	
 	dadCharactersPop.index_pressed.connect(func(i):
 		player2 = dadCharactersPop.get_item_text(i)
 		changeCharacter(player2,'player2')
@@ -377,10 +336,7 @@ func _ready():
 	
 	
 	#Load Stages
-	loadPopus(Paths.getFilesAt('stages',true,'.json'),stagePop)
-	stagePop.index_pressed.connect(func(i):
-		SONG.set('stage',stagePop.get_item_text(i))
-	)
+	stagePop.index_pressed.connect(_on_stage_index_pressed)
 	
 	if !SONG: _load_song_data()
 	
@@ -389,25 +345,9 @@ func _ready():
 	set_song_position(songPosition)
 	set_section(curSection)
 	
-func loadPopus(files: PackedStringArray, popup: PopupMenu):
-	var last_mod = ''
-	for i in files:
-		var mod = Paths.getModFolder(i)
-		if !mod: mod = Paths.game_name
-		
-		if last_mod != mod:
-			popup.add_separator(mod)
-			last_mod = mod
-		
-		popup.add_item(i.get_file())
-	popup.min_size.x = max(popup.size.x,Paths.game_name.length()*15)
-
 #region Chart Methods
 func createChart() -> void:
 	Conductor.clearSong(true)
-	
-	
-	
 	var new_song_name = new_chart_song_name.text
 	
 	var mod_founded = Paths.getModFolder(new_song_name)
@@ -454,13 +394,7 @@ func changeBpm(to: float = new_bpm_value.value) -> void:
 		curSectionData.bpm = to
 	updateBpm()
 
-func changeSongSpeed(value: float):
-	SONG.set('speed',value)
-	
-func changeSongBpm(to: float) -> void:
-	Conductor.setSongBpm(to)
-	updateBpm()
-	
+func changeSongBpm(to: float) -> void: Conductor.setSongBpm(to)
 
 #endregion
 
@@ -471,21 +405,17 @@ func set_zoom(new_zoom: float):
 	for i in chess_array:
 		i.steps = steps
 		i.draw_chess()
-		
-		for beat in range(1,4):
-			updateBeatLinePosition(i.get_node_or_null('Beat'+str(beat)),beat)
+		for beat in range(1,4): updateBeatLinePosition(i.get_node_or_null('Beat'+str(beat)),beat)
 	
 	#Update Sustain
-	for i in _notes_created:
-		i.sustain_scale = new_zoom
+	for i in _notes_created: i.sustain_scale = new_zoom
 	
 	updateNotesPositions()
 	_update_chart_positions()
 	_update_chess_notes_position()
 	
 func updateBeatLinePosition(line: ColorRect, beat: int = 0):
-	if line:
-		line.position = Vector2(0,4*beat*BLOCK_SIZE.y*cur_zoom)
+	if line: line.position = Vector2(0,4*beat*BLOCK_SIZE.y*cur_zoom)
 func load_game():
 	song_playing = false
 	autoSwapSection = false
@@ -493,11 +423,8 @@ func load_game():
 	Conductor.stopSongs()
 	
 	var playstate = PlayState.new()
-	if update_notes:
-		playstate._notes_preload.clear()
-		
-	if update_events:
-		playstate._events_preload.clear()
+	if update_notes: playstate._notes_preload.clear()
+	if update_events: playstate._events_preload.clear()
 	
 
 	Global.swapTree(playstate)
@@ -514,14 +441,13 @@ func setWaveform(audio: String):
 	#chart_waveform.draw_waveform()
 
 func _update_chart_positions():
-	var cal = ((-songPosition/stepCrochet) + Conductor.step_offset) * cur_zoom * CHESS_REAL_SIZE.y + CHESS_OFFSET.y
+	var cal = ((-songPosition/stepCrochet) + Conductor.step_offset) * cur_zoom * CHESS_REAL_SIZE.y + 50
 	chess_control.position.y = cal
-	line_rect.position.y = -cal + CHESS_OFFSET.y
+	line_rect.position.y = -cal + 50
 
 func _update_chess_notes_position():
 	var chess_position = curSection*16.0*CHESS_REAL_SIZE.y*cur_zoom
-	for i in chess_array:
-		i.position.y = chess_position
+	for i in chess_array: i.position.y = chess_position
 	
 func update_line_rect():
 	line_rect.scale = Vector2(
@@ -533,8 +459,7 @@ func update_line_rect():
 
 #region Character methods
 func getCharData(character: StringName) -> Dictionary:
-	if characters_data.has(character):
-		return characters_data[character]
+	if characters_data.has(character): return characters_data[character]
 	
 	var file = Paths.character(character+'.json')
 	if !file: file = Character.getCharacterBaseData()
@@ -564,8 +489,7 @@ func set_song_position(pos: float, conductor_position: bool = true):
 	pos = clampf(pos,0,Conductor.songLength)
 	songPosition = pos
 	
-	if conductor_position:
-		Conductor.setSongPosition(pos)
+	if conductor_position: Conductor.setSongPosition(pos)
 	
 	_update_chart_positions()
 	_update_song_info()
@@ -624,23 +548,20 @@ func set_section(section: int = curSection):
 	_update_chess_notes_position()
 	
 func get_section_data(from: int) -> Dictionary:
-	if !_song_notes:
-		return {}
-	if curSection == from:
-		return curSectionData
+	if !_song_notes: return {}
+	if curSection == from: return curSectionData
 	
-	var dic = ArrayHelper.get_array_index(_song_notes,from,{})
+	var dic = ArrayUtils.get_array_index(_song_notes,from,{})
 	dic.merge(Song.getSectionBase())
 	return dic
 
 func get_section_note_data(from: int):
-	if curSection == from:
-		return curSectionNotes
-	return ArrayHelper.get_array_index(_song_notes,from,{}).get('sectionNotes',[])
+	if curSection == from: return curSectionNotes
+	return ArrayUtils.get_array_index(_song_notes,from,{}).get('sectionNotes',[])
 
 func copyLastSection(add: bool = true):
 	var section_to_copy = curSection-section_copy_offset.value
-	if section_to_copy == curSection or !ArrayHelper.array_has_index(_song_notes,section_to_copy):
+	if section_to_copy == curSection or !ArrayUtils.array_has_index(_song_notes,section_to_copy):
 		return
 	
 	var section_time = curSectionTime - Conductor.get_section_time(section_to_copy)
@@ -652,7 +573,7 @@ func copyLastSection(add: bool = true):
 		note_data[0] += section_time
 		notes_added.append(note_data)
 	if add:
-		notes_added.sort_custom(ArrayHelper.sort_array_from_first_index)
+		notes_added.sort_custom(ArrayUtils.sort_array_from_first_index)
 	else:
 		killNotes()
 		_song_notes[curSection].sectionNotes = notes_added
@@ -729,37 +650,28 @@ func _update_song_data():
 #endregion
 
 #region Note methods
-func createNoteAtPosition(_position: Vector2) -> Variant:
-	var noteData = 0
+func createChessNote(time: float,data: int, chess: Chess) -> Variant:
 	var founded: bool = false
 	var mustPress: bool = !curSectionData.get('mustHitSection',false)
 	
-	var isEvent: bool = false
-	for chess in chess_array:
-		mustPress = not mustPress
-		var chess_size = Vector2(CHESS_REAL_SIZE.x*(keyCount-1),CHESS_REAL_SIZE.y*chess.steps)
-		
-		if MathHelper.is_pos_in_area(_position,chess.position,chess_size):
-			noteData = int((_position.x - chess.position.x)/CHESS_REAL_SIZE.x)
-			founded = true
-			isEvent = chess == chess_events
-			break
+	var isEvent: bool = chess == chess_events
+	if !isEvent: mustPress = chess == chess_player
 	
 	if !founded:
 		return null
 	
-	var songPos = getStepFromY(_position.y)
+	var songPos = getStepFromY(time)
 	if isEvent:
 		return addEvent(getEventData(songPos))
 	
-	var note = addNote(songPos,(noteData + keyCount) if mustPress else noteData)
+	var note = addNote(songPos,(data + keyCount) if mustPress else data)
 	detectNotesToHit()
 	return note
 
 func addNote(strumTime: float, noteData: int, section: int = curSection) -> Note_Chart:
 	var note = Note_Chart.new(noteData%keyCount)
 	note.strumTime = strumTime
-	note.reloadNote(arrowSkin)
+	note.loadFromStyle('funkin')
 	note.mustPress = detectNoteMustPress(noteData,section)
 	
 	note.sustain_scale = cur_zoom
@@ -837,7 +749,7 @@ func getNoteStep(strum_time: float):
 
 func getNoteAtMouse() -> Note_Chart:
 	for i in _notes_created:
-		if MathHelper.is_pos_in_area(mouse_pos,i.global_position,CHESS_REAL_SIZE):
+		if MathUtils.is_pos_in_area(mouse_pos,i.global_position,CHESS_REAL_SIZE):
 			return i
 	return null
 	
@@ -950,8 +862,7 @@ func _create_notes_section(from: int = curSection):
 	
 	_notes_created = _notes_unspawned[from]
 	if _notes_created:
-		for i in _notes_created:
-			addNoteToScene(i)
+		for i in _notes_created: addNoteToScene(i)
 		detectNotesToHit()
 		return
 	
@@ -959,11 +870,11 @@ func _create_notes_section(from: int = curSection):
 	if !section: return
 	
 	for i in section.get('sectionNotes',[]):
-		var data = ArrayHelper.get_array_index(i,1,0)
+		var data = ArrayUtils.get_array_index(i,1,0)
 		var note = addNote(i[0],data)
-		var noteType = ArrayHelper.get_array_index(i,3,'')
+		var noteType = ArrayUtils.get_array_index(i,3,'')
 		note.section_data = i
-		note.sustainLength = ArrayHelper.get_array_index(i,2,0)
+		note.sustainLength = ArrayUtils.get_array_index(i,2,0)
 		if noteType:
 			note.noteType = noteType
 	detectNotesToHit()
@@ -1024,8 +935,7 @@ func addEvent(event_data: Array) -> EventChart:
 func addEventToJson(event: EventChart):
 	var index: int = 0
 	for i in events_data:
-		if event.strumTime <= i[0]:
-			break
+		if event.strumTime <= i[0]: break
 		index += 1
 	
 	update_events = true
@@ -1124,7 +1034,7 @@ func createEventVariables(event_name: String, variables: Dictionary = {}):
 					)
 				TYPE_FLOAT:
 					needs_text = false
-					variable_node = ButtonRange.instantiate()
+					variable_node = ButtonRangeScene.instantiate()
 					variable_node.value = float(value)
 					variable_node.value_to_add = 0.1
 					variable_node.value_changed.connect(func(v):
@@ -1134,7 +1044,8 @@ func createEventVariables(event_name: String, variables: Dictionary = {}):
 					variable_node.text = i+': '
 				TYPE_INT:
 					needs_text = false
-					variable_node = ButtonRange.instantiate()
+					variable_node = ButtonRangeScene.instantiate()
+					variable_node.update_min_size_y = true
 					variable_node.int_value = true
 					variable_node.value = int(value)
 					variable_node.value_changed.connect(func(v):
@@ -1224,12 +1135,9 @@ func set_event_chart_value(variable: String, value: Variant):
 	var node = event_variable_container.get_node_or_null(variable)
 	if !node:
 		return
-	if node is ButtonRangeType:
-		node.value = value
-	elif node is Label or node is LineEdit:
-		node.text = str(value)
-	elif node is ColorPickerButton:
-		node.color = Color.html(str(value))
+	if node is ButtonRange: node.value = value
+	elif node is Label or node is LineEdit: node.text = str(value)
+	elif node is ColorPickerButton: node.color = Color.html(str(value))
 		
 func unselectEvent():
 	if !event_selected:
@@ -1237,40 +1145,20 @@ func unselectEvent():
 	event_selected.modulate = Color.WHITE
 	event_selected = null
 	
-func _load_events_popus():
-	events_popup.clear()
-	var last_mod = ''
-	
-	var events_loaded: PackedStringArray = []
-	for i in Paths.getFilesAt('custom_events',true,['txt','json']):
-		var file = i.get_file()
-		if file in events_loaded: continue
-		var mod = Paths.getModFolder(i)
-		if !mod:
-			mod = Paths.game_name
-		
-		if last_mod != mod:
-			events_popup.add_separator(mod)
-			last_mod = mod
-		
-		events_loaded.append(i)
-		events_popup.add_item(file)
-		pass
-	
 func getEventChartVariables():
 	var variables: Dictionary = {}
 	for i in event_variable_container.get_children():
 		if i is LineEdit:
 			variables[i.name] = i.text
 			continue
-		if i is ButtonRangeType:
+		if i is ButtonRange:
 			variables[i.name] = i.value
 			continue
 	return variables
 
 func getEventAtMouse() -> EventChart:
 	for i in _events_created:
-		if MathHelper.is_pos_in_area(mouse_pos,i.global_position,CHESS_REAL_SIZE):
+		if MathUtils.is_pos_in_area(mouse_pos,i.global_position,CHESS_REAL_SIZE):
 			return i
 	return null
 
@@ -1288,16 +1176,13 @@ func getEventData(strumTime: float) -> Array:
 #region Strum Notes Methods
 func enableStrums(enable: bool):
 	if !enable:
-		for i in strums_created:
-			i.queue_free()
+		for i in strums_created: i.queue_free()
 		strums_created.clear()
 		return
 	for i in range(keyCount*2):
 		var strum = StrumNote.new(i%keyCount)
 		var group = chess_opponent if i < keyCount else chess_player
-		strum.texture_changed.connect(func(_o,_n):
-			updateStrumScale(strum)
-		)
+		strum.texture_changed.connect(func(_o,_n): updateStrumScale(strum))
 		strum.texture = arrowSkin
 		strum.offset_follow_scale = true
 		
@@ -1327,8 +1212,7 @@ func detectNotesToHit():
 				hit_times.append(sustain_data)
 			sustain_data[3] = i
 			
-	if need_to_sort:
-		hit_times.sort_custom(ArrayHelper.sort_array_from_first_index)
+	if need_to_sort: hit_times.sort_custom(ArrayUtils.sort_array_from_first_index)
 #endregion
 
 func _process(_d) -> void:
@@ -1342,13 +1226,7 @@ func _process(_d) -> void:
 	if mouse_erase_notes:
 		removeEventFromSong(getEventAtMouse())
 		removeNote(getNoteAtMouse())
-		
-func enable_mouse_rect(enable: bool):
-	if enable:
-		mouse_rect_follow.modulate.a = 1
-	else:
-		mouse_rect_follow.create_tween().tween_property(mouse_rect_follow,'modulate:a',0,0.1)
-		
+
 func getStepFromY(mouse_y: float) -> float:
 	return mouse_y/ cur_zoom / CHESS_REAL_SIZE.y * stepCrochet + (stepCrochet * Conductor.step_offset)
 
@@ -1362,34 +1240,53 @@ func updateIcons():
 	iconP2.scale *= ICON_SCALE
 	iconP2.default_scale = iconP2.scale
 
-func icon_beat():
-	for i in icons:
-		i.scale += i.beat_value
+func icon_beat(): for i in icons: i.scale += i.beat_value
 #endregion
 
-
 #region Keys Methods
+func enable_mouse_rect(enable: bool):
+	if enable: mouse_rect_follow.modulate.a = 1
+	else: mouse_rect_follow.create_tween().tween_property(mouse_rect_follow,'modulate:a',0,0.1)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEvent and event.keycode == KEY_SHIFT: is_shift_pressed = event.pressed; enable_mouse_rect(is_shift_pressed)
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey:
-		if event.keycode == KEY_SHIFT and not mouse_sustain_note:
-			enable_mouse_rect(event.pressed)
-			return
-		if !event.pressed:
-			return
+	if event is InputEventKey and event.pressed:
 		match event.keycode:
-			KEY_SPACE:
-				song_playing = !song_playing
-			KEY_ENTER:
-				load_game()
-			KEY_A:
-				set_song_position(Conductor.get_section_time(curSection-(4 if Input.is_key_pressed(KEY_SHIFT) else 1)))
-			KEY_D:
-				set_song_position(Conductor.get_section_time(curSection+(4 if Input.is_key_pressed(KEY_SHIFT) else 1)))
-			KEY_X:
-				cur_zoom += 0.5
-			KEY_Z:
-				cur_zoom -= 0.5
+			KEY_SPACE: song_playing = !song_playing
+			KEY_ENTER: load_game()
+			KEY_A: set_song_position(Conductor.get_section_time(curSection-(4 if is_shift_pressed else 1)))
+			KEY_D: set_song_position(Conductor.get_section_time(curSection+(4 if is_shift_pressed else 1)))
+			KEY_X: if not event.echo: cur_zoom += 0.5
+			KEY_Z: if not event.echo: cur_zoom -= 0.5
+	
 func _unhandled_input(event):
+	if event is InputEventMouseButton:
+		match event.button_index:
+			2: mouse_erase_notes = event.pressed
+			4: set_song_position(songPosition - stepCrochet * (3 if Input.is_key_pressed(KEY_SHIFT) else 1))
+			5: set_song_position(songPosition + stepCrochet * (3 if Input.is_key_pressed(KEY_SHIFT) else 1))
+		
+#endregion
+
+#region Signals
+#region Popups
+func _on_stage_index_pressed(i: int) -> void: SONG.set('stage',stagePop.get_item_text(i))
+func _on_event_index_pressed(i: int) -> void:
+	var event_name = events_popup.get_item_text(i)
+	setEvent(event_name)
+	if event_selected:
+		var index = event_selected.event_index
+		event_selected.removeEvent(index)
+		event_selected.addEvent(event_name,{},index)
+func _on_note_type_index_pressed(i: int) -> void:
+	var type = note_type_popup.get_item_text(i)
+	note_type_menu.text = type
+	for n in notes_selected: n.noteType = type
+#endregion
+func _on_chess_event_input(event: InputEvent):
+	pass
+func _on_chess_input(event: InputEvent,chess: Chess):
 	if event is InputEventMouseButton:
 		match event.button_index:
 			1:
@@ -1397,31 +1294,30 @@ func _unhandled_input(event):
 				mouse_create_note = event.pressed
 				if event.pressed:
 					unselectNotes()
-					if event.double_click:
-						mouse_selection.start_selection()
-						return
-				else:
-					_update_note_data()
+					if event.double_click: mouse_selection.start_selection(); return
+				else: _update_note_data()
+				
 				for i in _notes_created:
-					if Rect2(i.global_position,CHESS_REAL_SIZE).intersects(Rect2(mouse_selection.position,mouse_selection.size)):
+					if Rect2(i.position,CHESS_REAL_SIZE).intersects(Rect2(event.position,mouse_selection.size)):
 						selectNote(i,true)
 				
-				if !mouse_create_note or notes_selected:
-					return
+				if !mouse_create_note or notes_selected: return
 				
 				var note = getNoteAtMouse()
-				#Check if the mouse is in a Event note 
-				if !note:
-					note = getEventAtMouse()
-				else:
-					note = note
 				
+				if !note: note = getEventAtMouse()
+				else: note = note
+				
+				
+				var data: int = event.position.x/chess.line_size.x
 				#Create Note
-				if !note:
-					note = createNoteAtPosition(mouse_rect_follow.position)
+				if !note: note = createChessNote(
+					event.position.y if is_shift_pressed else event.position.y,
+					data,
+					chess
+				)
 				
-				if !note:
-					return
+				if !note: return
 				
 				if note is EventChart:
 					selectEvent(note)
@@ -1430,53 +1326,32 @@ func _unhandled_input(event):
 				
 				selectNote(note)
 				addNoteToJson(note)
-			2:
-				mouse_erase_notes = event.pressed
-				
-			4:
-				var step = songPosition - stepCrochet * (3 if Input.is_key_pressed(KEY_SHIFT) else 1)
-				#step -= stepCrochet * (step/stepCrochet)
-				set_song_position(step)
-			5:
-				set_song_position(songPosition + stepCrochet * (3 if Input.is_key_pressed(KEY_SHIFT) else 1))
-		
 	elif event is InputEventMouseMotion:
-		mouse_pos = event.position
+		mouse_pos = chess.position + event.position
 		var mouse_div = ((mouse_pos-chess_control.position-CHESS_REAL_SIZE/2.0)/CHESS_REAL_SIZE).round() * CHESS_REAL_SIZE
 		
 		mouse_rect_follow.position.x = mouse_div.x
-		if Input.is_key_pressed(KEY_SHIFT):
+		if is_shift_pressed:
 			mouse_rect_follow.position.y = mouse_pos.y - chess_control.position.y - CHESS_REAL_SIZE.y/2.0
-		else:
-			mouse_rect_follow.position.y = mouse_div.y
+		else: mouse_rect_follow.position.y = mouse_div.y
 			
 		if notes_selected and mouse_sustain_note:
 			var block_div = CHESS_REAL_SIZE.y
 			for i in notes_selected:
 				var sustain = (mouse_rect_follow.position.y - i.position.y - block_div)/block_div * stepCrochet
-				if sustain > 0:
-					i.sustainLength = sustain/cur_zoom
-#endregion
-
-#region Signals
+				if sustain > 0: i.sustainLength = sustain/cur_zoom
 func _on_hit_section_toggled(toggled_on: bool) -> void:
 	curSectionData.mustHitSection = toggled_on
 	updateNotesPositions()
 	_update_icon_in_section()
-	for i in _notes_created:
-		i.noteData = (i.noteData + keyCount) % (keyCount*2)
+	for i in _notes_created: i.noteData = (i.noteData + keyCount) % (keyCount*2)
 	
 func _on_auto_change_section_toggled(toggled_on: bool) -> void:
 	autoSwapSection = toggled_on
-	if autoSwapSection and curSection != Conductor.section:
-		set_section(Conductor.section)
+	if autoSwapSection and curSection != Conductor.section: set_section(Conductor.section)
 
-func _on_add_event_button_down() -> void:
-	if event_selected:
-		event_selected.addEvent()
-
-func _on_save_chart_button_down() -> void:
-	Paths.saveFile({'song' : SONG},Conductor.jsonDir)
+func _on_add_event_button_down() -> void: if event_selected: event_selected.addEvent()
+func _on_save_chart_button_down() -> void: Paths.saveFile({'song' : SONG},Conductor.jsonDir)
 
 
 func _on_save_to_chart_button_down() -> void:
@@ -1524,7 +1399,7 @@ func _on_arrow_skin_text_submitted(new_text: String) -> void:
 	for i in strums_created:
 		i.texture = new_text
 	for i in _notes_created:
-		i.reloadNote(new_text)
+		i.loadFromStyle('funkin')
 	note_skin.release_focus()
 func _on_change_bpm_toggled(toggled_on: bool) -> void:
 	if toggled_on:
@@ -1544,7 +1419,7 @@ func _on_sustain_length_value_added(value: float) -> void:
 	_update_note_data()
 	detectNotesToHit()
 #endregion
-	
+
 #region Static Methods
 static func reset_values():
 	songPosition = 0.0

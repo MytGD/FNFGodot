@@ -237,7 +237,7 @@ static func get_arguments(script: Object) -> Dictionary[String,Variant]:
 		
 		if default_args:
 			for i in funcArgs:
-				i.type = ArrayHelper.get_array_index(default_args,index,TYPE_NIL)
+				i.type = ArrayUtils.get_array_index(default_args,index,TYPE_NIL)
 				i.default = type_convert(null,i.type)
 				index += 1
 		else:
@@ -245,10 +245,10 @@ static func get_arguments(script: Object) -> Dictionary[String,Variant]:
 			function.default_args.reverse()
 			default_args = function.default_args
 			for i in funcArgs:
-				i.default = ArrayHelper.get_array_index(
+				i.default = ArrayUtils.get_array_index(
 					default_args,
 					index,
-					MathHelper.get_new_value(i.type)
+					MathUtils.get_new_value(i.type)
 				)
 			funcArgs.reverse()
 			
@@ -344,7 +344,7 @@ static func setProperty(property: String, value: Variant, target: Variant = null
 		split = target[1]
 		target = target[0]
 	else:
-		#split = StringHelper.replace_chars_from_dict(property,property_replaces).split('.')
+		#split = StringUtils.replace_chars_from_dict(property,property_replaces).split('.')
 		split = property.split('.')
 	
 	if !split: return 
@@ -357,7 +357,7 @@ static func setProperty(property: String, value: Variant, target: Variant = null
 	
 	while index < split.size()-1:
 		_property = split[index]
-		if MathHelper.value_exists(target,_property):
+		if MathUtils.value_exists(target,_property):
 			prev_obj = target
 			target = target[_property]
 			index += 1
@@ -441,12 +441,12 @@ static func _find_object(property: Variant, return_rest: bool = false) -> Varian
 	return object
 	
 static func get_as_property(property: String) -> String:
-	return StringHelper.replace_chars_from_dict(property,property_replaces)
+	return StringUtils.replace_chars_from_dict(property,property_replaces)
 
 
 static func _get_variable(obj: Variant, variable: String) -> Variant:
 	var type = typeof(obj)
-	if ArrayHelper.is_array_type(type): return obj.get(int(variable))
+	if ArrayUtils.is_array_type(type): return obj.get(int(variable))
 	
 	if VectorUtils.is_vector_type(type):
 		if variable.is_valid_int(): return obj[int(variable)]
@@ -468,7 +468,7 @@ static func is_indexable(variable: Variant) -> bool:
 	if !variable: return false
 	var type = typeof(variable)
 	
-	if ArrayHelper.is_array_type(type):return true
+	if ArrayUtils.is_array_type(type):return true
 	match type:
 		TYPE_OBJECT,TYPE_DICTIONARY: return true
 		_: return false
@@ -518,7 +518,7 @@ static func _find_group_members(_group_name: String, member_index: int) -> Objec
 	if !group is Array:
 		return null
 	
-	return ArrayHelper.get_array_index(group,member_index)
+	return ArrayUtils.get_array_index(group,member_index)
 	
 ##Add [Sprite] to a [code]group[/code] [SpriteGroup] or [Array].[br][br]
 ##If [code]at = -1[/code], the sprite will be inserted at the last position.
@@ -1013,7 +1013,7 @@ static func startTween(tag: String, object: Variant, what: Dictionary[String,Var
 		if !object: return
 		if split[1]:
 			var split_join = String(":").join(split[1])
-			for i in what.keys(): DictionaryHelper.rename_key(what,i,split_join+':'+i)
+			for i in what.keys(): DictionaryUtils.rename_key(what,i,split_join+':'+i)
 	
 	if !object: return
 	
@@ -1300,7 +1300,7 @@ static func getShaderParameter(shader: String, shaderVar: String) -> Variant:
 static func setBlendMode(object: Variant, blend: String) -> void:
 	object = _find_object(object)
 	if !object is CanvasItem: return
-	var material = ShaderHelper.get_blend(blend)
+	var material = ShaderUtils.get_blend(blend)
 	if material: object.material = material
 
 static func _find_shader_material(shader: Variant) -> ShaderMaterial:
@@ -1483,16 +1483,16 @@ static func _get_sound(path):
 #region Keyboard Methods
 ##Detect if the keycode is just pressed. See also [method keyboardJustReleased].
 static func keyboardJustPressed(key: String) -> bool:  
-	return InputHelper.isKeyJustPressed(OS.find_keycode_from_string(key))
+	return InputUtils.isKeyJustPressed(OS.find_keycode_from_string(key))
 
 ##Detect if the keycode is just pressed. See also [method keyboardJustPressed].
 static func keyboardJustReleased(key: String) -> bool:
-	return InputHelper.isKeyJustReleased(OS.find_keycode_from_string(key))
+	return InputUtils.isKeyJustReleased(OS.find_keycode_from_string(key))
 
 ##Detect if the keycode is pressed, similar to [method Input.is_key_label_pressed].
 ##[br]See also [method keyboardJustPressed].
 static func keyboardPressed(key: String) -> bool:
-	return InputHelper.isKeyPressed(OS.find_keycode_from_string(key))
+	return InputUtils.isKeyPressed(OS.find_keycode_from_string(key))
 
 static func addKey(key: String, action: String):
 	pass

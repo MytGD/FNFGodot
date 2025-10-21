@@ -1,4 +1,4 @@
-class_name MathHelper
+class_name MathUtils
 
 static func mix(current: Variant,target: Variant,value: float):
 	target = type_convert(target,typeof(current))
@@ -143,7 +143,7 @@ static func value_exists(obj: Variant, value: Variant) -> bool:
 		TYPE_DICTIONARY:
 			return obj.has(value)
 		TYPE_ARRAY:
-			return ArrayHelper.array_has_index(obj,int(value))
+			return ArrayUtils.array_has_index(obj,int(value))
 		TYPE_VECTOR2,TYPE_VECTOR2I:
 			return value in ['x','y']
 		TYPE_VECTOR3,TYPE_VECTOR3I:

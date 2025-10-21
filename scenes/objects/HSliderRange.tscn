@@ -1,0 +1,47 @@
+[gd_scene load_steps=3 format=3 uid="uid://c43gjt1vgui8m"]
+
+[ext_resource type="Script" uid="uid://f2w0nf35i667" path="res://scenes/objects/HSliderRange.gd" id="1_7tajf"]
+[ext_resource type="Script" uid="uid://50thfspe3s66" path="res://source/objects/UI/LineEditNumber.gd" id="2_lt1av"]
+
+[node name="HSliderRange" type="Label"]
+offset_right = 400.0
+offset_bottom = 15.0
+size_flags_horizontal = 3
+text = "Name:"
+vertical_alignment = 1
+script = ExtResource("1_7tajf")
+
+[node name="LineEdit" type="LineEdit" parent="."]
+layout_mode = 0
+offset_left = 47.0
+offset_top = -2.5
+offset_right = 112.0
+offset_bottom = 20.5
+script = ExtResource("2_lt1av")
+characters_allowed = PackedStringArray("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", ".", ".", ".", ".", ".")
+min_value = -99999.0
+max_value = 99999.0
+
+[node name="HSlider" type="HSlider" parent="."]
+layout_mode = 0
+offset_left = 122.0
+offset_top = -2.5
+offset_right = 273.0
+offset_bottom = 20.0
+min_value = -99999.0
+max_value = 99999.0
+step = 0.1
+
+[node name="Panel" type="Panel" parent="HSlider"]
+show_behind_parent = true
+layout_mode = 0
+offset_left = -6.0
+offset_top = 0.5
+offset_right = 153.0
+offset_bottom = 21.5
+mouse_filter = 2
+metadata/_edit_lock_ = true
+
+[connection signal="text_submitted" from="LineEdit" to="LineEdit" method="_on_text_submitted"]
+[connection signal="value_changed" from="LineEdit" to="." method="set_value"]
+[connection signal="value_changed" from="HSlider" to="." method="set_value"]

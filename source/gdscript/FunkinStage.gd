@@ -108,8 +108,7 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 	
 	sprites.sort_custom(func(a,b): return a[0] <= b[0])
 	
-	for i in sprites:
-		FunkinGD.addSprite(i[1],i[0] >= front_index)
+	for i in sprites: FunkinGD.addSprite(i[1],i[0] >= front_index)
 	
 static func onBeatHit() -> void:
 	danced = !danced

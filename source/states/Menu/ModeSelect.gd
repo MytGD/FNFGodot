@@ -162,7 +162,7 @@ func _input(event):
 	elif event is InputEventMouseButton and event.pressed and event.button_index == 1:
 		var index: int = 0
 		for i in options:
-			if MathHelper.is_pos_in_area(event.position,i.global_position,i.image.region_rect.size):
+			if MathUtils.is_pos_in_area(event.position,i.global_position,i.image.region_rect.size):
 				if index == curOptionIndex:
 					selectOption(i)
 				else:

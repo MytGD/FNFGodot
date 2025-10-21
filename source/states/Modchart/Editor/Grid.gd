@@ -128,7 +128,6 @@ func removeKey(key: KeyInterpolatorNode):
 	if key_index[0] and index <= key_index[0]: key_index[0] -= 1
 	if key_index[1] and index <= key_index[1]: key_index[1] -= 1
 	
-	print(data)
 	keys_array.erase(data)
 	_keys_created.erase(key)
 	key.queue_free()

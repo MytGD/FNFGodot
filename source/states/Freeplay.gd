@@ -192,7 +192,7 @@ func loadWeekProperties(week_data: Dictionary) -> Dictionary:
 	if !dif:
 		dif = 'easy, normal, hard'
 		
-	var dif_split: Array = StringHelper.split_no_space(dif,',')
+	var dif_split: Array = StringUtils.split_no_space(dif,',')
 	var data: Dictionary = {
 		'songs': [],
 		'difficulties': dif
@@ -398,13 +398,13 @@ func _input(event: InputEvent) -> void:
 			
 			if event.position.y < 120:
 				if !event.pressed: return
-				if MathHelper.is_pos_in_area(
+				if MathUtils.is_pos_in_area(
 				event.position, 
 				modSelectLeft.global_position,
 				modSelectLeft.image.region_rect.size*modSelectLeft.global_scale): 
 					setModSelected(curMod-1);
 				
-				elif MathHelper.is_pos_in_area(
+				elif MathUtils.is_pos_in_area(
 				event.position, 
 				modSelectRight.global_position,
 				modSelectRight.image.region_rect.size*modSelectRight.global_scale): 
@@ -420,25 +420,25 @@ func _input(event: InputEvent) -> void:
 			
 			if !event.pressed: return
 			
-			if difficultySprite.image.texture and MathHelper.is_pos_in_area(
+			if difficultySprite.image.texture and MathUtils.is_pos_in_area(
 					event.position, 
 					difficultySprite.global_position,
 					difficultySprite.image.texture.get_size()): 
 						startSong();
 						return
-			elif difficultyText.text and MathHelper.is_pos_in_area(
+			elif difficultyText.text and MathUtils.is_pos_in_area(
 					event.position, 
 					difficultyText.global_position,
 					difficultyText.size): 
 						startSong();
 						return
-			elif MathHelper.is_pos_in_area(
+			elif MathUtils.is_pos_in_area(
 				event.position, 
 				diffiSelectLeft.global_position,
 				diffiSelectLeft.image.region_rect.size*diffiSelectLeft.global_scale): 
 					setDifficulty(curDifficulty-1)
 				
-			elif MathHelper.is_pos_in_area(
+			elif MathUtils.is_pos_in_area(
 				event.position, 
 				diffiSelectRight.global_position,
 				diffiSelectRight.image.region_rect.size*diffiSelectRight.global_scale): 
@@ -472,8 +472,8 @@ func startSong():
 	if cur_song_difficulties_data.get(difficulty):
 		var data = cur_song_difficulties_data[difficulty]
 		songJson = data[0]
-		songFolder = ArrayHelper.get_array_index(data,1,'')
-		audio_suffix = ArrayHelper.get_array_index(data,2,'')
+		songFolder = ArrayUtils.get_array_index(data,1,'')
+		audio_suffix = ArrayUtils.get_array_index(data,2,'')
 		
 		songData = Paths.data(songJson,'',songFolder)
 	else:

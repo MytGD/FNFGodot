@@ -134,15 +134,6 @@ func _ready():
 	
 	#Character List
 	characterPop.min_size = Vector2(250,0)
-	var last_mod = ''
-	charactersFound = Paths.getFilesAt('characters',true,'.json')
-	for i in charactersFound:
-		var mod = Paths.getModFolder(i)
-		if !mod: mod = Paths.game_name
-		if last_mod != mod:
-			characterPop.add_separator(mod)
-			last_mod = mod
-		characterPop.add_item(i.get_file())
 	
 	prefixListPop.index_pressed.connect(
 		func(i):setAnimationPrefix(prefixListPop.get_item_text(i))

@@ -1,4 +1,4 @@
-class_name ArrayHelper
+class_name ArrayUtils
 
 const array_types: Dictionary = {
 	TYPE_ARRAY: true,

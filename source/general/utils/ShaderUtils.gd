@@ -1,4 +1,4 @@
-class_name ShaderHelper
+class_name ShaderUtils
 
 const replace_frag: Dictionary = {
 	'#pragma header': '',

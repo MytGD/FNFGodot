@@ -7,7 +7,7 @@ const EditorMaterial = preload("res://source/states/Modchart/Shaders/EditorShade
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 const Sprite = preload("res://source/objects/Sprite/Sprite.gd")
 const Character = preload("res://source/objects/Sprite/Character.gd")
-const CameraCanvas = preload("res://source/objects/Display/Camera.gd")
+const CameraCanvas = preload("res://source/objects/Display/Camera/Camera.gd")
 const SpriteGroup = preload("res://source/general/groups/SpriteGroup.gd")
 const PlayState = preload("res://source/states/PlayState.gd")
 
@@ -16,26 +16,44 @@ const KeyInterpolatorNode = preload("res://source/states/Modchart/Editor/KeyInte
 
 const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")
 const ButtonRangeScene = preload("res://scenes/objects/ButtonRange.tscn")
+const HSliderRange = preload("res://scenes/objects/HSliderRange.gd")
+const HSliderRangeScene = preload("res://scenes/objects/HSliderRange.tscn")
 const ModchartState = preload("res://source/states/Modchart/ModchartState.gd")
 const Grid = preload("res://source/states/Modchart/Editor/Grid.gd")
 
+var screen_size_mult = ScreenUtils.screenSize*2
 var PropertiesAvaliable: Dictionary = {
 	PlayState: {
 		'defaultCamZoom': {'range': [-5,5]},
 		'cameraSpeed': {'range': [0.2,10]},
-		'scrollSpeed':  {'range': [0.2,10]}
+		'scrollSpeed':  {'range': [0.2,10]},
+		'zoomSpeed': {'range': [0.0,15.0]},
+		'camZooming': null
 	},
 	CameraCanvas:{
-		'scrollOffset': null,
-		'angle': {'range': [-360,360]}
+		'x': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
+		'y': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
+		'scroll': null,
+		'zoom': null,
+		'defaultZoom': null,
+		'angle': {'range': [-360,360,0.2]}
 	},
 	Sprite:{
-		'scale': {'type': TYPE_FLOAT,'range': [-12,12]},
 		'x': null,
 		'y': null,
+		'velocity': null,
+		'acceleration': null,
+		'scale': {'type': TYPE_FLOAT,'range': [-12,12]},
+		'scrollFactor': {'range_x': [0.0,10.0,0.1],'range_y': [0.0,10.0,0.1]}
+	},
+	SpriteGroup: {
+		'x': null,
+		'y': null
 	},
 	StrumNote:{'direction': {'range': [-360,360]}}
 }
+
+var default_values: Dictionary[Object,Dictionary] = {}
 #var PropertiesAvaliable: Dictionary[Script,Dictionary] = {}
 
 var modchart_keys = ModchartState.keys
@@ -44,6 +62,11 @@ var modchart_upating = ModchartState.keys_index
 
 var songPosition: float = 0.0: set = set_song_editor_position
 var grids: Dictionary[String,Grid] = {}
+
+#region PlayState Variables
+@onready var playState = $SubViewport/PlayState
+static var songToLoad = 'test'
+#endregion
 
 #Song Data
 #region Tween Variables
@@ -62,7 +85,6 @@ var cur_ease: Tween.EaseType
 @onready var dialog_bg = $BG
 @onready var dialog: FileDialog = $FileDialog
 @onready var confirm_dialog: ConfirmationDialog = $ConfirmationDialog
-@onready var playState = $SubViewport/PlayState
 
 @onready var key_options = $KeyOptions
 @onready var object_options = $VSplit/HSplitP/Panel/HBox/Object/Name
@@ -78,12 +100,17 @@ var cur_ease: Tween.EaseType
 @onready var timeline = $VSplit/HSplitP/HTimeline/Timeline/Time
 #endregion
 
+#endregion
+
 #region Property Editor Variables
 @onready var explorer_nodes = $VSplit/HSplit/PanelContainer/Explorator/ColorRect/Explorer
-var properties_created: Array[Dictionary]
+var properties_created: Array
 @onready var properties_tab = $VSplit/HSplit/HSplit/Property/Properties/Scroll/Container
 @onready var properties_select_obj_text = $VSplit/HSplit/HSplit/Property/Properties/InfoText
+var property_label_settings = LabelSettings.new()
 
+const UPDATE_PROPERTY_EVERY = 1.0/10.0
+var property_update_el: float = 0.0
 #endregion
 
 #region Grid Properties
@@ -135,6 +162,8 @@ var key_moving_first_pos: float = 0
 #Textures
 const KeyNormalTexture = preload("res://icons/KeyBezierHandle.svg")
 const KeySelectedTexture = preload("res://icons/KeySelected.svg")
+
+const RESET_TEXTURE = preload("res://icons/Reload.svg")
 #endregion
 
 #region Different values
@@ -149,29 +178,65 @@ var explorer_object_selected: Node
 var explorer_object_last_modulate: Color
 var explorer_select_effect: bool = false
 var explorer_modulate_delta: float = 0.0
+@onready var explorer_area_selected = $SubViewport/ObjectSelected
+const SELECT_OBJECT_COLOR = Color.DIM_GRAY
 func _on_explorer_button_selected(button) -> void:
-	if explorer_object_selected: explorer_object_selected.modulate = explorer_object_last_modulate
 	var obj = button.object
+	if explorer_object_selected:
+		if explorer_object_selected == obj: return
+		if explorer_select_effect: 
+			explorer_object_selected.modulate.r = explorer_object_last_modulate.r
+			explorer_object_selected.modulate.g = explorer_object_last_modulate.g
+			explorer_object_selected.modulate.b = explorer_object_last_modulate.b
+		
+	if !show_object_properties(obj):
+		explorer_object_selected = null
+		explorer_area_selected.visible = false 
+		return
+	
+	explorer_area_selected.visible = true
 	explorer_select_effect = obj is CanvasItem
 	
 	if explorer_select_effect: explorer_object_last_modulate = obj.modulate
 	else: explorer_modulate_delta = 0.0
 	explorer_object_selected = obj
-	show_object_properties(obj)
+	
+
+func _explorer_obj_selected_color(delta: float):
+	_explorer_update_area_selected()
+	if !explorer_select_effect or !explorer_object_selected: return
+	explorer_modulate_delta += delta
+	var col = explorer_object_last_modulate.lerp(
+		SELECT_OBJECT_COLOR,
+		abs(sin(explorer_modulate_delta*3.0))
+	)
+	explorer_object_selected.modulate = Color(col.r,col.g,col.b,explorer_object_selected.modulate.a)
+	
+func _explorer_update_area_selected():
+	if !explorer_object_selected: return
+	var pos = explorer_object_selected.get('global_position')
+	if !pos: pos = Vector2.ZERO
+	explorer_area_selected.position = pos
+	
+	#var canvas_transform = explorer_area_selected.get_transform()
+	#print(canvas_transform)
+	#explorer_area_selected.size = Vector2(canvas_transform.x.y,canvas_transform.y.x)
 #endregion
 
 func _ready() -> void:
 	DiscordRPC.state = 'In Modchart Editor'
 	DiscordRPC.refresh()
 	
+	
+	property_label_settings.font_size = 13
+	
+	_update_song_info.call_deferred()
 	grid_material.shader = grid_shader
 	grid_material.set_shader_parameter('grid_size',GRID_SIZE)
 	dialog.current_dir = Paths.exePath+'/'
 	dialog.canceled.connect(dialog_bg.hide)
 	
 	#region Shaders
-	updateShadersPopup()
-	
 	shader_menu_popup.index_pressed.connect(func(i):
 		var shader = shader_menu_popup.get_item_text(i)
 		shader_menu.text = shader
@@ -182,7 +247,7 @@ func _ready() -> void:
 	#endregion
 	
 	#region Transition
-	for i in TweenService.transitions: transition_popup.add_item(StringHelper.first_letter_upper(i))
+	for i in TweenService.transitions: transition_popup.add_item(StringUtils.first_letter_upper(i))
 	
 	transition_menu.text = transition_popup.get_item_text(0)
 	
@@ -229,11 +294,11 @@ func disconnect_to_dialog(callable: Callable) -> void:
 #endregion
 
 #region Properties
-
-func show_object_properties(object: Object):
-	if object is ShaderMaterial: return
+func show_object_properties(object: Object) -> bool:
+	if object is ShaderMaterial: return false
 	
 	for i in properties_tab.get_children(): i.queue_free()
+	properties_created.clear()
 	var script: Script = object.get_script()
 	
 	var properties: Dictionary = {}
@@ -242,13 +307,13 @@ func show_object_properties(object: Object):
 			var props = PropertiesAvaliable.get(script)
 			if props: 
 				var _class_n = script.resource_path.get_basename().get_file()
-				properties[_class_n] = [props,explorer_nodes._get_class_icon(_class_n)]
+				properties[_class_n] = [props,explorer_nodes._get_node_icon(script)]
 			script = script.get_base_script()
 
-	var base_class_props = PropertiesAvaliable.get(ClassDB.instantiate(object.get_class()))
+	#var base_class_props = PropertiesAvaliable.get(ClassDB.instantiate(object.get_class()))
 	#if base_class_props: properties.append_array(base_class_props)
 	
-	if !properties: properties_select_obj_text.visible = true; return
+	if !properties: properties_select_obj_text.visible = true; return false
 	properties_select_obj_text.visible = false
 	
 	for i in properties:
@@ -259,6 +324,7 @@ func show_object_properties(object: Object):
 		for p in _props: 
 			var property = _create_property_buttons(object,p,_props[p])
 			if property: separator.properties_to_hide.append_array(property)
+	return true
 
 func _create_property_separator(text: String, icon: Texture):
 	var separator = PropertySeparator.new()
@@ -266,69 +332,167 @@ func _create_property_separator(text: String, icon: Texture):
 	separator.button.icon = icon
 	properties_tab.add_child(separator)
 	return separator
-		
+
 func _create_property_buttons(object: Node, property: String, data = null) -> Array[Node]:
 	var value = object.get(property)
 	var type = typeof(value)
 	var nodes: Array[Node] = []
 	
 	match type:
-		TYPE_FLOAT,TYPE_INT:
-			var int_val = type == TYPE_INT
-			var range = data.get('range') if data else null
-			var button
-			if range:
-				button = HSlider.new()
-				button.min_value = range[0]
-				button.max_value = range[1]
-				if range.size() >= 3: button.step = range[2]
-				elif not int_val: button.step = 0.1
-			else:
-				button = _create_property_button()
-				button.text = property+': '
-				button.value = value
-				if int_val: button.int_value = true
-				else: button.value_to_add = 0.1
-			button.value_changed.connect(func(_v): object[property] = _v)
-			nodes.append(button)
-		
+		TYPE_FLOAT,TYPE_INT: nodes.append(_create_property_range(object,property,type == TYPE_INT,data))
 		TYPE_VECTOR2,TYPE_VECTOR3,TYPE_VECTOR4,TYPE_VECTOR2I,TYPE_VECTOR3I,TYPE_VECTOR4I:
-			var int_val = (type == TYPE_VECTOR2I or type == TYPE_VECTOR3I or type == TYPE_VECTOR4I)
-			var length = VectorUtils.get_vector_length_from_type(type)
-			var vector_index = VectorUtils.vectors_index[length-1]
-			for i in vector_index:
-				var button = _create_property_button()
-				button.text = property+' '+i+': '
-				button.int_value = int_val
-				if not int_val: button.value_to_add = 0.1
-					
-				button.value = value[i]
-				match i:
-					'x': button.value_changed.connect(func(_v): object[property].x = _v)
-					'y': button.value_changed.connect(func(_v): object[property].y = _v)
-					'z': button.value_changed.connect(func(_v): object[property].z = _v)
-					'w': button.value_changed.connect(func(_v): object[property].w = _v)
-				nodes.append(button)
-	if !nodes: return []
+			nodes.append_array(_create_property_range_vector(object,property,type,data))
+		TYPE_BOOL: nodes.append(_create_property_box_button(object,property))
+		_: return nodes
+	
 	for i in nodes: 
 		properties_tab.add_child(i)
 		_create_interpolator_key_to_button(i)
 	return nodes
 
-func _create_property_button():
-	var button: ButtonRange = ButtonRangeScene.instantiate()
+func _create_property_range(obj: Node, property: Variant, int_value: bool = false, data = null):
+	var button
+	if data and data.has('range'): button = _create_property_hslider(data.range,int_value)
+	else: button = _create_property_button_range(int_value)
+	button.set_value_no_signal(obj[property])
+	button.name = property
+	button.text = property+': '
+	button.label_settings = property_label_settings
+	button.value_changed.connect(func(_v): obj[property] = _v)
+	properties_created.append([button,obj,property])
+	
+	var default_value = _get_obj_property_default(obj,property)
+	if default_value != null:
+		_connect_reset_button(_create_reset_property_button(),button,default_value)
+	return button
+
+func _create_property_button_range(int_value: bool = false) -> ButtonRange:
+	var button = ButtonRangeScene.instantiate()
 	button.update_min_size_x = true
 	button.update_min_size_y = true
+	button.int_value = int_value
+	button.label_settings = property_label_settings
+	if !int_value: button.value_to_add = 0.1
 	return button
+
+func _create_property_range_vector(obj: Node, property: Variant, type: Variant.Type, data = null) -> Array[Node]:
+	var index: int = 0
+	var length = VectorUtils.get_vector_length_from_type(type)
+	var int_value = type == TYPE_VECTOR2I or type == TYPE_VECTOR3I or type == TYPE_VECTOR4I
+	var vector_index = VectorUtils.vectors_index[length-1]
+	
+	var nodes: Array[Node] = []
+	
+	var default_value = obj.property_get_revert(property)
+	while index < vector_index.size():
+		var button
+		var i = vector_index[index]
+		
+		var range_name = 'range_'+i
+		if data and data.has(range_name): button = _create_property_hslider(data[range_name],int_value)
+		else: button = _create_property_button_range(int_value)
+		button.set_value_no_signal(obj[property][index])
+		button.name = property+' '+i
+		button.text = button.name+': '
+		button.label_settings = property_label_settings
+		nodes.append(button)
+		
+		if default_value != null:
+			_connect_reset_button(_create_reset_property_button(),button,default_value[index])
+		
+		match index:
+			0: button.value_changed.connect(func(_v): obj[property].x = _v)
+			1: button.value_changed.connect(func(_v): obj[property].y = _v)
+			2: button.value_changed.connect(func(_v): obj[property].z = _v)
+			3: button.value_changed.connect(func(_v): obj[property].w = _v)
+		properties_created.append([button,obj,property,index])
+		
+		index += 1
+	return nodes
+
+func _create_property_hslider(range_data: Array, rounded: bool = false) -> HSliderRange:
+	var button = HSliderRangeScene.instantiate()
+	button.min_value = range_data[0]
+	button.int_value = rounded
+	button.max_value = range_data[1]
+	if range_data.size() >= 3: button.step = range_data[2]
+	return button
+
+func _create_property_box_button(obj: Node, property: String) -> CheckBox:
+	var button = CheckBox.new()
+	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	button.name = property
+	button.text = ': '+property
+	button.add_theme_font_size_override('font_size',property_label_settings.font_size)
+	button.focus_mode = Control.FOCUS_NONE
+	button.toggled.connect(func(_v): obj[property] = _v)
+	return button
+
+func _update_properties():
+	for i in properties_created:
+		var obj = i[0]
+		var val = i[1][i[2]]
+		if i.size() >= 4: obj.set_value_no_signal(val[i[3]])
+		elif obj is CheckBox:obj.set_pressed_no_signal(val)
+		else: 
+			if !obj.line_edit.has_focus() and not (obj is HSliderRange and obj.slider.has_focus()): 
+				obj.set_value_no_signal(val)
+			else:
+				print(obj)
 
 func _create_interpolator_key_to_button(button: Control) -> void:
 	var key = KeyValue.new()
-	button.minimum_size_changed.connect(_update_interpolator_key_pos.bind(key).call_deferred)
+	
+	var bind = _update_interpolator_key_pos.bind(key)
+	button.minimum_size_changed.connect(bind)
 	button.add_child(key)
-	_update_interpolator_key_pos.call_deferred(key)
+	bind.call_deferred()
 
 func _update_interpolator_key_pos(key: Control):
-	key.position = Vector2(key.get_parent().size.x + 15,key.get_parent().size.y/2.0 - 8)
+	var parent: Control = key.get_parent()
+	if parent is HSliderRange:
+		key.position = Vector2(parent.slider.position.x + parent.slider.size.x + 40,parent.size.y/2.0 - 8)
+		return
+	var min_size = parent.get_minimum_size()
+	key.position = Vector2(min_size.x + 40,parent.size.y/2.0 - 8)
+
+func _create_reset_property_button():
+	var button = Button.new()
+	button.flat = true
+	button.icon = RESET_TEXTURE
+	return button
+
+func _connect_reset_button(reset_b: Button, button_to_connect: Control, default: Variant):
+	reset_b.pressed.connect(func(): button_to_connect.value = default)
+	
+	var func_bind = _check_reset_visible.bind(default,reset_b)
+	
+	
+	var pos_func = _update_reset_button_pos.bind(reset_b)
+	button_to_connect.value_changed.connect(func_bind)
+	button_to_connect.minimum_size_changed.connect(pos_func)
+	button_to_connect.add_child(reset_b)
+	pos_func.call()
+	
+	func_bind.call(button_to_connect.value)
+
+func _check_reset_visible(value: Variant, default: Variant,b: Button): b.visible = value != default
+
+func _update_reset_button_pos(reset_button: Button) -> void:
+	var parent = reset_button.get_parent()
+	var min_size = parent.get_minimum_size()
+	reset_button.position = Vector2(min_size.x,parent.size.y/2.0 - 8)
+func _check_properties_update(delta: float):
+	if properties_created:
+		property_update_el += delta
+		if property_update_el >= UPDATE_PROPERTY_EVERY:
+			property_update_el = 0.0
+			_update_properties()
+
+func _get_obj_property_default(obj: Object, property: String):
+	return default_values.get_or_add(obj,{}).get_or_add(property,obj.property_get_revert(property))
+#endregion
+
 #region Song
 func bpm_changes() -> void:
 	#bpm.text = str(Conductor.bpm)
@@ -359,7 +523,7 @@ func _load_song_from_json(dir_absolute: String):
 	set_song_editor_position(0.0)
 	
 	Paths.curMod = Paths.getModFolder(dir_absolute)
-	updateShadersPopup()
+	shader_menu._refresh()
 	removeAllGrids()
 	playState.clear()
 	playState._reset_values()
@@ -370,6 +534,9 @@ func _load_song_from_json(dir_absolute: String):
 	
 	if playState.process_mode != ProcessMode.PROCESS_MODE_DISABLED: playState.startSong()
 	
+	_update_song_info()
+
+func _update_song_info():
 	if playState.Song.songName: 
 		if Paths.curMod: DiscordRPC.details = 'Editing Modchart of: '+playState.Song.songName+' of the '+Paths.curMod+" mod"
 		else: DiscordRPC.details = 'Editing Modchart of: '+playState.Song.songName
@@ -394,8 +561,8 @@ func addShader(tag: String = shader_tag.text, file: String = shader_menu.text, o
 	if !tag: tag = shader_tag.placeholder_text
 	
 	if !objects:
-		if shader_objects.text: objects = StringHelper.split_no_space(shader_objects.text,',')
-		else: objects = StringHelper.split_no_space(shader_objects.placeholder_text,',')
+		if shader_objects.text: objects = StringUtils.split_no_space(shader_objects.text,',')
+		else: objects = StringUtils.split_no_space(shader_objects.placeholder_text,',')
 	
 	shader.shader_name = file.get_base_dir().get_basename()
 	shader.objects = objects
@@ -410,30 +577,16 @@ func addShader(tag: String = shader_tag.text, file: String = shader_menu.text, o
 			obj.material = shader
 	addFileToEditor(tag,shader)
 
-func updateShadersPopup() -> void:
-	shader_menu_popup.clear()
-	var cur_mod: String = Paths.game_name
-	for i in Paths.getFilesAt('shaders',true,['gdshader','frag'],true):
-		var mod_folder = Paths.getModFolder(i)
-		if cur_mod != mod_folder:
-			shader_menu_popup.add_separator(mod_folder)
-			cur_mod = mod_folder
-		shader_menu_popup.add_item(i.get_file())
 #endregion
 
 #region Modchart Area
 func _process(delta: float) -> void:
-	if playState.process_mode != playState.PROCESS_MODE_DISABLED: set_song_editor_position(Conductor.songPosition)
-	
-	if explorer_select_effect and explorer_object_selected:
-		explorer_modulate_delta += delta
-		explorer_object_selected.modulate = Color.WHITE.lerp(
-			Color.CYAN,
-			abs(sin(explorer_modulate_delta*3.0))
-		)
+	if playState.process_mode != playState.PROCESS_MODE_DISABLED: 
+		set_song_editor_position(Conductor.songPosition)
+		_check_properties_update(delta)
+	_explorer_obj_selected_color(delta)
 
-func save_modchart(path_absolute: String):
-	Paths.saveFile(ModchartState.get_keys_data(),path_absolute)
+func save_modchart(path_absolute: String): Paths.saveFile(ModchartState.get_keys_data(),path_absolute)
 
 #endregion
 
@@ -460,7 +613,6 @@ func set_song_editor_position(new_pos: float) -> void:
 		updateGridX(grid)
 		updateGridKeys(grid,is_processing_back)
 	updateKeysPositions()
-
 func set_song_position(pos: float):
 	if pos == songPosition: return
 	Conductor.setSongPosition(pos)
@@ -490,8 +642,7 @@ func updateGridX(grid: Grid) -> void:
 	grid.material.set_shader_parameter('x',grid_x)
 	grid.position.x = grid_real_x
 
-func updateGridY(grid: Grid) -> void:
-	grid.position.y = grid.dropdownBox.position.y + 24.0
+func updateGridY(grid: Grid) -> void: grid.position.y = grid.dropdownBox.position.y + 24.0
 
 func set_grid_zoom(new_zoom: float):
 	grid_size = Vector2(GRID_SIZE.x*new_zoom,GRID_SIZE.y)
@@ -598,7 +749,8 @@ func addPropertyToGrid(grid: Grid, prop: String):
 	if value == null:
 		Global.show_label_error('Cannot add "'+prop+'" property: missing or undefined type.',1.0,600)
 		return
-	if not typeof(value) in MathHelper.math_types:
+		
+	if not typeof(value) in MathUtils.math_types:
 		Global.show_label_error('Cannot add "'+prop+'" property: property is not a numeric type.',1.0,600)
 		return
 	
@@ -623,10 +775,10 @@ func removeGridProperty(grid: Grid, prop: String):
 	ModchartState.keys_index[grid.object_name].erase(prop)
 	grid.updateSize()
 #endregion
-func updateKeysPositions():
-	for i in grids: for key in grids[i]._keys_created: key.updatePos()
 
 #region Key Setters
+func updateKeysPositions(): for i in grids: for key in grids[i]._keys_created: key.updatePos()
+
 func toggle_key(key: KeyInterpolatorNode, add: bool = is_shift_pressed):
 	if key in keys_selected: unselect_key(key)
 	else: select_key(key,add)
@@ -676,14 +828,11 @@ func add_keys_duration(value: float):
 	
 	if is_duration_different: duration.text = '...'
 
-func set_keys_transition(trans: Tween.TransitionType):
-	for i in keys_selected: i.data.transition = trans
+func set_keys_transition(trans: Tween.TransitionType): for i in keys_selected: i.data.transition = trans
 
-func set_keys_ease(ease: Tween.EaseType):
-	for i in keys_selected: i.data.ease = ease
+func set_keys_ease(ease: Tween.EaseType): for i in keys_selected: i.data.ease = ease
 
-func set_keys_value(value: float):
-	for i in keys_selected: 
+func set_keys_value(value: float): for i in keys_selected: 
 		var key_array = get_keys_grid_from_key(i)
 		var key_index = key_array.find(i.data)
 		var prev_key: KeyInterpolator
@@ -763,12 +912,11 @@ func paste_keys(round_step: bool = !is_shift_pressed):
 	set_song_editor_position(max_time)
 #endregion
 
-
+#region Inputs
 func getMouseXStep(mouse_pos: float, rounded: bool = !is_shift_pressed):
 	mouse_pos /= grid_size.x
 	return roundf(mouse_pos) if !rounded else mouse_pos
 
-#region Inputs
 func dropdown_box_input(event: InputEvent, grid: Grid):
 	if event is InputEventMouseButton:
 		if !event.pressed: return
@@ -792,7 +940,6 @@ func dropdown_box_input(event: InputEvent, grid: Grid):
 
 func grid_input(event: InputEvent, grid: Grid):
 	if not event is InputEventMouseButton: return
-	
 	match event.button_index:
 		1:
 			if event.pressed or is_moving_keys: return
@@ -978,6 +1125,7 @@ class PropertySeparator extends VBoxContainer:
 		update_text()
 	
 	func update_text(): button.text = class_text+(' v' if button.button_pressed else ' >')
+	
 class KeyValue extends TextureButton:
 	func _init() -> void:
 		texture_normal = KeyNormalTexture

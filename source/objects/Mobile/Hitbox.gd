@@ -57,7 +57,7 @@ func _get_touched_hitboxes() -> Array[HitBox]:
 	var hitboxs_array: Array[HitBox] = []
 	for hitbox in hitboxs:
 		for i in touches_positions:
-			if MathHelper.is_pos_in_area(touches_positions[i],hitbox.position,hitbox_offset):
+			if MathUtils.is_pos_in_area(touches_positions[i],hitbox.position,hitbox_offset):
 				hitboxs_array.append(hitbox)
 				break
 	return hitboxs_array

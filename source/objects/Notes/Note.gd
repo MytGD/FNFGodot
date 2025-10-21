@@ -1,15 +1,13 @@
 
 @icon("res://icons/note.svg")
 ##The Note Base Class
-extends "res://source/objects/Sprite/Sprite.gd"
+extends "res://source/objects/Notes/NoteBase.gd"
 
 #region Constants
 const NoteSplash = preload("res://source/objects/Notes/NoteSplash.gd")
-const Note = preload("res://source/objects/Notes/Note.gd")
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 
-const directions: PackedStringArray = ['left','down','up','right']
-const note_colors: PackedStringArray = ['Purple','Blue','Green','Red']
+
 const _rating_string: PackedStringArray = ['marvellous','sick','good','bad','shit']
 
 const _ratings_length: int = 4 #The same as _rating_string.size()
@@ -59,14 +57,6 @@ var strumNote: StrumNote ##Strum Parent that note will follow
 
 
 #region Note Style Variables
-var isPixelNote: bool = false: set = setPixelNote ##Is Pixel Note
-
-var styleData: Dictionary
-var styleName: String: set = setStyleName
-
-var texture: String: set = setTexture ##Note Texture
-var _real_texture: String = ''
-
 var noteSpeed: float = 1.0: set = setNoteSpeed ##Note Speed
 var _real_note_speed: float = 1.0
 
@@ -94,9 +84,6 @@ var multScale: Vector2 = Vector2.ONE
 #endregion
 
 #region General Variables
-var noteColor: StringName = '' ## The color name of this Note.
-var noteData: int = 0: set = setNoteData ##The direction of this Note.
-
 ##The group the note will be added when spawned,
 ##see [method "source/states/StrumState.gd".spawnNote] in his script for more information.[br][br]
 ##[b]Tip:[/b] Is recommend to set this value as a [SpriteGroup]!! 
@@ -141,8 +128,8 @@ var ratingDisabled: bool = false ##Disable Rating. If [code]true[/code], the rat
 
 func _init(data: int = 0) -> void:
 	noteData = data
-	super._init(null,true)
 	_update_note_speed()
+	super._init()
 
 ##Update Note Position
 func updateNote() -> void:
@@ -177,35 +164,6 @@ func resetNote() -> void: ##Reset Note values when spawned.
 	offset = Vector2.ZERO
 	noteSplashData.parent = null
 
-func reloadNote() -> void: ##Reload the Note animation and his texture.
-	animation.clearLibrary()
-	_animOffsets.clear()
-	offset = Vector2.ZERO
-	
-	var dir = directions[noteData]
-	var prefix = styleData.data.get(dir)
-	if prefix:
-		var fps = prefix.get('fps',24.0)
-		animation.addAnimByPrefix('static',prefix.prefix,fps,true)
-	else:
-		image.region_rect.size = imageSize/Vector2(Conductor.keyCount,5)
-		animation.addFrameAnim('static',[noteData + Conductor.keyCount])
-		
-	var note_scale = styleData.get('scale',0.7)
-	setGraphicScale(Vector2(note_scale,note_scale))
-
-func loadFromStyle(noteStyle: String):
-	styleName = noteStyle
-	if !styleData: return
-	
-	isPixelNote = styleData.get('isPixel',false)
-	texture = styleData.assetPath
-	
-	var offsets = styleData.get('offsets')
-	if offsets:
-		offsetX = offsets[0]
-		offsetY = offsets[1]
-
 func killNote() -> void: ##Delete the note from the scene.
 	_is_processing = false
 	kill()
@@ -214,28 +172,18 @@ func _update_note_speed() -> void: _real_note_speed = noteSpeed * 0.45 * multSpe
 
 func _update_splash_data() -> void: noteSplashData.prefix = directions[noteData]+'Splashes'
 
+
+
 #region Setters
-func setPixelNote(isPixel: bool) -> void:
-	antialiasing = !isPixel
-	isPixelNote = isPixel
-
-
-func setTexture(_new_texture: String) -> void:
-	var real_tex = getNoteTexture(_new_texture, isPixelNote)
-	if _real_texture == real_tex: return
-	_real_texture = real_tex
-	texture = _new_texture
+func loadFromStyle(noteStyle: String) -> void:
+	super.loadFromStyle(noteStyle)
+	var offsets = styleData.get('offsets')
+	if offsets:
+		offsetX = offsets[0]
+		offsetY = offsets[1]
 	
-	image.texture = Paths.imageTexture(real_tex)
-	reloadNote()
-
-func setStyleName(_name: String) -> void:
-	styleName = _name
-	styleData = getStyleData(_name)
-
 func setNoteData(_data: int) -> void:
-	noteData = _data
-	noteColor = note_colors[noteData]
+	super.setNoteData(_data)
 	_update_splash_data()
 func setNoteSpeed(_speed: float) -> void:
 	if noteSpeed == _speed: return
@@ -248,13 +196,9 @@ func setMultSpeed(_speed: float):
 	_update_note_speed() 
 #endregion
 
-#region Statics Funcs
-static func getStyleData(style: String): return Paths.loadJson('data/notestyles/'+style).get('notes',{})
-	
-static func getNoteTexture(_texture: String, is_pixel: bool = false) -> String:
-	if !_texture: _texture = 'noteSkins/NOTE_assets'
-	if is_pixel and not _texture.begins_with('pixelUI/'): return 'pixelUI/'+_texture
-	return _texture
+#region Static Funcs
+##Returns the keys to hit the note, depending of the [param keyCount].
+static func getNoteAction(keyCount: int = Conductor.keyCount) -> Array: return key_actions[keyCount]
 
 ##Return the closer note from his [member Note.strumNote]
 static func detectCloseNote(array: Array):
@@ -266,27 +210,4 @@ static func detectCloseNote(array: Array):
 		if absf(i.distance) < absf(closeNote.distance): closeNote = i 
 	return closeNote
 
-##Returns the keys to hit the note, depending of the [param keyCount].
-static func getNoteAction(keyCount: int = Conductor.keyCount) -> Array: return key_actions[keyCount]
-	
-
-##Detect if [param note1] is the same as [param note2].
-static func sameNote(note1: Note, note2: Note) -> bool:
-	return note1 and note2 and \
-	note1.strumTime == note2.strumTime and \
-	note1.noteData == note2.noteData and \
-	note1.mustPress == note2.mustPress and \
-	note1.isSustainNote == note2.isSustainNote and \
-	note1.noteType == note2.noteType
-
-##Returns the note colors, depending of the [param keyCount].
-static func get_note_colors(keyCount: int = Conductor.keyCount) -> PackedStringArray:
-	match keyCount:
-		2: return ['Purple','Red']
-		3: return ['Purple','Blue','Red']
-		5: return ['Purple','Blue','White','Green','Red']
-		6: return ['Purple','Blue','Yellow','Pink','Green','Red']
-		7: return ['Purple','Blue','Yellow','White','Pink','Green','Red']
-		8: return ['Purple','Blue','Green','Red','White','Pink','Green','Red']
-		_: return ['Purple','Blue','Green','Red']
 #endregion

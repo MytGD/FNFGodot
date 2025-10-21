@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://b1a3jlb7iu130"]
+[gd_scene load_steps=3 format=3 uid="uid://b1a3jlb7iu130"]
 
 [ext_resource type="Script" uid="uid://bscbt2dibch22" path="res://scenes/objects/ButtonRange.gd" id="1_238s7"]
+[ext_resource type="Script" uid="uid://50thfspe3s66" path="res://source/objects/UI/LineEditNumber.gd" id="2_eujyj"]
 
 [node name="ButtonRange" type="Label"]
 anchors_preset = -1
@@ -39,6 +40,8 @@ offset_bottom = 27.5
 focus_mode = 1
 text = "0"
 virtual_keyboard_type = 2
+script = ExtResource("2_eujyj")
+characters_allowed = PackedStringArray("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".")
 
 [connection signal="minimum_size_changed" from="." to="." method="_on_minimum_size_changed"]
 [connection signal="button_down" from="ButtonUp" to="." method="addValue"]

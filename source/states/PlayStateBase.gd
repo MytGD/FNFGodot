@@ -1,8 +1,9 @@
 @abstract
-extends "res://source/states/StrumState.gd"
 ##PlayState Base.
+extends "res://source/states/StrumState.gd"
+
 const GDText = preload("res://source/objects/Display/GDText.gd")
-const CameraCanvas = preload("res://source/objects/Display/Camera.gd")
+const CameraCanvas = preload("res://source/objects/Display/Camera/Camera.gd")
 const PauseSubstate = preload("res://source/substates/PauseSubstate.gd")
 const Character = preload("res://source/objects/Sprite/Character.gd")
 const Bar = preload("res://source/objects/UI/Bar.gd")
@@ -14,12 +15,7 @@ const ChartEditorScene = preload("res://scenes/states/Editors/ChartEditor.tscn")
 static var back_state = preload("res://source/states/Menu/ModeSelect.gd")
 var stateLoaded: bool = false #Used in FunkinGD
 
-
-enum IconState{
-	NORMAL,
-	LOSING,
-	WINNING
-}
+enum IconState{NORMAL,LOSING,WINNING}
 
 @export_group('Camera')
 var camHUD: CameraCanvas = CameraCanvas.new()
@@ -29,9 +25,13 @@ var cameraSpeed: float = 1.0
 var zoomSpeed: float = 1.0
 
 var isCameraOnForcedPos: bool = false
-var defaultCamZoom: float = 1.0
+var defaultCamZoom: float = 1.0: set = set_default_zoom
 
 @export_group('Play Options')
+var altSection: bool = false
+
+var health: float: set = set_health
+
 @export var singAnimations: PackedStringArray = ["singLEFT","singDOWN","singUP","singRIGHT"]
 
 ##The amount of beats for the camera to give a "beat" effect.
@@ -45,9 +45,8 @@ var inGameOver: bool = false
 var camZooming: bool = false##If [code]true[/code], the camera make a beat effect every [member bumpStrumBeat] beats and the zoom will back automatically.
 
 #region Scripts
-@export_group('Stage')
-var stageJson: Dictionary = Stage.getStageBase()
 var curStage: StringName = ''
+var stageJson: Dictionary = Stage.getStageBase()
 
 @export_subgroup('Scripts')
 @export var loadScripts: bool = true
@@ -74,28 +73,24 @@ var skipCountdown: bool = false
 
 var hideTimeBar: bool = ClientPrefs.data.timeBarType == "Disabled"
 var timeBarType: StringName = ClientPrefs.data.timeBarType
+
+var _healthBar_State: IconState = IconState.NORMAL
+var healthBar: Bar = Bar.new('healthBar')
+
+var timeBar: Bar
+var timeTxt: GDText
+#region Icons
+const Icon := preload("res://source/objects/UI/Icon.gd")
+var iconP1: Icon = Icon.new()
+var iconP2: Icon = Icon.new()
+var icons: Array[Icon] = [iconP1,iconP2]
+var scoreTxt = GDText.new()
+#endregion
+
 #endregion
 
 
 @export_group('Objects')
-
-const Icon := preload("res://source/objects/UI/Icon.gd")
-
-
-
-var iconP1: Icon = Icon.new()
-var iconP2: Icon = Icon.new()
-var icons: Array[Icon] = [iconP1,iconP2]
-
-var scoreTxt = GDText.new()
-
-var healthBar: Bar = Bar.new('healthBar')
-var health: float: set = set_health
-var _healthBar_State: IconState = IconState.NORMAL
-
-var timeBar: Bar
-var timeTxt: GDText
-
 var pauseState: PauseSubstate
 
 #region Game Options
@@ -116,8 +111,6 @@ var inCutscene: bool = false
 var videoPlayer: VideoStreamPlayer
 
 var introSoundsSuffix: StringName = ''
-
-var altSection: bool = false
 
 func _ready():
 	Global.onSwapTree.connect(destroy)
@@ -213,7 +206,6 @@ func _ready():
 
 func createMobileGUI():
 	super.createMobileGUI()
-	#Pause Button
 	var button = TextureButton.new()
 	button.texture_normal = Paths.imageTexture('mobile/pause_menu')
 	button.scale = Vector2(1.2,1.2)
@@ -226,30 +218,21 @@ func loadCharactersFromData(json: Dictionary = SONG) -> void:
 	changeCharacter(0,json.get('player1','bf'))
 	changeCharacter(1,json.get('player2','bf'))
 
-
 func _process(delta: float) -> void:
 	if camZooming: camHUD.zoom = lerpf(camHUD.zoom,camHUD.defaultZoom,delta*3*zoomSpeed)
 	
-	#Count Down
-	if Conductor.songPosition < 0:
-		Conductor.songPosition += delta * 1000.0
-		if Conductor.songPosition >= 0: startSong()
+	_check_count_down_pos(delta)
 	
 	FunkinGD.callOnScripts('onUpdate',[delta])
 	updateTimeBar()
 	
 	super._process(delta)
 	
-	
 	#Update Icons Positions
-	for icon in icons: updateIconPos(icon)
-	
-	FunkinGD.callOnScripts('onUpdatePost',[delta])
-	
-	
+	for icon in icons: updateIconPos(icon)	
 	#Skip Cutscene
 	if inCutscene and videoPlayer and skipCutscene and Input.is_action_just_pressed('ui_accept'): skipVideo()
-
+	FunkinGD.callOnScripts('onUpdatePost',[delta])
 #region Gui
 func updateTimeBar() -> void:
 	if !timeBar: return
@@ -266,45 +249,11 @@ func updateTimeBar() -> void:
 	songMinutes = str(songMinutes)
 	songSeconds = str(songSeconds)
 	if songMinutes.length() <= 1: songMinutes = '0'+songMinutes
-	
 	if songSeconds.length() <= 1: songSeconds = '0'+songSeconds
-	
 	
 	timeTxt.text = songMinutes+':'+songSeconds
 
 #region Icon Methods
-func updateIconPos(icon: Icon) -> void:
-	var icon_pos: Vector2 
-	if icon.flipX: icon_pos = healthBar.get_process_position(healthBar.progress - 0.03)
-	else: icon_pos = healthBar.get_process_position(healthBar.progress)
-	icon._position = icon_pos + healthBar.position - icon.pivot_offset
-
-func updateIconsPivot() -> void:
-	var angle = healthBar.rotation
-	if angle:
-		for i in icons:
-			if i.flipX: 
-				i.pivot_offset = Vector2(
-					lerpf(i.image.pivot_offset.x,0,cos(angle)),
-					lerpf(i.image.pivot_offset.y,0,sin(angle))
-				)
-			else: 
-				i.pivot_offset = Vector2(
-					lerpf(i.image.pivot_offset.x,0,cos(angle)),
-					lerpf(0,i.image.pivot_offset.y*2.0,sin(angle))
-				)
-	else:
-		for i in icons:
-			if i.flipX: i.pivot_offset = Vector2(0,i.image.pivot_offset.y)
-			else: i.pivot_offset = Vector2(i.image.pivot_offset.x*2.0,i.image.pivot_offset.y)
-#endregion
-#endregion
-
-#region Beat Methods
-func iconBeat() -> void:
-	if !can_process(): return #Do not beat if the game is not being processed.
-	for i in icons: i.scale += i.beat_value
-
 func updateIconsImage(state: IconState):
 	match state:
 		IconState.NORMAL:
@@ -319,6 +268,29 @@ func updateIconsImage(state: IconState):
 			else: iconP1.animation.play('normal')
 			iconP2.animation.play('losing')
 
+
+func updateIconPos(icon: Icon) -> void:
+	var icon_pos: Vector2 
+	if icon.flipX: icon_pos = healthBar.get_process_position(healthBar.progress - 0.03)
+	else: icon_pos = healthBar.get_process_position(healthBar.progress)
+	icon._position = icon_pos + healthBar.position - icon.pivot_offset
+
+func updateIconsPivot() -> void: for i in icons: _update_icon_pivot(i,healthBar.rotation)
+
+func _update_icon_pivot(icon: Icon,angle: float):
+	var pivot = icon.image.pivot_offset
+	if !angle:
+		icon.pivot_offset = Vector2(0,pivot.y) if icon.flipX else Vector2(pivot.x*2.0,pivot.y)
+		return
+	icon.pivot_offset = Vector2(lerpf(pivot.x*2.0,0,cos(angle)),lerpf(pivot.y,0,sin(angle))) if icon.flipX else Vector2(lerpf(0,pivot.x,cos(angle)),lerpf(0,pivot.y*2.0,sin(angle)))
+#endregion
+
+#endregion
+
+#region Beat Methods
+func iconBeat() -> void:
+	if !can_process(): return #Do not beat if the game is not being processed.
+	for i in icons: i.scale += i.beat_value
 ##Do screen beat effect.
 #Replaced in states/PlayState.
 func screenBeat() -> void: camHUD.zoom += 0.03
@@ -331,15 +303,16 @@ func onBeatHit(beat: int = Conductor.beat) -> void:
 #endregion
 
 #region Note Methods
+func createSplash(note) -> NoteSplash:
+	var splash = super.createSplash(note)
+	FunkinGD.callOnScripts('onSplashCreate',[splash])
+	return splash
+
 func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
 	var strum = super.createStrum(i,opponent_strum,pos)
 	FunkinGD.callOnScripts('onLoadStrum',[strum,opponent_strum])
 	return strum
 
-func createSplash(note) -> NoteSplash:
-	var splash = super.createSplash(note)
-	FunkinGD.callOnScripts('onSplashCreate',[splash])
-	return splash
 	
 func spawnNote(note):
 	super.spawnNote(note)
@@ -530,18 +503,17 @@ func endSound() -> void:
 	if FunkinGD.Function_Stop in results or !canExitSong: return
 	exitingSong = true
 	canPause = false
-	if isStoryMode and story_song_notes:
-		loadNextSong()
+	if isStoryMode and story_song_notes: loadNextSong()
 	elif back_state: Global.swapTree(back_state.new(),true)
 
 func loadNextSong():
 	var newSong = story_songs[0]
 	story_songs.remove_at(0)
-	if !story_song_notes.has(newSong):
-		newSong = loadSong()
+	if !story_song_notes.has(newSong): newSong = loadSong()
+
 func countDownTick(beat: int) -> void:
 	if beat > 0: return
-	elif beat == 0: startSong(); return
+	elif !beat: startSong(); return
 	
 	var tick: int = countSounds.size() - absi(beat)
 	if tick < 0 or tick >= countSounds.size(): return
@@ -552,24 +524,31 @@ func countDownTick(beat: int) -> void:
 	
 	if !countDownEnabled or !countDownImages[tick]: return
 	
+	var sprite = _create_countdown_sprite(countDownImages[tick])
+	if !sprite.texture: return
+	
+	camHUD.add(sprite)
+
+func _check_count_down_pos(delta: float) -> void:
+	if Conductor.songPosition >= 0: return
+	Conductor.songPosition += delta * 1000.0
+	if Conductor.songPosition >= 0: startSong()
+
+func _create_countdown_sprite(sprite_name: String, is_pixel: bool = isPixelStage) -> Sprite2D:
 	var sprite = Sprite2D.new()
-	if isPixelStage:
-		sprite.texture = Paths.imageTexture('ui/countdown/pixel/'+countDownImages[tick])
+	if is_pixel:
+		sprite.texture = Paths.imageTexture('ui/countdown/pixel/'+sprite_name)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.scale = Vector2(6,6)
 	else:
-		sprite.texture = Paths.imageTexture('ui/countdown/funkin/'+countDownImages[tick])
+		sprite.texture = Paths.imageTexture('ui/countdown/funkin/'+sprite_name)
 		sprite.scale = Vector2(0.7,0.7)
 	
-	if !sprite.texture: return
 	sprite.position = ScreenUtils.screenSize/2.0
-	
-	var tween = create_tween()
+	var tween = sprite.create_tween()
 	tween.tween_property(sprite,'modulate:a',0.0,Conductor.stepCrochet*0.004)
 	tween.tween_callback(sprite.queue_free)
-	camHUD.add(sprite)
-	
-	
+	return sprite
 
 ##Called when the game gonna restart the song
 func reloadPlayState():
@@ -579,8 +558,7 @@ func reloadPlayState():
 	
 	Global.onSwapTree.disconnect(destroy)
 	Global.onSwapTree.connect(func():
-		for vars in ['seenCutscene','playAsOpponent']: 
-			state[vars] = get(vars)
+		for vars in ['seenCutscene','playAsOpponent']: state[vars] = get(vars)
 		destroy(false)
 	)
 #endregion
@@ -629,14 +607,12 @@ func startVideo(path: Variant, isCutscene: bool = true) -> VideoStreamPlayer:
 		var video_scale = minf(video_div.x,video_div.y)
 		videoPlayer.scale = Vector2(video_scale,video_scale)
 	)
-	
 	return videoPlayer
 
 func skipVideo() -> void:
 	if !videoPlayer: return
 	FunkinGD.callOnScripts('onSkipCutscene')
 	videoPlayer.finished.emit()
-	
 #endregion
 
 func _unhandled_input(event: InputEvent):
@@ -655,8 +631,8 @@ func destroy(absolute: bool = true):
 	stageJson.clear()
 	
 	if absolute: _events_preload.clear()
-	
 	if exitingSong: ChartEditor.reset_values()
+	
 	Paths.extraDirectory = ''
 	
 	camHUD.removeFilters()
@@ -687,7 +663,7 @@ func updateScore():
 func onSectionHit(sec: int = Conductor.section) -> void:
 	if sec < 0: return
 	
-	var sectionData = ArrayHelper.get_array_index(SONG.get('notes',[]),sec)
+	var sectionData = ArrayUtils.get_array_index(SONG.get('notes',[]),sec)
 	if !sectionData: return
 	
 	mustHitSection = !!sectionData.get('mustHitSection')
@@ -697,9 +673,7 @@ func onSectionHit(sec: int = Conductor.section) -> void:
 	FunkinGD.gfSection = gfSection
 	FunkinGD.altAnim = altSection
 	
-func detectSection() -> StringName:
-	if gfSection: return 'gf'
-	return 'boyfriend' if mustHitSection else 'dad'
+func detectSection() -> String: return 'gf' if gfSection else ('boyfriend' if mustHitSection else 'dad')
 #endregion
 
 #region Character Methods
@@ -708,9 +682,8 @@ func changeCharacter(_t: int = 0, _character: StringName = 'bf') -> Object:
 	updateIconsImage(_healthBar_State)
 	return
 
-func onSectionHitOnce():
-	if !isCameraOnForcedPos: moveCamera(detectSection())
-	
+func onSectionHitOnce(): if !isCameraOnForcedPos: moveCamera(detectSection())
+
 static func get_character_type_name(type: int) -> StringName:
 	match type:
 		1: return 'dad'
@@ -718,17 +691,15 @@ static func get_character_type_name(type: int) -> StringName:
 		_: return 'boyfriend'
 
 
-func addCharacterToList(_type,_character) -> Node:return null #Replaced in PlayState and PlayState3D
+@abstract func addCharacterToList(_type,_character) #Replaced in PlayState and PlayState3D
 
-func moveCamera(target: StringName = 'boyfriend') -> void:
-	FunkinGD.callOnScripts('onMoveCamera',[target])
+func moveCamera(target: StringName = 'boyfriend') -> void: FunkinGD.callOnScripts('onMoveCamera',[target])
 #endregion
 
 
 #region Stage Methods
 func loadStage(stage: StringName, loadScript: bool = loadStageScript):
 	if curStage == stage: return
-	#Remove old stage script
 	FunkinGD.removeScript('stages/'+curStage)
 	FunkinGD.curStage = stage
 	curStage = stage
@@ -736,19 +707,15 @@ func loadStage(stage: StringName, loadScript: bool = loadStageScript):
 	stageJson = Stage.loadStage(stage)
 	isPixelStage = stageJson.isPixelStage
 	
-	if loadScript: 
-		FunkinGD.addScript('stages/'+stage)
-		Stage.loadSprites()
-	
+	if loadScript: FunkinGD.addScript('stages/'+stage); Stage.loadSprites()
 #endregion
-
-
 
 #region Combo Methods
 func createCombo(rating: String) -> Combo:
 	var combo = super.createCombo(rating)
 	if combo: FunkinGD.callOnScripts('onComboCreated',[combo,rating])
 	return combo
+#endregion
 
 #region General Methods
 func get_hud_elements() -> Array[Node]:
@@ -762,21 +729,14 @@ func seek_to(time: float, kill_notes: bool = true):
 
 
 #region Game Over Methods
-func gameOver():
-	FunkinGD.inGameOver = true
-	inGameOver = true
-	pauseSong(false)
+func gameOver() -> void: FunkinGD.inGameOver = true; inGameOver = true; pauseSong(false)
 
 func isGameOverEnabled() -> bool:
-	return canGameOver and health < 0.0 \
-			and not inGameOver\
-			and not FunkinGD.Function_Stop in FunkinGD.callOnScripts('onGameOver',[],true)
+	return canGameOver and health < 0.0 and not inGameOver and\
+		not FunkinGD.Function_Stop in FunkinGD.callOnScripts('onGameOver',[],true)
 
-func clear():
-	super.clear()
-	camHUD.removeFilters()
-	camOther.removeFilters()
-	
+func clear() -> void: super.clear(); camHUD.removeFilters(); camOther.removeFilters()
+
 static func _reset_values():
 	super._reset_values()
 	_events_preload.clear()
@@ -785,9 +745,9 @@ static func _reset_values():
 #endregion
 
 #region Health Methods
-func set_health(value: float):
-	value = clamp(value,-1.0,2.0)
-	#if health == value: return
+func set_health(value: float) -> void:
+	value = clampf(value,-1.0,2.0)
+	if health == value: return
 	health = value
 	
 	if isGameOverEnabled(): gameOver(); return
@@ -800,9 +760,9 @@ func set_health(value: float):
 	elif progress_h <= 0.3: bar_state = IconState.LOSING
 	else: bar_state = IconState.NORMAL
 	
-	if bar_state != _healthBar_State:
-		_healthBar_State = bar_state
-		updateIconsImage(bar_state)
+	if bar_state == _healthBar_State: return
+	_healthBar_State = bar_state
+	updateIconsImage(bar_state)
 
 ##Set HealthBar angle(in degrees). See also [method @GlobalScope.rad_to_deg]
 func setHealthBarAngle(angle: float):
@@ -811,12 +771,27 @@ func setHealthBarAngle(angle: float):
 #endregion
 
 #region Setters
+func set_default_zoom(value: float) -> void: defaultCamZoom = value;
+
 func _set_hide_hud(hide: bool):
 	hideHud = false
 	for i in get_hud_elements(): if i: i.visible = !hide
 	hideHud = hide
-	
+
 func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
 	healthBar.flip = !isOpponent
 	super._set_play_opponent(isOpponent)
+	
+
 #endregion
+
+func _property_can_revert(property: StringName) -> bool:
+	match property:
+		'defaultCamZoom','cameraSpeed': return true
+	return false
+func _property_get_revert(property: StringName) -> Variant:
+	match property:
+		'defaultCamZoom': return Stage.json.get('cameraZoom',1.0)
+		'cameraSpeed': return Stage.json.get('cameraSpeed',1.0)
+		'health': return 1.0
+	return null

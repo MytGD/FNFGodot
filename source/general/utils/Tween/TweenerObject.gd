@@ -49,7 +49,7 @@ func tween_property(property: String, to: Variant) -> void: ##Tween the [member 
 	var prop = property
 	if object is ShaderMaterial: 
 		init_val = object.get_shader_parameter(property)
-		if init_val == null: init_val = MathHelper.get_new_value(typeof(to))
+		if init_val == null: init_val = MathUtils.get_new_value(typeof(to))
 	else:
 		if property.contains(':'): prop = NodePath(property); init_val = object.get_indexed(prop)
 		else: init_val = object.get(prop)

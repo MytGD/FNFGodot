@@ -1,13 +1,16 @@
-[gd_scene load_steps=14 format=3 uid="uid://dgigti34bmg6s"]
+[gd_scene load_steps=21 format=3 uid="uid://dgigti34bmg6s"]
 
 [ext_resource type="Script" uid="uid://blf6ig37np2mt" path="res://source/states/Modchart/Editor/ModchartEditor.gd" id="1_2kx6s"]
 [ext_resource type="Texture2D" uid="uid://dshtfnk38km3v" path="res://icons/Object.svg" id="1_vxf07"]
 [ext_resource type="Script" uid="uid://cg2ig10imhwri" path="res://source/states/PlayState.gd" id="2_2kx6s"]
+[ext_resource type="Texture2D" uid="uid://cggfq2j244bhe" path="res://icons/ArrowDown.svg" id="3_3fulc"]
 [ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_c5smy"]
 [ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/Shader.svg" id="3_n2vt6"]
 [ext_resource type="Script" uid="uid://du1rbf6kg1jmr" path="res://source/states/Modchart/Editor/Explorer.gd" id="3_rhtdg"]
 [ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="5_n2vt6"]
 [ext_resource type="Script" uid="uid://bwuthavuunu4c" path="res://source/states/Modchart/Editor/Timeline.gd" id="7_rhtdg"]
+[ext_resource type="Script" uid="uid://cvvli26q7wviq" path="res://source/general/popup/PopupDir.gd" id="9_xr4tk"]
+[ext_resource type="Texture2D" uid="uid://cdbm117l1dtf" path="res://icons/Keyboard.svg" id="11_x5qun"]
 
 [sub_resource type="GDScript" id="GDScript_rhtdg"]
 resource_name = "ExplorerIcons"
@@ -15,12 +18,8 @@ script/source = "@tool
 extends TabContainer
 func _ready():
 	set_tab_icon(0,load(\"res://icons/Panels2.svg\"))
-	set_tab_icon(1,load(\"res://icons/Keyboard.svg\"))
 	if !Engine.is_editor_hint(): set_script(null)
 "
-
-[sub_resource type="LabelSettings" id="LabelSettings_rhtdg"]
-font_size = 14
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_vxf07"]
 viewport_path = NodePath("SubViewport")
@@ -45,10 +44,53 @@ func _ready() -> void:
 	add_item('Delete')
 "
 
+[sub_resource type="GDScript" id="GDScript_3fulc"]
+resource_name = "KeyOptions"
+script/source = "extends PopupMenu
+
+func _ready():
+	add_submenu_node_item('Transitions',$Transitions)
+	add_submenu_node_item('Easing',$Easings)
+	add_item('Delete')
+"
+
+[sub_resource type="GDScript" id="GDScript_x5qun"]
+resource_name = "KeyTransitions"
+script/source = "extends PopupMenu
+func _ready() -> void:
+	for i in TweenService.transitions: add_item(i)
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[sub_resource type="GDScript" id="GDScript_mbk3t"]
+resource_name = "Easings"
+script/source = "extends PopupMenu
+
+func _ready():
+	for i in TweenService.easings: add_item(i)
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[sub_resource type="GDScript" id="GDScript_oop0l"]
+resource_name = "HelpOptions"
+script/source = "extends PopupMenu
+
+
+func _on_index_pressed(index: int) -> void:
+	match index:
+		0: $\"../ShortCuts\".visible = true;
+"
+
+[sub_resource type="LabelSettings" id="LabelSettings_rhtdg"]
+font_size = 14
+
 [node name="Modchart" type="Node"]
 script = ExtResource("1_2kx6s")
 
 [node name="SubViewport" type="SubViewport" parent="."]
+snap_2d_transforms_to_pixel = true
+snap_2d_vertices_to_pixel = true
+gui_disable_input = true
 size = Vector2i(1280, 720)
 
 [node name="PlayState" type="Node" parent="SubViewport"]
@@ -59,10 +101,19 @@ canGameOver = false
 loadScripts = false
 loadSongScript = false
 countDownEnabled = false
+song_folder = "test"
+song_json_file = "test"
 botplay = true
 showCombo = false
 showRating = false
 showComboNum = false
+
+[node name="ObjectSelected" type="Sprite2D" parent="SubViewport"]
+visible = false
+position = Vector2(60, 60)
+rotation = -0.7853982
+scale = Vector2(0.99999994, 0.99999994)
+texture = ExtResource("3_3fulc")
 
 [node name="Panel" type="Panel" parent="."]
 offset_right = 1282.0
@@ -71,7 +122,7 @@ size_flags_horizontal = 3
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Panel"]
 layout_mode = 0
-offset_right = 268.0
+offset_right = 367.0
 offset_bottom = 31.0
 
 [node name="Modchart" type="Button" parent="Panel/HBoxContainer"]
@@ -94,6 +145,12 @@ focus_mode = 0
 text = "| Edit |"
 flat = true
 
+[node name="Help" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+focus_mode = 0
+text = "Help |"
+flat = true
+
 [node name="VSplit" type="VSplitContainer" parent="."]
 offset_top = 30.0
 offset_right = 1282.0
@@ -102,7 +159,7 @@ split_offset = 520
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit"]
 layout_mode = 2
-split_offset = 300
+split_offset = 200
 
 [node name="PanelContainer" type="TabContainer" parent="VSplit/HSplit"]
 clip_contents = true
@@ -139,45 +196,9 @@ grow_vertical = 2
 script = ExtResource("3_rhtdg")
 object = NodePath("../../../../../../SubViewport/PlayState")
 
-[node name="ShortCuts" type="Panel" parent="VSplit/HSplit/PanelContainer"]
-visible = false
-clip_contents = true
-layout_mode = 2
-metadata/_tab_index = 1
-
-[node name="BG" type="Panel" parent="VSplit/HSplit/PanelContainer/ShortCuts"]
-self_modulate = Color(0.017732391, 0.017732391, 0.01773239, 1)
-clip_contents = true
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.98700005
-anchor_bottom = 0.994
-offset_left = 4.0
-offset_top = 4.0
-offset_right = -0.1000061
-offset_bottom = -0.018005371
-
-[node name="Label" type="Label" parent="VSplit/HSplit/PanelContainer/ShortCuts/BG"]
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 1.0
-anchor_bottom = 0.92200005
-offset_left = -0.5
-offset_top = 5.0
-offset_right = 0.5
-offset_bottom = 0.2199707
-grow_horizontal = 2
-text = "KEY_LEFT = Move Keys One Step Back
-KEY_RIGHT = Move Keys One Step Front
-
-Ctrl+C = Copy Keys Selected
-Ctrl+V = Paste Keys"
-label_settings = SubResource("LabelSettings_rhtdg")
-autowrap_mode = 2
-
 [node name="HSplit" type="HSplitContainer" parent="VSplit/HSplit"]
 layout_mode = 2
-split_offset = 600
+split_offset = 650
 
 [node name="TextureRect" type="TextureRect" parent="VSplit/HSplit/HSplit"]
 layout_mode = 2
@@ -244,7 +265,7 @@ offset_bottom = -0.018005371
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 13
 
 [node name="Key" type="VBoxContainer" parent="VSplit/HSplit/HSplit/Property"]
 visible = false
@@ -446,6 +467,7 @@ offset_top = 52.0
 offset_right = 279.0
 offset_bottom = 73.0
 flat = false
+script = ExtResource("9_xr4tk")
 
 [node name="SelectShader" type="Button" parent="ShaderTab"]
 layout_mode = 0
@@ -503,9 +525,14 @@ oversampling_override = 1.0
 oversampling_override = 1.0
 initial_position = 1
 size = Vector2i(77, 27)
-item_count = 1
-item_0/text = "Delete"
-item_0/id = 0
+script = SubResource("GDScript_3fulc")
+
+[node name="Transitions" type="PopupMenu" parent="KeyOptions"]
+oversampling_override = 1.0
+script = SubResource("GDScript_x5qun")
+
+[node name="Easings" type="PopupMenu" parent="KeyOptions"]
+script = SubResource("GDScript_mbk3t")
 
 [node name="ModchartOptions" type="PopupMenu" parent="."]
 oversampling_override = 1.0
@@ -525,12 +552,44 @@ item_count = 1
 item_0/text = "Load from Song Data"
 item_0/id = 0
 
-[node name="HSlider" type="HSlider" parent="."]
-offset_right = 8.0
-offset_bottom = 16.0
+[node name="HelpOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+position = Vector2i(260, 30)
+size = Vector2i(121, 100)
+item_count = 1
+item_0/text = "ShortCuts"
+item_0/icon = ExtResource("11_x5qun")
+item_0/id = 0
+script = SubResource("GDScript_oop0l")
+
+[node name="ShortCuts" type="PopupPanel" parent="."]
+oversampling_override = 1.0
+title = "ShortCuts"
+position = Vector2i(400, 100)
+size = Vector2i(328, 300)
+wrap_controls = false
+borderless = false
+
+[node name="ScrollContainer" type="ScrollContainer" parent="ShortCuts"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 324.0
+offset_bottom = 296.0
+horizontal_scroll_mode = 0
+
+[node name="Label" type="Label" parent="ShortCuts/ScrollContainer"]
+layout_mode = 2
+text = "============Keys ShortCuts=============
+KEY_LEFT = Move Keys One Step Back
+KEY_RIGHT = Move Keys One Step Front
+
+Ctrl+C = Copy Keys Selected
+Ctrl+V = Paste Keys"
+label_settings = SubResource("LabelSettings_rhtdg")
 
 [connection signal="pressed" from="Panel/HBoxContainer/Modchart" to="ModchartOptions" method="show"]
 [connection signal="pressed" from="Panel/HBoxContainer/Song" to="SongOptions" method="show"]
+[connection signal="pressed" from="Panel/HBoxContainer/Help" to="HelpOptions" method="show"]
 [connection signal="on_button_selected" from="VSplit/HSplit/PanelContainer/Explorator/ColorRect/Explorer" to="." method="_on_explorer_button_selected"]
 [connection signal="value_added" from="VSplit/HSplit/HSplit/Property/Key/Duration" to="." method="add_keys_duration"]
 [connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="grab_focus"]
@@ -553,3 +612,4 @@ offset_bottom = 16.0
 [connection signal="index_pressed" from="KeyOptions" to="." method="key_options_menu_pressed"]
 [connection signal="index_pressed" from="ModchartOptions" to="." method="_on_modchart_options_index_selected"]
 [connection signal="index_pressed" from="SongOptions" to="." method="_on_song_options_index_selected"]
+[connection signal="index_pressed" from="HelpOptions" to="HelpOptions" method="_on_index_pressed"]

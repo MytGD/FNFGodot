@@ -1,4 +1,4 @@
-class_name DictionaryHelper
+class_name DictionaryUtils
 
 static func merge_existing(dic: Dictionary, to: Dictionary) -> Dictionary:
 	for i in dic:

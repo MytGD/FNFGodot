@@ -168,7 +168,7 @@ func _process(delta) -> void:
 	if !specialAnim and animation.curAnim.name.begins_with('sing'):
 		if holdTimer < _real_hold_limit:
 			holdTimer += delta
-		elif returnDance and (autoDance or !InputHelper.is_any_actions_pressed(Note.getNoteAction())):
+		elif returnDance and (autoDance or !InputUtils.is_any_actions_pressed(Note.getNoteAction())):
 			dance()
 	
 	if heyTimer:
@@ -324,7 +324,7 @@ static func _convert_psych_to_original(json: Dictionary):
 		for i in anims:
 			var anim = getAnimBaseData()
 			
-			DictionaryHelper.merge_existing(anim,i)
+			DictionaryUtils.merge_existing(anim,i)
 			if i.has('indices'): anim.frameIndices = i.indices
 			if i.has('loop'): anim.looped = i.loop
 			if i.has('anim'):  anim.name = i.anim; if i.has('name'): anim.prefix = i.name
@@ -345,9 +345,15 @@ static func _convert_psych_to_original(json: Dictionary):
 	new_json.camera_position = json.get('camera_position',[0,0])
 	new_json.scale = json.get('scale',1.0)
 	
-	DictionaryHelper.merge_existing(new_json,json)
+	DictionaryUtils.merge_existing(new_json,json)
 	return new_json
 
+
+func _property_get_revert(property: StringName) -> Variant: #Used in ModchartEditor
+	match property:
+		'scale': return Vector2(jsonScale,jsonScale)
+	return super._property_get_revert(property)
+	
 static func getCharacterBaseData() -> Dictionary: ##Returns a base to character data.
 	return {
 		"animations": [],

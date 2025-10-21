@@ -13,7 +13,6 @@ static var is_system_case_sensitive: bool = curDevice in ['macOS','Linux',"FreeB
 
 #region Paths
 static var exePath: StringName = get_exe_path()
-static var _exe_dir: DirAccess
 static var replace_paths: PackedStringArray = [exePath+'/','assets/mods','assets/','mods/']
 #endregion
 
@@ -102,26 +101,22 @@ static func get_exe_path() -> String:
 
 static func _init() -> void:
 	if is_on_mobile: OS.request_permissions()
-	_exe_dir = get_dir(exePath)
 	_detect_mods()
 	modsEnabled = getRunningMods()
 	updateDirectories()
-	
-	
 
 static func detectFileFolder(path: String, case_sensive: bool = false) -> String:
 	var path_cache = _files_directories_cache.get(path)
 	if path_cache: return path_cache
 	if case_sensive: return _detect_file_folder_case_sensive(path)
 	
-	if _exe_dir.file_exists(path): 
-		_files_directories_cache[path] = exePath+'/'+path
+	if FileAccess.file_exists(path): 
+		_files_directories_cache[path] = path
 		return path
 	
 	for d in dirsToSearch:
 		var curPath: String = d+path
-		if _exe_dir.file_exists(curPath):
-			curPath = exePath+'/'+curPath
+		if FileAccess.file_exists(curPath):
 			_files_directories_cache[path] = curPath
 			return curPath
 	return ''
@@ -446,7 +441,7 @@ static func loadShaderCodeAbsolute(absolute_path: String) -> Shader:
 	shader = Shader.new()
 	var shader_code = FileAccess.get_file_as_string(absolute_path) 
 	shader.resource_name = absolute_path.get_file().get_basename()
-	shader.code = ShaderHelper.fragToGd(shader_code) if absolute_path.ends_with('.frag') else shader_code
+	shader.code = ShaderUtils.fragToGd(shader_code) if absolute_path.ends_with('.frag') else shader_code
 	shadersCodes[absolute_path] = shader
 	return shader
 #endregion
@@ -461,13 +456,10 @@ static func updateDirectories(): ##Update the folders that the [method detectFil
 		var searchIn = modsFounded
 		if !searchAllMods: searchIn = getRunningMods()
 		
-		#for i in searchIn: new_dirs.append(exePath+'/mods/'+i+'/')
-		#new_dirs.append(exePath+'/mods/')
-		for i in searchIn: new_dirs.append('mods/'+i+'/')
-		new_dirs.append('mods/')
+		for i in searchIn: new_dirs.append(exePath+'/mods/'+i+'/')
+		new_dirs.append(exePath+'/mods/')
 	
-	#new_dirs.append(exePath+'/assets/')
-	new_dirs.append('assets/')
+	new_dirs.append(exePath+'/assets/')
 	new_dirs.append('res://assets/')
 	
 	for i in new_dirs: 
@@ -489,12 +481,9 @@ static func clearDirsCache(): _files_directories_cache.clear(); _dir_exists_cach
 static func getFilesAt(folder: String, return_folder: bool = false, filters: Variant = '', with_extension: bool = false) -> PackedStringArray:
 	var files: PackedStringArray = PackedStringArray()
 
-	if folder.ends_with('/'): folder = folder.left(-1)
+	#if folder.ends_with('/'): folder = folder.left(-1)
 	
-	if filters and filters is String:
-		if filters.begins_with('.'): filters = PackedStringArray([filters.right(-1)])
-		else: filters = PackedStringArray([filters])
-	
+	if filters and filters is String: filters = PackedStringArray([filters])
 	for i in dirsToSearch:
 		files.append_array(getFilesAtAbsolute(i+folder,return_folder,filters,with_extension))
 	
@@ -509,7 +498,7 @@ static func getFilesAtAbsolute(
 	if filters and filters is String:
 		if filters.begins_with('.'): filters = PackedStringArray([filters.right(-1)])
 		else: filters = PackedStringArray([filters])
-	if !dir_exists(folder):  return PackedStringArray()
+	if !dir_exists(folder):   return PackedStringArray()
 	return _getFilesNoCheck(folder,return_folder,filters,with_extension)
 
 static func _getFilesNoCheck(

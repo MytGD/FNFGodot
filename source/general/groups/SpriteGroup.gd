@@ -91,9 +91,10 @@ func insert(at: int, node: Node) -> void:
 	move_child(node,min(at,get_child_count()-1))
 	
 func replace_at(at: int, node: Node):
-	if ArrayHelper.array_has_index(members,at):
+	if ArrayUtils.array_has_index(members,at):
 		remove_at(at)
 	insert(at,node)
+
 ##Remove [Node] from the group.
 func remove(node: Object) -> void:
 	if !node or not node in members:
@@ -113,7 +114,11 @@ func remove_at(index: int) -> void:
 		return
 	if node is Node and node.is_inside_tree():
 		node.reparent(get_parent(),false)
-	
+
+##Queues all members of this group. See also [method Node.queue_free].
+func queue_free_members():
+	for i in members: i.queue_free()
+	members.clear()
 func _add_member_position(member: Node,_x: float = x, _y: float = y) -> void:
 	if member is Sprite:
 		member._position += Vector2(_x,_y)

@@ -1,5 +1,5 @@
 extends Node
-const TRANSITION = preload("res://source/general/Transition.gd")
+const TRANSITION = preload("res://source/objects/Display/Transition.gd")
 signal onSwapTree
 
 static var scene: Node

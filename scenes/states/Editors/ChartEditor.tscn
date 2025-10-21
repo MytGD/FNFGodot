@@ -1,19 +1,49 @@
-[gd_scene load_steps=3 format=3 uid="uid://eonsf5cks44n"]
+[gd_scene load_steps=6 format=3 uid="uid://eonsf5cks44n"]
 
 [ext_resource type="Script" uid="uid://cigpxll0rg8br" path="res://source/states/ChartEditor/ChartEditor.gd" id="1_twph6"]
 [ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="2_p8wo6"]
+[ext_resource type="Script" uid="uid://cvvli26q7wviq" path="res://source/general/popup/PopupDir.gd" id="3_nkmqi"]
+[ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="4_4ubu6"]
 
-[node name="Charter" type="Node2D"]
+[sub_resource type="GDScript" id="GDScript_4ubu6"]
+resource_name = "StagePop"
+script/source = "extends MenuButton
+
+func _ready() -> void:
+	var last_mod: String = ''
+	var popup = get_popup()
+	for i in Paths.getFilesAt('stages',true,'.json'):
+		var mod = Paths.getModFolder(i)
+		if !mod: mod = Paths.game_name
+		if last_mod != mod:
+			popup.add_separator(mod)
+			last_mod = mod
+		popup.add_item(i.get_file())
+	popup.min_size.x = max(popup.size.x,Paths.game_name.length()*15)
+	
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[node name="Charter" type="Node"]
 script = ExtResource("1_twph6")
 song_json = &"test"
+
+[node name="ChessControl" type="Node2D" parent="."]
+
+[node name="MouseRect" type="Node2D" parent="ChessControl"]
+modulate = Color(1, 1, 1, 0)
+position = Vector2(22, 120)
+scale = Vector2(30, 30)
+script = ExtResource("4_4ubu6")
+metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
 
 [node name="TabContainer" type="TabContainer" parent="."]
 self_modulate = Color(1, 1, 1, 0.470588)
 offset_left = 737.0
 offset_top = 257.0
 offset_right = 1279.0
-offset_bottom = 720.0
-current_tab = 3
+offset_bottom = 721.0
+current_tab = 2
 clip_tabs = false
 tab_focus_mode = 0
 
@@ -82,10 +112,12 @@ text = "Erase Section"
 [node name="SectionCopyOffset" parent="TabContainer/Section" instance=ExtResource("2_p8wo6")]
 custom_minimum_size = Vector2(378, 40)
 layout_mode = 0
-offset_left = 7.0
-offset_top = 173.0
-offset_right = 385.0
-offset_bottom = 213.0
+anchors_preset = 0
+anchor_bottom = 0.0
+offset_left = 6.0
+offset_top = 179.0
+offset_right = 384.0
+offset_bottom = 219.0
 text = "Section Copy Offset:"
 value = 1.0
 int_value = true
@@ -101,10 +133,10 @@ text = "Copy Last Section"
 
 [node name="ChangeBPM" type="CheckBox" parent="TabContainer/Section"]
 layout_mode = 0
-offset_left = 274.0
-offset_top = 96.0
-offset_right = 404.0
-offset_bottom = 127.0
+offset_left = 270.0
+offset_top = 99.0
+offset_right = 400.0
+offset_bottom = 130.0
 tooltip_text = "Change the bpm starting  from this section."
 focus_mode = 0
 text = "Change BPM"
@@ -112,10 +144,12 @@ text = "Change BPM"
 [node name="NewBPM" parent="TabContainer/Section" instance=ExtResource("2_p8wo6")]
 custom_minimum_size = Vector2(265, 40)
 layout_mode = 0
-offset_left = 9.0
-offset_top = 91.0
-offset_right = 274.0
-offset_bottom = 131.0
+anchors_preset = 0
+anchor_bottom = 0.0
+offset_left = 8.0
+offset_top = 94.0
+offset_right = 273.0
+offset_bottom = 134.0
 text = "New BPM:"
 
 [node name="Swap Section" type="Button" parent="TabContainer/Section"]
@@ -180,15 +214,15 @@ metadata/_tab_index = 1
 
 [node name="Text" type="Label" parent="TabContainer/Note"]
 layout_mode = 0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 149.0
-offset_bottom = 187.0
+offset_right = 197.0
+offset_bottom = 699.0
 text = "------Note Data------
 
 Strum Time:
 
-Sustain Length:
+
+
+
 
 Note Type:
 
@@ -197,9 +231,9 @@ Show Strums(Editor):
 
 ------Skins------
 
-Arrow Skin:
+Arrow Style:
 
-Splash Skin:
+Splash Style:
 
 
 
@@ -207,54 +241,42 @@ Splash Skin:
 
 [node name="NoteType" type="MenuButton" parent="TabContainer/Note"]
 layout_mode = 0
-offset_left = 100.0
-offset_top = 112.0
-offset_right = 263.0
-offset_bottom = 145.0
+offset_left = 96.0
+offset_top = 141.0
+offset_right = 178.0
+offset_bottom = 164.0
 text = "None"
 flat = false
+script = ExtResource("3_nkmqi")
+dir_to_look = "custom_notetypes"
+filters = PackedStringArray(".gd")
 
 [node name="StrumTime" type="LineEdit" parent="TabContainer/Note"]
 layout_mode = 0
-offset_left = 112.0
+offset_left = 104.0
 offset_top = 31.0
-offset_right = 277.0
-offset_bottom = 62.0
+offset_right = 201.0
+offset_bottom = 67.0
 
 [node name="SustainLength" parent="TabContainer/Note" instance=ExtResource("2_p8wo6")]
 layout_mode = 0
-offset_left = 141.0
-offset_top = 66.0
-offset_right = 332.0
-offset_bottom = 115.0
+anchors_preset = 0
+anchor_bottom = 0.0
+offset_left = 2.0
+offset_top = 92.0
+offset_right = 143.0
+offset_bottom = 107.0
+text = "Sustain Length:"
 
 [node name="ShowStrums" type="CheckBox" parent="TabContainer/Note"]
 layout_mode = 0
-offset_left = 195.0
-offset_top = 164.0
-offset_right = 219.0
-offset_bottom = 188.0
-scale = Vector2(1.4, 1.4)
+offset_left = 189.0
+offset_top = 192.0
+offset_right = 213.0
+offset_bottom = 216.0
 focus_mode = 0
 
-[node name="ArrowSkin" type="LineEdit" parent="TabContainer/Note"]
-layout_mode = 0
-offset_left = 115.0
-offset_top = 231.0
-offset_right = 361.0
-offset_bottom = 262.0
-placeholder_text = "noteSkins/NOTE_assets"
-
-[node name="SplashSkin" type="LineEdit" parent="TabContainer/Note"]
-layout_mode = 0
-offset_left = 121.0
-offset_top = 274.0
-offset_right = 370.0
-offset_bottom = 305.0
-placeholder_text = "noteSplashes/noteSplashes"
-
 [node name="Event" type="Panel" parent="TabContainer"]
-visible = false
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
 metadata/_tab_index = 2
@@ -268,7 +290,7 @@ offset_bottom = 392.0
 text = "Event: 
 
 
-Event ID:
+
 
 ------Variables------
 
@@ -289,16 +311,19 @@ offset_top = 17.0
 offset_right = 199.0
 offset_bottom = 48.0
 flat = false
+script = ExtResource("3_nkmqi")
+dir_to_look = "custom_events"
+filters = PackedStringArray("json", "txt")
 
 [node name="VariablesContainer" type="ScrollContainer" parent="TabContainer/Event"]
 custom_minimum_size = Vector2(535, 155)
 layout_mode = 0
-offset_left = 4.0
-offset_top = 152.0
-offset_right = 540.0
-offset_bottom = 307.0
+offset_left = 1.0
+offset_top = 126.0
+offset_right = 537.0
+offset_bottom = 281.0
 
-[node name="Control" type="Control" parent="TabContainer/Event/VariablesContainer"]
+[node name="Grid" type="Control" parent="TabContainer/Event/VariablesContainer"]
 layout_mode = 2
 
 [node name="EventDescription" type="RichTextLabel" parent="TabContainer/Event"]
@@ -340,15 +365,20 @@ text = "Remove Event"
 
 [node name="EventIndex" parent="TabContainer/Event" instance=ExtResource("2_p8wo6")]
 layout_mode = 0
-offset_left = 79.0
-offset_top = 63.0
-offset_right = 310.0
-offset_bottom = 103.0
+anchors_preset = 0
+anchor_bottom = 0.0
+offset_left = 5.0
+offset_top = 57.0
+offset_right = 236.0
+offset_bottom = 97.0
+text = "Event Selected:"
+suffix = "/0"
 limit_min = true
 limit_max = true
 int_value = true
 
 [node name="Song" type="Panel" parent="TabContainer"]
+visible = false
 self_modulate = Color(1, 1, 1, 0)
 clip_contents = true
 layout_mode = 2
@@ -382,6 +412,8 @@ stage: "
 
 [node name="BPM" parent="TabContainer/Song" instance=ExtResource("2_p8wo6")]
 layout_mode = 0
+anchors_preset = 0
+anchor_bottom = 0.0
 offset_left = 8.0
 offset_top = 89.0
 offset_right = 46.0
@@ -451,6 +483,8 @@ text = "Save Chart"
 
 [node name="Speed" parent="TabContainer/Song" instance=ExtResource("2_p8wo6")]
 layout_mode = 0
+anchors_preset = 0
+anchor_bottom = 0.0
 offset_left = 8.0
 offset_top = 135.0
 offset_right = 65.0
@@ -465,6 +499,7 @@ offset_right = 199.0
 offset_bottom = 354.0
 flat = false
 clip_text = true
+script = SubResource("GDScript_4ubu6")
 
 [node name="Editor" type="Panel" parent="TabContainer"]
 visible = false
@@ -613,6 +648,8 @@ offset_bottom = 115.0
 
 [node name="NewBpm" parent="TabContainer/Editor/CreateChart" instance=ExtResource("2_p8wo6")]
 layout_mode = 0
+anchors_preset = 0
+anchor_bottom = 0.0
 offset_left = 44.0
 offset_top = 127.0
 offset_right = 275.0
@@ -701,7 +738,6 @@ Z : Zoom Out"
 [connection signal="button_down" from="TabContainer/Section/Flip Opponent Notes" to="." method="flipNotes"]
 [connection signal="value_added" from="TabContainer/Note/SustainLength" to="." method="_on_sustain_length_value_added"]
 [connection signal="toggled" from="TabContainer/Note/ShowStrums" to="." method="_on_show_strums_toggled"]
-[connection signal="text_submitted" from="TabContainer/Note/ArrowSkin" to="." method="_on_arrow_skin_text_submitted"]
 [connection signal="button_down" from="TabContainer/Event/AddEvent" to="." method="_on_add_event_button_down"]
 [connection signal="button_up" from="TabContainer/Event/RemoveEvent" to="." method="_on_remove_event_button_up"]
 [connection signal="value_changed" from="TabContainer/Event/EventIndex" to="." method="_on_event_index_value_changed"]

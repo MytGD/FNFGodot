@@ -160,6 +160,18 @@ func _process(delta: float) -> void:
 				hitTime = 0.0
 				animation.play('static')
 
+func _property_can_revert(property: StringName) -> bool:
+	match property:
+		'data','styleData': return false
+	return true
+func _property_get_revert(property: StringName) -> Variant:
+	match property:
+		'direction': return 0.0
+		'multSpeed': return 1.0
+		'mustPress': return false
+		'scale': return Vector2(default_scale,default_scale)
+	return null
+
 static func getStrumStyleData(style: String) -> Dictionary:
 	var style_data = Paths.loadJson('data/notestyles/'+style)
 	if !style_data: 

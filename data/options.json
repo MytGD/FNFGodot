@@ -185,6 +185,6 @@
 	"splashSkin": "noteSplashes/noteSplashes",
 	"splashesEnabled": true,
 	"timeBarType": "Disabled",
-	"vsync_mode": 1,
+	"vsync_mode": 0,
 	"window_mode": 0
 }

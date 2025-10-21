@@ -49,7 +49,7 @@ func set_variable(variable: String, value: Variant):
 func selectEvent(index: int = event_index):
 	index = clamp(index,0,events.size()-1)
 	event_index = index
-	event_selected = ArrayHelper.get_array_index(events,index,['',{}])
+	event_selected = ArrayUtils.get_array_index(events,index,['',{}])
 
 func addEvent(event_name: String = '', variables: Dictionary = {},at: int = -1) -> Array:
 	var event_default_vars = EventNote.get_event_variables(event_name)

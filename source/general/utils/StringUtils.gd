@@ -1,4 +1,4 @@
-class_name StringHelper
+class_name StringUtils
 
 const points: PackedStringArray = ['.',',','[',']','´','`',"'",'"',';',':','+','-','/','*']
 const letters: PackedStringArray =  [

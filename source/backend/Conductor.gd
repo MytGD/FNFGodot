@@ -196,7 +196,7 @@ static func get_section_crochet(bpm: float, section_beats: float = 4) -> float:
 	return get_crochet(bpm) * section_beats
 
 func get_section_data(section: int) -> Dictionary:
-	return ArrayHelper.get_array_index(
+	return ArrayUtils.get_array_index(
 		songJson.get('notes',[]),
 		section,
 		{}

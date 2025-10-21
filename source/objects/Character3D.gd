@@ -127,7 +127,7 @@ func _process(delta):
 	if not specialAnim and holdLimit and animation.curAnim.name.begins_with('sing') and not animation.curAnim.name.ends_with('miss'):
 		holdTimer += delta
 		if holdTimer >= holdLimit * singDuration:
-			if autoDance or not autoDance and not InputHelper.detectKeysPressed(['note_left','note_down','note_up','note_right']):
+			if autoDance or not autoDance and not InputUtils.detectKeysPressed(['note_left','note_down','note_up','note_right']):
 				dance()
 	if heyTimer:
 		heyTimer -= delta

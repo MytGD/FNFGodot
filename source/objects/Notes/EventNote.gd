@@ -15,7 +15,7 @@ static func convert_events(events: Array) -> Array:
 			if !vars is Dictionary:
 				var keys = properties.keys()
 				vars = {keys[0]: vars}
-				if keys.size() > 1 and ArrayHelper.array_has_index(event,2): vars[keys[1]] = event[2]
+				if keys.size() > 1 and ArrayUtils.array_has_index(event,2): vars[keys[1]] = event[2]
 			
 			for i in properties:
 				var default_value = properties[i].default_value
@@ -27,7 +27,7 @@ static func convert_events(events: Array) -> Array:
 	return new_events
 
 static func convert_event_type(value: Variant, type: Variant.Type, default_value: Variant = null):
-	if value == null: return MathHelper.get_new_value(type)
+	if value == null: return MathUtils.get_new_value(type)
 	var value_type = typeof(value)
 	match type:
 		TYPE_NIL: return value
@@ -74,7 +74,7 @@ const default_variables = {
 static func _get_transitions():
 	var trans: PackedStringArray = []
 	for i in TweenService.transitions:
-		i = StringHelper.first_letter_upper(i)
+		i = StringUtils.first_letter_upper(i)
 		trans.append("#"+i)
 		if i == 'Linear': trans.append("Linear"); continue
 		for e in TweenService.easings: trans.append(i+e)
@@ -101,39 +101,30 @@ static func _get_value_data(value: Dictionary):
 		'EasingType':
 			options.append_array(easing_types)
 			value_type = TYPE_STRING
-		_: value_type = MathHelper.type_via_string(type)
+		_: value_type = MathUtils.type_via_string(type)
 		
 	var default_value: Variant = value.get('default_value')
 	if !default_value or typeof(default_value) != value_type:
-		default_value = MathHelper.get_new_value(value_type)
+		default_value = MathUtils.get_new_value(value_type)
 	
-	var data = {
-		'type': value_type,
-		'default_value': default_value
-	}
+	var data = {'type': value_type,'default_value': default_value}
 
 	var look_at = value.get('look_at')
-	
 	if look_at and look_at.get('directory'):
 		var extension = look_at.get('extension','')
-		if value.look_at.get('separate_mods'):
-			var files_founded = []
-			var last_mod: String = ''
-			for i in Paths.getFilesAt(look_at.directory,true,extension):
-				var file = i.get_file()
-				if file in files_founded:
-					continue
-				var mod = Paths.getModFolder(i)
-				if last_mod != mod:
-					last_mod = mod
-					options.append('#'+mod)
-				files_founded.append(file)
-				options.append(file)
-		else:
-			options.append_array(Paths.getFilesAt(look_at.directory,false,extension))
+		var files_founded = []
+		var last_mod: String = ''
+		for i in Paths.getFilesAt(look_at.directory,true,extension):
+			var file = i.get_file()
+			if file in files_founded: continue
+			var mod = Paths.getModFolder(i)
+			if last_mod != mod:
+				last_mod = mod
+				options.append('#'+mod)
+			files_founded.append(file)
+			options.append(file)
 	
-	if options:
-		data.options = options
+	if options: data.options = options
 	return data
 
 static func _replace_look_at_to_enum(string: String) -> String:
@@ -175,8 +166,8 @@ static func look_for_function_in_line(string: String, function: String):
 		var func_data = string.right(-index-1)
 		var func_name = function+str(index)
 		
-		var variables = func_data.left(StringHelper._find_last_parentese(func_data)+1)
-		var variables_array = StringHelper.get_function_data(variables)[1]
+		var variables = func_data.left(StringUtils._find_last_parentese(func_data)+1)
+		var variables_array = StringUtils.get_function_data(variables)[1]
 		
 		functions_created[func_name] = variables_array
 		string = string.erase(index_find,function_length+variables.length()+1)

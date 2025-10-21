@@ -1,3 +1,4 @@
+@tool
 extends Node
 const TweenerMethod = preload("res://source/general/utils/Tween/TweenerMethod.gd")
 const TweenerObject = preload("res://source/general/utils/Tween/TweenerObject.gd")

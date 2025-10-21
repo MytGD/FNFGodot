@@ -146,7 +146,7 @@ static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, di
 		var section = int(strumTime/sectionStep) - subSections
 		
 		#Detect Bpm Changes
-		if ArrayHelper.array_has_index(bpms,bpmIndex) and bpms[bpmIndex][0] <= strumTime:
+		if ArrayUtils.array_has_index(bpms,bpmIndex) and bpms[bpmIndex][0] <= strumTime:
 			json_bpm = bpms[bpmIndex][1]
 			sectionStep = Conductor.get_section_crochet(json_bpm)
 			var newSection = strumTime/sectionStep - subSections
@@ -193,7 +193,7 @@ static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, di
 static func sort_song_notes(song_notes: Array) -> void:
 	for i in song_notes:
 		if !i.sectionNotes: continue
-		i.sectionNotes.sort_custom(ArrayHelper.sort_array_from_first_index)
+		i.sectionNotes.sort_custom(ArrayUtils.sort_array_from_first_index)
 
 static func getSectionBase() -> Dictionary:
 	return {

@@ -14,6 +14,6 @@ static func get_shader_uniforms(material: Material):
 	for i in material.shader.get_shader_uniform_list(true):
 		var type = i.type
 		var default_value = RenderingServer.shader_get_parameter_default(uid,i.name)
-		if default_value == null: default_value = MathHelper.get_new_value(type)
+		if default_value == null: default_value = MathUtils.get_new_value(type)
 		list[i.name] = {'default': default_value,'type': type}
 	return list

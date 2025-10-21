@@ -92,14 +92,14 @@ func createOptions(node: Node,option_data: Array):
 	var object = option_data[0]
 	var variable = option_data[1]
 	var value = null
-	if ArrayHelper.get_array_index(option_data,3) is String and object is Object and object.has_method(option_data[3]): 
+	if ArrayUtils.get_array_index(option_data,3) is String and object is Object and object.has_method(option_data[3]): 
 		value = object.call(option_data[3])
 	else: 
 		value = object.get(variable)
 	
 	var type = typeof(value)
 	
-	if ArrayHelper.get_array_index(option_data,3) is Dictionary:
+	if ArrayUtils.get_array_index(option_data,3) is Dictionary:
 		var number = createOptionControl(NumberRangeKeys,node,object,variable)
 		number.name = 'num_range'
 		number.set_index_keys(option_data[3])
