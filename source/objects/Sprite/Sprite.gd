@@ -84,6 +84,7 @@ func _init(image_file: Variant = null, animated: bool = false):
 		name = image_file.get_file()
 	if image.texture: _update_texture()
 
+func _ready() -> void: _updatePos()
 func centerOrigin(): midpoint_scale = scale;
 
 func kill() -> void: var parent = get_parent(); if parent: parent.remove_child(self) ##Remove the Sprite from the game, still can be accesed.
@@ -214,7 +215,7 @@ func set_graphic_scale(_scale: Vector2):
 	_graphic_offset = image.pivot_offset*_scale
 func set_camera(_cam: Node):
 	if camera == _cam: return
-	if _camera_is_canvas: camera.remove.call(self)
+	if camera and _camera_is_canvas: camera.remove.call(self)
 	
 	if !_cam: camera = null; _camera_is_canvas = false; return
 	

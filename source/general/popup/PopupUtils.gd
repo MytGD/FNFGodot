@@ -1,9 +1,9 @@
-class_name PopupUtils
+class_name PopupUtils extends Object
 
-static func addPopupItemsFromDir(popup: PopupMenu, dir: String, filters: Variant = '') -> void:
+static func addPopupItemsFromDir(popup: PopupMenu, dir: String, filters: Variant = '', with_extension: bool = false) -> void:
 	var last_mod = ''
 	var events_loaded: PackedStringArray = []
-	for i in Paths.getFilesAt(dir,true,filters):
+	for i in Paths.getFilesAt(dir,true,filters,with_extension):
 		var file = i.get_file()
 		if file in events_loaded: continue
 		var mod = Paths.getModFolder(i)

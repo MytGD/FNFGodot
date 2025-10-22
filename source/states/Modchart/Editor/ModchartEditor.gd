@@ -89,12 +89,6 @@ var cur_ease: Tween.EaseType
 
 @onready var key_options = $KeyOptions
 @onready var object_options = $VSplit/HSplitP/Panel/HBox/Object/Name
-
-
-@onready var property_options = $PropertyOptions
-@onready var properties_names = $PropertyOptions/Properties
-@onready var property_remove = $PropertyOptions/PropertyRemove
-
 #region Timeline
 @onready var position_line = $VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine
 @onready var timeline_panel = $VSplit/HSplitP/HTimeline/Timeline
@@ -595,8 +589,11 @@ func save_modchart(path_absolute: String): Paths.saveFile(ModchartState.get_keys
 func set_song_editor_position(new_pos: float) -> void:
 	if new_pos == songPosition: return
 	
-	if Conductor.step_float < 0: grid_x = -24
-	else: grid_x = maxf(0,Conductor.step_float - 15)
+	
+	if Conductor.step_float < 0: 
+		grid_x = -26
+	else: 
+		grid_x = maxf(0,Conductor.step_float - 15)
 	
 	grid_real_x = grid_x*grid_size.x
 	position_line.position.x = grid_size.x*Conductor.step_float
@@ -624,7 +621,7 @@ func set_song_position_from_line() -> void:
 	set_song_position(Conductor.get_step_time(position_line.position.x/GRID_SIZE.x))
 #endregion
 
-#region Grid
+#region Grid Methods
 func createGrid(object: Variant) -> Grid:
 	var grid: Grid = Grid.new()
 	if object is Object: grid.object = object
@@ -922,21 +919,7 @@ func dropdown_box_input(event: InputEvent, grid: Grid):
 	if event is InputEventMouseButton:
 		if !event.pressed: return
 		match event.button_index:
-			2: 
-				var properties = getGridObjectProperties(grid)
-				if !properties:
-					Global.show_label_error("Error on Properties: Object don't exists or don't have any property.")
-					return
-				property_options.visible = true
-				property_options.position = get_viewport().get_mouse_position()
-				properties_names.clear()
-				property_remove.clear()
-				for i in properties: if not i in grid.keys: properties_names.add_item(i)
-				
-				if !grid.keys: property_options.set_item_disabled(1,true)
-				else: 
-					for i in grid.keys: property_remove.add_item(i); 
-					property_options.set_item_disabled(1,false)
+			2:
 				grid_selected = grid
 
 func grid_input(event: InputEvent, grid: Grid):
@@ -1028,7 +1011,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		if !event.pressed: return
 		match event.keycode:
-			KEY_SPACE,KEY_ENTER: pausePlaystate(Conductor.is_playing)
+			KEY_SPACE,KEY_ENTER: pausePlaystate(playState.process_mode != PROCESS_MODE_DISABLED)
 			KEY_C: if Input.is_key_pressed(KEY_CTRL): copy_keys_selected()
 			KEY_V: if Input.is_key_pressed(KEY_CTRL): paste_keys()
 			KEY_LEFT: add_keys_step(-2.0 if is_shift_pressed else -1.0)
@@ -1073,12 +1056,8 @@ func getObjectProperty(object: Variant, prop: String):
 #region PlayState
 func pausePlaystate(pause: bool) -> void:
 	playState.canHitNotes = !pause
-	if pause:
-		Conductor.pauseSongs()
-		playState.process_mode = Node.PROCESS_MODE_DISABLED
-	else:
-		Conductor.resumeSongs()
-		playState.process_mode = Node.PROCESS_MODE_INHERIT
+	if pause: playState.pauseSong()
+	else: playState.resumeSong()
 
 func _set_playstate_value(value: Variant, property: String): playState.set(property,value)
 #endregion
@@ -1090,10 +1069,6 @@ func object_submitted(obj_name: String):
 	obj_name = obj_name.strip_edges()
 	if !obj_name: return
 	addFileToEditor(obj_name,null)
-
-func _on_property_index_selected(index: int): addPropertyToGrid(grid_selected,properties_names.get_item_text(index))
-
-func _on_property_remove_index_selected(index: int): removeGridProperty(grid_selected,property_remove.get_item_text(index))
 
 func _on_modchart_options_index_selected(index: int):
 	match index:

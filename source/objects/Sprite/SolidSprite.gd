@@ -9,5 +9,5 @@ func set_filled(_filled: bool): filled = _filled; queue_redraw()
 func set_width(_width: float):  width = _width; if !filled: queue_redraw()
 
 func _draw(): 
-	if filled: draw_rect(Rect2(Vector2.ZERO,size),Color.WHITE,true,width)
+	if !filled: draw_rect(Rect2(Vector2.ZERO,size),Color.WHITE,false,width)
 	else: draw_rect(Rect2(Vector2.ZERO,size),Color.WHITE)

@@ -38,6 +38,7 @@ var health: float: set = set_health
 @export var bumpStrumBeat: float = 4.0
 @export var canExitSong: bool = true
 @export var canPause: bool = true
+@export var createPauseMenu: bool = true
 @export var canGameOver: bool = true
 var onPause: bool = false
 
@@ -222,7 +223,6 @@ func _process(delta: float) -> void:
 	if camZooming: camHUD.zoom = lerpf(camHUD.zoom,camHUD.defaultZoom,delta*3*zoomSpeed)
 	
 	_check_count_down_pos(delta)
-	
 	FunkinGD.callOnScripts('onUpdate',[delta])
 	updateTimeBar()
 	
@@ -456,27 +456,34 @@ func startSong():
 	_isSongStarted = true
 	FunkinGD.callOnScripts('onSongStart')
 
+func loadNextSong():
+	var newSong = story_songs[0]
+	story_songs.remove_at(0)
+	if !story_song_notes.has(newSong): newSong = loadSong()
+
+#region Resume/Pause/End Song Methods
 func resumeSong() -> void:
 	if _isSongStarted: Conductor.resumeSongs()
 	generateMusic = true
 	process_mode = PROCESS_MODE_INHERIT
 	onPause = false
 
-func pauseSong(menu: bool = true) -> void:
+func pauseSong(menu: bool = createPauseMenu) -> void:
 	if !canPause: return
 	generateMusic = false
-	Conductor.pauseSongs()
+	if _isSongStarted: Conductor.pauseSongs()
 	process_mode = Node.PROCESS_MODE_DISABLED
-	
-	if !menu or onPause: return
-	
 	onPause = true
+	if menu: create_pause_menu()
+
+func create_pause_menu() -> PauseSubstate:
+	if pauseState: return pauseState
 	pauseState = PauseSubstate.new()
 	pauseState.resume_song.connect(resumeSong.call_deferred)
 	pauseState.restart_song.connect(restartSong.call_deferred)
 	pauseState.exit_song.connect(endSound.call_deferred)
-	
-	call_deferred('add_sibling',pauseState)
+	add_sibling.call_deferred(pauseState)
+	return pauseState
 
 func restartSong(absolute: bool = true):
 	Conductor.pauseSongs()
@@ -505,12 +512,12 @@ func endSound() -> void:
 	canPause = false
 	if isStoryMode and story_song_notes: loadNextSong()
 	elif back_state: Global.swapTree(back_state.new(),true)
+#endregion
 
-func loadNextSong():
-	var newSong = story_songs[0]
-	story_songs.remove_at(0)
-	if !story_song_notes.has(newSong): newSong = loadSong()
+#endregion
 
+
+#region Countdown Methods
 func countDownTick(beat: int) -> void:
 	if beat > 0: return
 	elif !beat: startSong(); return
@@ -549,6 +556,7 @@ func _create_countdown_sprite(sprite_name: String, is_pixel: bool = isPixelStage
 	tween.tween_property(sprite,'modulate:a',0.0,Conductor.stepCrochet*0.004)
 	tween.tween_callback(sprite.queue_free)
 	return sprite
+#endregion
 
 ##Called when the game gonna restart the song
 func reloadPlayState():
@@ -561,7 +569,6 @@ func reloadPlayState():
 		for vars in ['seenCutscene','playAsOpponent']: state[vars] = get(vars)
 		destroy(false)
 	)
-#endregion
 
 #region Modding Methods
 func chartEditor():
@@ -576,43 +583,51 @@ func characterEditor():
 	pauseSong(false)
 #endregion
 
-#region Cutscene Methods
+#region Video Methods
+func _load_video(stream: VideoStreamTheora) -> VideoStreamPlayer:
+	var video_player = VideoStreamPlayer.new()
+	camOther.add(video_player)
+	video_player.stream = stream
+	video_player.play()
+	return video_player
+
+func _update_video_size_to_screen():
+	if !videoPlayer: return
+	var video_div = ScreenUtils.screenSize/videoPlayer.size
+	var video_scale = minf(video_div.x,video_div.y)
+	videoPlayer.scale = Vector2(video_scale,video_scale)
+
 func startVideo(path: Variant, isCutscene: bool = true) -> VideoStreamPlayer:
 	var video = path if path is VideoStreamTheora else Paths.video(path)
-	if not video: return VideoStreamPlayer.new()
+	if !video: return VideoStreamPlayer.new()
+	var new_video = _load_video(video)
+	
+	if !isCutscene: 
+		new_video.finished.connect(video.queue_free) 
+		return new_video
+	
 	if videoPlayer: videoPlayer.queue_free()
 	
-	videoPlayer = VideoStreamPlayer.new()
-	
-	camOther.add(videoPlayer)
-	videoPlayer.stream = video
-	videoPlayer.play()
-	
-	if not isCutscene:
-		videoPlayer.finished.connect(func(): videoPlayer.queue_free())
-		return videoPlayer
-	
+	videoPlayer = new_video
 	canPause = false
 	inCutscene = true
-	videoPlayer.finished.connect(func():
-		startCountdown()
-		inCutscene = false
-		videoPlayer.queue_free()
-		canPause = true
-		seenCutscene = true
-		FunkinGD.callOnScripts('onEndCutscene',[path])
-	)
-	videoPlayer.resized.connect(func():
-		var video_div = ScreenUtils.screenSize/videoPlayer.size
-		var video_scale = minf(video_div.x,video_div.y)
-		videoPlayer.scale = Vector2(video_scale,video_scale)
-	)
+	
+	videoPlayer.resized.connect(_update_video_size_to_screen)
+	videoPlayer.finished.connect(_on_cutscene_ends)
 	return videoPlayer
 
 func skipVideo() -> void:
 	if !videoPlayer: return
-	FunkinGD.callOnScripts('onSkipCutscene')
+	FunkinGD.callOnScripts('onSkipCutscene',[videoPlayer.stream.resource_name])
 	videoPlayer.finished.emit()
+
+func _on_cutscene_ends() -> void:
+	startCountdown()
+	inCutscene = false
+	canPause = true
+	seenCutscene = true
+	FunkinGD.callOnScripts('onEndCutscene',[videoPlayer.stream.resource_name])
+	videoPlayer.queue_free()
 #endregion
 
 func _unhandled_input(event: InputEvent):

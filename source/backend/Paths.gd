@@ -183,10 +183,12 @@ static func video(path: String) -> VideoStreamTheora: ##Get the [param video] pa
 	
 	if path in videosCreated: return videosCreated[path]
 	
-	var videoPath = detectFileFolder('videos/'+path)
-	if !videoPath: return null
+	var video_path = 'videos/'+path
+	var path_absolute = detectFileFolder(video_path)
+	if !path_absolute: return null
 	
-	var video = load(videoPath)
+	var video = load(path_absolute)
+	video.resource_name = getPath(video_path)
 	videosCreated[path] = video
 	return video
 

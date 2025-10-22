@@ -1,13 +1,13 @@
-[gd_scene load_steps=21 format=3 uid="uid://dgigti34bmg6s"]
+[gd_scene load_steps=22 format=3 uid="uid://dgigti34bmg6s"]
 
 [ext_resource type="Script" uid="uid://blf6ig37np2mt" path="res://source/states/Modchart/Editor/ModchartEditor.gd" id="1_2kx6s"]
-[ext_resource type="Texture2D" uid="uid://dshtfnk38km3v" path="res://icons/Object.svg" id="1_vxf07"]
 [ext_resource type="Script" uid="uid://cg2ig10imhwri" path="res://source/states/PlayState.gd" id="2_2kx6s"]
 [ext_resource type="Texture2D" uid="uid://cggfq2j244bhe" path="res://icons/ArrowDown.svg" id="3_3fulc"]
 [ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_c5smy"]
 [ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/Shader.svg" id="3_n2vt6"]
 [ext_resource type="Script" uid="uid://du1rbf6kg1jmr" path="res://source/states/Modchart/Editor/Explorer.gd" id="3_rhtdg"]
 [ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="5_n2vt6"]
+[ext_resource type="Texture2D" uid="uid://d3ler7oyh2kc5" path="res://icons/Remove.svg" id="6_3fulc"]
 [ext_resource type="Script" uid="uid://bwuthavuunu4c" path="res://source/states/Modchart/Editor/Timeline.gd" id="7_rhtdg"]
 [ext_resource type="Script" uid="uid://cvvli26q7wviq" path="res://source/general/popup/PopupDir.gd" id="9_xr4tk"]
 [ext_resource type="Texture2D" uid="uid://cdbm117l1dtf" path="res://icons/Keyboard.svg" id="11_x5qun"]
@@ -34,14 +34,22 @@ func _ready() -> void:
 	if !Engine.is_editor_hint(): set_script(null)
 "
 
-[sub_resource type="GDScript" id="GDScript_c5smy"]
-resource_name = "Property"
+[sub_resource type="GDScript" id="GDScript_ybanq"]
+resource_name = "EditOptions"
 script/source = "extends PopupMenu
 
 func _ready() -> void:
-	add_submenu_node_item('Add Property',$Properties,0)
-	add_submenu_node_item('Delete Property',$PropertyRemove,1)
-	add_item('Delete')
+	add_submenu_node_item('Add object',$AddObject)
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[sub_resource type="GDScript" id="GDScript_u3sa4"]
+resource_name = "ObjectMenu"
+script/source = "extends PopupMenu
+
+func _on_index_pressed(id: int):
+	match id:
+		0: $\"../../ShaderTab\".visible = true
 "
 
 [sub_resource type="GDScript" id="GDScript_3fulc"]
@@ -78,7 +86,7 @@ script/source = "extends PopupMenu
 
 func _on_index_pressed(index: int) -> void:
 	match index:
-		0: $\"../ShortCuts\".visible = true;
+		0: $ShortCuts.visible = true;
 "
 
 [sub_resource type="LabelSettings" id="LabelSettings_rhtdg"]
@@ -96,10 +104,11 @@ size = Vector2i(1280, 720)
 [node name="PlayState" type="Node" parent="SubViewport"]
 script = ExtResource("2_2kx6s")
 canExitSong = false
-canPause = false
+createPauseMenu = false
 canGameOver = false
 loadScripts = false
 loadSongScript = false
+generateEvents = false
 countDownEnabled = false
 song_folder = "test"
 song_json_file = "test"
@@ -125,6 +134,12 @@ layout_mode = 0
 offset_right = 367.0
 offset_bottom = 31.0
 
+[node name="Edit" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+focus_mode = 0
+text = "| Edit"
+flat = true
+
 [node name="Modchart" type="Button" parent="Panel/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 0
@@ -136,13 +151,7 @@ flat = true
 layout_mode = 2
 size_flags_horizontal = 0
 focus_mode = 0
-text = "| Song"
-flat = true
-
-[node name="Button" type="Button" parent="Panel/HBoxContainer"]
-layout_mode = 2
-focus_mode = 0
-text = "| Edit |"
+text = "| Song |"
 flat = true
 
 [node name="Help" type="Button" parent="Panel/HBoxContainer"]
@@ -152,9 +161,9 @@ text = "Help |"
 flat = true
 
 [node name="VSplit" type="VSplitContainer" parent="."]
-offset_top = 30.0
+offset_top = 32.0
 offset_right = 1282.0
-offset_bottom = 750.0
+offset_bottom = 752.0
 split_offset = 520
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit"]
@@ -164,11 +173,12 @@ split_offset = 200
 [node name="PanelContainer" type="TabContainer" parent="VSplit/HSplit"]
 clip_contents = true
 layout_mode = 2
-current_tab = 0
+current_tab = 1
 tab_focus_mode = 0
 script = SubResource("GDScript_rhtdg")
 
 [node name="Explorator" type="Panel" parent="VSplit/HSplit/PanelContainer"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -195,6 +205,57 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_rhtdg")
 object = NodePath("../../../../../../SubViewport/PlayState")
+
+[node name="Media" type="Panel" parent="VSplit/HSplit/PanelContainer"]
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="ColorRect2" type="ColorRect" parent="VSplit/HSplit/PanelContainer/Media"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -0.1000061
+offset_bottom = -0.018005371
+color = Color(0.011087579, 0.011087578, 0.01108758, 1)
+
+[node name="Explorer" type="ScrollContainer" parent="VSplit/HSplit/PanelContainer/Media/ColorRect2" node_paths=PackedStringArray("object")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1.0
+offset_top = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_rhtdg")
+object = NodePath("../../../../../../SubViewport/PlayState")
+
+[node name="HBoxContainer" type="VBoxContainer" parent="VSplit/HSplit/PanelContainer/Media"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 5.0
+offset_right = 124.0
+offset_bottom = 65.0
+
+[node name="Shaders" type="FoldableContainer" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+title = "Shaders"
+
+[node name="Add" type="Button" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer/Shaders"]
+layout_mode = 2
+text = "+"
+icon = ExtResource("3_n2vt6")
+
+[node name="Images" type="FoldableContainer" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+title = "Images"
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit/HSplit"]
 layout_mode = 2
@@ -329,43 +390,15 @@ metadata/_edit_lock_ = true
 [node name="Panel" type="VBoxContainer" parent="VSplit/HSplitP"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="VSplit/HSplitP/Panel"]
+[node name="PanelContainer" type="PanelContainer" parent="VSplit/HSplitP/Panel"]
 layout_mode = 2
 
-[node name="Object" type="Button" parent="VSplit/HSplitP/Panel/HBox"]
+[node name="Delete" type="Button" parent="VSplit/HSplitP/Panel/PanelContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-focus_mode = 0
-text = "Obj+"
-icon = ExtResource("1_vxf07")
-alignment = 0
-
-[node name="Name" type="LineEdit" parent="VSplit/HSplitP/Panel/HBox/Object"]
-visible = false
-z_index = 2
-layout_mode = 1
-offset_left = 69.0
-offset_top = -1.0
-offset_right = 202.0
-offset_bottom = 26.0
-placeholder_text = "Object Name"
-
-[node name="ColorRect" type="ColorRect" parent="VSplit/HSplitP/Panel/HBox/Object/Name"]
-show_behind_parent = true
-layout_mode = 0
-offset_right = 133.0
-offset_bottom = 24.0
-color = Color(0.04755766, 0.047557645, 0.047557645, 1)
-metadata/_edit_lock_ = true
-
-[node name="Shader" type="Button" parent="VSplit/HSplitP/Panel/HBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-focus_mode = 0
-text = "Mat+"
-icon = ExtResource("3_n2vt6")
+size_flags_horizontal = 8
+tooltip_text = "Delete Current Select"
+icon = ExtResource("6_3fulc")
+flat = true
 
 [node name="Panel" type="PanelContainer" parent="VSplit/HSplitP/Panel"]
 layout_mode = 2
@@ -389,25 +422,28 @@ metadata/_edit_lock_ = true
 
 [node name="Time" type="Node2D" parent="VSplit/HSplitP/HTimeline/Timeline"]
 script = ExtResource("7_rhtdg")
+draw_limit = 29
 
 [node name="PositionLine" type="ColorRect" parent="VSplit/HSplitP/HTimeline/Timeline/Time"]
 z_index = 1
-offset_left = 15.440002
-offset_right = 24.440002
+offset_left = 32.440002
+offset_right = 41.440002
 offset_bottom = 9.0
 rotation = 0.785398
 
-[node name="Line" type="Node2D" parent="VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine"]
-position = Vector2(0.9921875, 2.5000305)
-rotation = -0.785398
-scale = Vector2(2.25, 720)
-script = ExtResource("5_n2vt6")
-metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
+[node name="Line" type="ColorRect" parent="VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine"]
+layout_mode = 0
+offset_left = 8.469205
+offset_top = 7.087172
+offset_right = 184.75961
+offset_bottom = 8.988585
+rotation = 0.7853982
 
 [node name="GridContainer" type="Panel" parent="VSplit/HSplitP/HTimeline"]
 clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
+metadata/_edit_lock_ = true
 
 [node name="Panel" type="Node2D" parent="VSplit/HSplitP/HTimeline/GridContainer"]
 
@@ -469,6 +505,9 @@ offset_right = 279.0
 offset_bottom = 73.0
 flat = false
 script = ExtResource("9_xr4tk")
+dir_to_look = "shaders"
+filters = PackedStringArray("gdshader", "frag")
+show_with_extenstion = true
 
 [node name="SelectShader" type="Button" parent="ShaderTab"]
 layout_mode = 0
@@ -511,16 +550,21 @@ offset_top = 88.0
 offset_right = 261.0
 offset_bottom = 111.0
 
-[node name="PropertyOptions" type="PopupMenu" parent="."]
+[node name="EditOptions" type="PopupMenu" parent="."]
 oversampling_override = 1.0
-position = Vector2i(422, 29)
-size = Vector2i(133, 65)
-script = SubResource("GDScript_c5smy")
+position = Vector2i(0, 32)
+item_count = 1
+item_0/id = 0
+script = SubResource("GDScript_ybanq")
 
-[node name="Properties" type="PopupMenu" parent="PropertyOptions"]
+[node name="AddObject" type="PopupMenu" parent="EditOptions"]
 oversampling_override = 1.0
-
-[node name="PropertyRemove" type="PopupMenu" parent="PropertyOptions"]
+size = Vector2i(140, 100)
+item_count = 1
+item_0/text = "Shader"
+item_0/icon = ExtResource("3_n2vt6")
+item_0/id = 0
+script = SubResource("GDScript_u3sa4")
 
 [node name="KeyOptions" type="PopupMenu" parent="."]
 oversampling_override = 1.0
@@ -537,7 +581,7 @@ script = SubResource("GDScript_mbk3t")
 
 [node name="ModchartOptions" type="PopupMenu" parent="."]
 oversampling_override = 1.0
-position = Vector2i(0, 30)
+position = Vector2i(75, 30)
 size = Vector2i(106, 100)
 item_count = 2
 item_0/text = "Save"
@@ -547,7 +591,7 @@ item_1/id = 1
 
 [node name="SongOptions" type="PopupMenu" parent="."]
 oversampling_override = 1.0
-position = Vector2i(100, 30)
+position = Vector2i(180, 30)
 size = Vector2i(199, 100)
 item_count = 1
 item_0/text = "Load from Song Data"
@@ -563,22 +607,23 @@ item_0/icon = ExtResource("11_x5qun")
 item_0/id = 0
 script = SubResource("GDScript_oop0l")
 
-[node name="ShortCuts" type="PopupPanel" parent="."]
+[node name="ShortCuts" type="PopupPanel" parent="HelpOptions"]
 oversampling_override = 1.0
 title = "ShortCuts"
 position = Vector2i(400, 100)
 size = Vector2i(328, 300)
+visible = true
 wrap_controls = false
 borderless = false
 
-[node name="ScrollContainer" type="ScrollContainer" parent="ShortCuts"]
+[node name="ScrollContainer" type="ScrollContainer" parent="HelpOptions/ShortCuts"]
 offset_left = 4.0
 offset_top = 4.0
 offset_right = 324.0
 offset_bottom = 296.0
 horizontal_scroll_mode = 0
 
-[node name="Label" type="Label" parent="ShortCuts/ScrollContainer"]
+[node name="Label" type="Label" parent="HelpOptions/ShortCuts/ScrollContainer"]
 layout_mode = 2
 text = "============Keys ShortCuts=============
 KEY_LEFT = Move Keys One Step Back
@@ -588,28 +633,24 @@ Ctrl+C = Copy Keys Selected
 Ctrl+V = Paste Keys"
 label_settings = SubResource("LabelSettings_rhtdg")
 
+[connection signal="pressed" from="Panel/HBoxContainer/Edit" to="EditOptions" method="show"]
 [connection signal="pressed" from="Panel/HBoxContainer/Modchart" to="ModchartOptions" method="show"]
 [connection signal="pressed" from="Panel/HBoxContainer/Song" to="SongOptions" method="show"]
 [connection signal="pressed" from="Panel/HBoxContainer/Help" to="HelpOptions" method="show"]
 [connection signal="on_button_selected" from="VSplit/HSplit/PanelContainer/Explorator/ColorRect/Explorer" to="." method="_on_explorer_button_selected"]
+[connection signal="on_button_selected" from="VSplit/HSplit/PanelContainer/Media/ColorRect2/Explorer" to="." method="_on_explorer_button_selected"]
 [connection signal="value_added" from="VSplit/HSplit/HSplit/Property/Key/Duration" to="." method="add_keys_duration"]
-[connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="grab_focus"]
-[connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="show"]
-[connection signal="button_down" from="VSplit/HSplitP/Panel/HBox/Object" to="VSplit/HSplitP/Panel/HBox/Object/Name" method="set_text" binds= [""]]
-[connection signal="text_submitted" from="VSplit/HSplitP/Panel/HBox/Object/Name" to="." method="object_submitted"]
-[connection signal="pressed" from="VSplit/HSplitP/Panel/HBox/Shader" to="BG" method="show"]
-[connection signal="pressed" from="VSplit/HSplitP/Panel/HBox/Shader" to="ShaderTab" method="show"]
 [connection signal="resized" from="VSplit/HSplitP/Panel/Panel/Scroll/VBox" to="." method="updateAllGrids"]
 [connection signal="gui_input" from="VSplit/HSplitP/HTimeline/Timeline" to="." method="timeline_input"]
+[connection signal="draw" from="ShaderTab" to="BG" method="show"]
+[connection signal="hidden" from="ShaderTab" to="BG" method="hide"]
 [connection signal="pressed" from="ShaderTab/SelectShader" to="." method="_on_select_shader_pressed"]
 [connection signal="pressed" from="ShaderTab/AddShader" to="." method="addShader"]
 [connection signal="pressed" from="ShaderTab/AddShader" to="BG" method="hide"]
 [connection signal="pressed" from="ShaderTab/AddShader" to="ShaderTab" method="hide"]
 [connection signal="pressed" from="ShaderTab/Cancel" to="BG" method="hide"]
 [connection signal="pressed" from="ShaderTab/Cancel" to="ShaderTab" method="hide"]
-[connection signal="index_pressed" from="PropertyOptions" to="." method="grid_options_menu_pressed"]
-[connection signal="id_pressed" from="PropertyOptions/Properties" to="." method="_on_property_index_selected"]
-[connection signal="id_pressed" from="PropertyOptions/PropertyRemove" to="." method="_on_property_remove_index_selected"]
+[connection signal="index_pressed" from="EditOptions/AddObject" to="EditOptions/AddObject" method="_on_index_pressed"]
 [connection signal="index_pressed" from="KeyOptions" to="." method="key_options_menu_pressed"]
 [connection signal="index_pressed" from="ModchartOptions" to="." method="_on_modchart_options_index_selected"]
 [connection signal="index_pressed" from="SongOptions" to="." method="_on_song_options_index_selected"]

@@ -1395,7 +1395,7 @@ static func getCamera(camera: Variant) -> CameraCanvas:
 static func startCountdown() -> void: game.startCountdown()
 
 ##Ends the game song.
-static func endSong(skip_transition: bool = false): game.endSound()
+static func endSong(skip_transition: bool = false) -> void: game.endSound()
 
 ##Sets the player health.
 static func setHealth(value: float) -> void: game.health = value
@@ -1415,7 +1415,6 @@ static func startVideo(path: Variant, isCutscene: bool = true) -> VideoStreamPla
 
 
 #region Song Methods
-
 static func is_audio(value: Object): return value and value.get_class().begins_with('AudioStreamPlayer')
 
 ##Skip the song to [code]time[/code].[br]

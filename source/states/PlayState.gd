@@ -251,7 +251,6 @@ static func getCameraPos(obj: Node, add_camera_json_offset: bool = true) -> Vect
 		if add_camera_json_offset: pos += getCameraOffset(obj)
 		if ScreenUtils.screenOffset.x: pos.x -= ScreenUtils.screenOffset.x/2.0
 		return pos
-			
 	if obj is Sprite: return obj.getMidPoint()
 	return obj.position
 
