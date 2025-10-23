@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3 uid="uid://eonsf5cks44n"]
 
-[ext_resource type="Script" uid="uid://cigpxll0rg8br" path="res://source/states/ChartEditor/ChartEditor.gd" id="1_twph6"]
+[ext_resource type="Script" uid="uid://cigpxll0rg8br" path="res://source/states/Editors/ChartEditor/ChartEditor.gd" id="1_twph6"]
 [ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="2_p8wo6"]
 [ext_resource type="Script" uid="uid://cvvli26q7wviq" path="res://source/general/popup/PopupDir.gd" id="3_nkmqi"]
 [ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="4_4ubu6"]

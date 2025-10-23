@@ -1,6 +1,6 @@
 @tool
 extends Node2D
-const ModchartEditor = preload("res://source/states/Modchart/Editor/ModchartEditor.gd")
+const ModchartEditor = preload("res://source/states/Editors/Modchart/Editor/ModchartEditor.gd")
 @export_range(0,100,1.0)  var timeline_space: float = 40.0: set = set_timeline_space
 @export var step_init: int = 0: set = set_step_init
 @export var steps: int = 0: set = set_steps

@@ -1,8 +1,11 @@
 extends Node
 
 const GRID_SIZE = Vector2(40,24)
+const Grid = preload("res://source/states/Editors/Modchart/Editor/Grid.gd")
 
-const EditorMaterial = preload("res://source/states/Modchart/Shaders/EditorShader.gd")
+const ModchartState = preload("res://source/states/Editors/Modchart/ModchartState.gd")
+
+const EditorMaterial = preload("res://source/states/Editors/Modchart/Shaders/EditorShader.gd")
 
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 const Sprite = preload("res://source/objects/Sprite/Sprite.gd")
@@ -11,15 +14,17 @@ const CameraCanvas = preload("res://source/objects/Display/Camera/Camera.gd")
 const SpriteGroup = preload("res://source/general/groups/SpriteGroup.gd")
 const PlayState = preload("res://source/states/PlayState.gd")
 
-const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
-const KeyInterpolatorNode = preload("res://source/states/Modchart/Editor/KeyInterpolatorNode.gd")
+const KeyInterpolator = preload("res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd")
+const KeyInterpolatorNode = preload("res://source/states/Editors/Modchart/Editor/KeyInterpolatorNode.gd")
 
 const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")
 const ButtonRangeScene = preload("res://scenes/objects/ButtonRange.tscn")
+
 const HSliderRange = preload("res://scenes/objects/HSliderRange.gd")
 const HSliderRangeScene = preload("res://scenes/objects/HSliderRange.tscn")
-const ModchartState = preload("res://source/states/Modchart/ModchartState.gd")
-const Grid = preload("res://source/states/Modchart/Editor/Grid.gd")
+
+const LineEditWithTitleScene = preload("res://scenes/objects/LineEditWithTitle.tscn")
+const LineEditWithTitle = preload("res://scenes/objects/LineEditWithTitle.gd")
 
 var screen_size_mult = ScreenUtils.screenSize*2
 var PropertiesAvaliable: Dictionary = {
@@ -55,11 +60,8 @@ var PropertiesAvaliable: Dictionary = {
 }
 
 var default_values: Dictionary[Object,Dictionary] = {}
-#var PropertiesAvaliable: Dictionary[Script,Dictionary] = {}
-
 var modchart_keys = ModchartState.keys
 var modchart_upating = ModchartState.keys_index
-
 
 var songPosition: float = 0.0: set = set_song_editor_position
 var grids: Dictionary[String,Grid] = {}
@@ -69,26 +71,12 @@ var grids: Dictionary[String,Grid] = {}
 static var songToLoad = 'test'
 #endregion
 
-#Song Data
-#region Tween Variables
-@onready var duration: ButtonRange = $"VSplit/HSplit/HSplit/Property/Key/Duration"
-
-@onready var transition_menu: MenuButton = $"VSplit/HSplit/HSplit/Property/Key/Transition/Options"
-var cur_transition: Tween.TransitionType
-@onready var transition_popup = transition_menu.get_popup()
-
-@onready var ease_menu: MenuButton = $"VSplit/HSplit/HSplit/Property/Key/Ease/Options"
-var cur_ease: Tween.EaseType
-@onready var ease_popup: PopupMenu = ease_menu.get_popup()
-#endregion
-
 #region Nodes
 @onready var dialog_bg = $BG
 @onready var dialog: FileDialog = $FileDialog
 @onready var confirm_dialog: ConfirmationDialog = $ConfirmationDialog
 
 @onready var key_options = $KeyOptions
-@onready var object_options = $VSplit/HSplitP/Panel/HBox/Object/Name
 #region Timeline
 @onready var position_line = $VSplit/HSplitP/HTimeline/Timeline/Time/PositionLine
 @onready var timeline_panel = $VSplit/HSplitP/HTimeline/Timeline
@@ -98,7 +86,8 @@ var cur_ease: Tween.EaseType
 #endregion
 
 #region Property Editor Variables
-@onready var explorer_nodes = $VSplit/HSplit/PanelContainer/Explorator/ColorRect/Explorer
+@onready var explorer_nodes = $VSplit/HSplit/PanelContainer/Explorator/Explorer
+
 var properties_created: Array
 @onready var properties_tab = $VSplit/HSplit/HSplit/Property/Properties/Scroll/Container
 @onready var properties_select_obj_text = $VSplit/HSplit/HSplit/Property/Properties/InfoText
@@ -109,7 +98,7 @@ var property_update_el: float = 0.0
 #endregion
 
 #region Grid Properties
-const grid_shader = preload("res://source/states/Modchart/Shaders/Grid.gdshader")
+const grid_shader = preload("res://source/states/Editors/Modchart/Shaders/Grid.gdshader")
 var grid_x: float = 0.0
 var grid_real_x: float = 0.0
 
@@ -130,12 +119,12 @@ var position_line_offset: float = 0.0
 @onready var grid_property = $VSplit/HSplitP/Panel/Panel/Scroll/VBox
 #endregion
 
+#region Media Area
+const MediaData = preload("uid://ckoa4kdjfntbw")
+@onready var Media = $VSplit/HSplit/PanelContainer/Media
+#endregion
 #region Shader Area
-@onready var shader_tab: Panel = $ShaderTab
-@onready var shader_menu: MenuButton = $ShaderTab/Shaders
-@onready var shader_tag: LineEdit = $ShaderTab/Tag
-@onready var shader_menu_popup: PopupMenu = shader_menu.get_popup()
-@onready var shader_objects: LineEdit = $ShaderTab/Objects
+
 #endregion
 
 #region Keys Area
@@ -169,14 +158,17 @@ var is_ease_different: bool = false
 #endregion
 
 #region Explorer
-var explorer_object_selected: Node
+var explorer_object_selected: Object
 var explorer_object_last_modulate: Color
 var explorer_select_effect: bool = false
 var explorer_modulate_delta: float = 0.0
+var explorer_properties_can_be_update: bool = true
 @onready var explorer_area_selected = $SubViewport/ObjectSelected
 const SELECT_OBJECT_COLOR = Color.DIM_GRAY
+
 func _on_explorer_button_selected(button) -> void:
 	var obj = button.object
+	explorer_properties_can_be_update = true
 	if explorer_object_selected:
 		if explorer_object_selected == obj: return
 		if explorer_select_effect: 
@@ -195,7 +187,10 @@ func _on_explorer_button_selected(button) -> void:
 	if explorer_select_effect: explorer_object_last_modulate = obj.modulate
 	else: explorer_modulate_delta = 0.0
 	explorer_object_selected = obj
-	
+
+func _on_explorer_media_button_pressed(button: Button):
+	explorer_properties_can_be_update = false
+	if button.media is EditorMaterial: show_media_material_properties(button.media)
 
 func _explorer_obj_selected_color(delta: float):
 	_explorer_update_area_selected()
@@ -206,7 +201,7 @@ func _explorer_obj_selected_color(delta: float):
 		abs(sin(explorer_modulate_delta*3.0))
 	)
 	explorer_object_selected.modulate = Color(col.r,col.g,col.b,explorer_object_selected.modulate.a)
-	
+
 func _explorer_update_area_selected():
 	if !explorer_object_selected: return
 	var pos = explorer_object_selected.get('global_position')
@@ -230,48 +225,12 @@ func _ready() -> void:
 	grid_material.set_shader_parameter('grid_size',GRID_SIZE)
 	dialog.current_dir = Paths.exePath+'/'
 	dialog.canceled.connect(dialog_bg.hide)
-	
-	#region Shaders
-	shader_menu_popup.index_pressed.connect(func(i):
-		var shader = shader_menu_popup.get_item_text(i)
-		shader_menu.text = shader
-		shader_tag.placeholder_text = shader.get_file().get_basename()
-	)
-	
 	dialog.file_selected.connect(func(_f): show_dialog(false))
-	#endregion
-	
-	#region Transition
-	for i in TweenService.transitions: transition_popup.add_item(StringUtils.first_letter_upper(i))
-	
-	transition_menu.text = transition_popup.get_item_text(0)
-	
-	transition_popup.index_pressed.connect(func(i):
-		var trans = transition_popup.get_item_text(i)
-		transition_menu.text = trans
-		cur_transition = TweenService.detect_trans(trans)
-		set_keys_transition(cur_transition)
-	)
-	#endregion
-	
-	#region Ease
-	ease_popup.index_pressed.connect(func(i):
-		var ease = ease_popup.get_item_text(i)
-		ease_menu.text = ease
-		cur_ease = TweenService.detect_ease(ease)
-		set_keys_ease(cur_ease)
-	)
-	#endregion
-	
-	#region Position Line
-	#endregion
-	
 	#Set the state of the PlayState
 	playState.inModchartEditor = true
 	playState.respawnNotes = true
 	
 	Conductor.bpm_changes.connect(bpm_changes)
-
 
 #region Dialog
 func show_dialog(show: bool = true, mode: FileDialog.FileMode = FileDialog.FILE_MODE_OPEN_FILE) -> void:
@@ -280,20 +239,20 @@ func show_dialog(show: bool = true, mode: FileDialog.FileMode = FileDialog.FILE_
 		dialog.file_mode = mode
 	dialog_bg.visible = show
 	dialog.visible = show
-	
+
 func connect_to_dialog(callable: Callable) -> void: 
 	dialog.file_selected.connect(callable,ConnectFlags.CONNECT_ONE_SHOT)
-
-func disconnect_to_dialog(callable: Callable) -> void: 
-	dialog.file_selected.disconnect(callable)
 #endregion
 
 #region Properties
+func _clear_properties():
+	for i in properties_tab.get_children(): i.queue_free()
+	properties_created.clear()
+
 func show_object_properties(object: Object) -> bool:
 	if object is ShaderMaterial: return false
 	
-	for i in properties_tab.get_children(): i.queue_free()
-	properties_created.clear()
+	_clear_properties()
 	var script: Script = object.get_script()
 	
 	var properties: Dictionary = {}
@@ -320,6 +279,25 @@ func show_object_properties(object: Object) -> bool:
 			var property = _create_property_buttons(object,p,_props[p])
 			if property: separator.properties_to_hide.append_array(property)
 	return true
+
+func show_media_material_properties(material: EditorMaterial):
+	_clear_properties()
+	
+	for i in material.uniforms: pass
+	#Load Objects Text
+	var objects_edit: LineEditWithTitle = LineEditWithTitleScene.instantiate()
+	objects_edit.text = 'Objects:'
+	objects_edit.tooltip_text = 'Objects that will contain the shader.'
+	objects_edit.edit_text = _get_shader_objects_str(material)
+	objects_edit.edit_text_changed.connect(func(_t): material.objects = _t.split(','))
+	properties_tab.add_child(objects_edit)
+
+func _get_shader_objects_str(material: EditorMaterial) -> String:
+	if !material.objects: return ''
+	var text: String = material.objects[0]
+	var index: int = 1
+	while index < material.objects.size(): text += ','+material.objects[index]; index += 1
+	return text
 
 func _create_property_separator(text: String, icon: Texture):
 	var separator = PropertySeparator.new()
@@ -387,8 +365,8 @@ func _create_property_range_vector(obj: Node, property: Variant, type: Variant.T
 		if data and data.has(range_name): button = _create_property_hslider(data[range_name],int_value)
 		else: button = _create_property_button_range(int_value)
 		button.set_value_no_signal(obj[property][index])
-		button.name = property+' '+i
-		button.text = button.name+': '
+		button.name = property+':'+i
+		button.text = property+' '+i+': '
 		button.label_settings = property_label_settings
 		nodes.append(button)
 		
@@ -518,7 +496,6 @@ func _load_song_from_json(dir_absolute: String):
 	set_song_editor_position(0.0)
 	
 	Paths.curMod = Paths.getModFolder(dir_absolute)
-	shader_menu._refresh()
 	removeAllGrids()
 	playState.clear()
 	playState._reset_values()
@@ -542,27 +519,25 @@ func _update_song_info():
 #endregion
 
 #region Shader Area
-func _on_select_shader_pressed() -> void: show_dialog(); connect_to_dialog(selected_shader)
+func _on_select_shader_media_pressed() -> void: 
+	show_dialog(); 
+	connect_to_dialog(addMediaShader)
+	dialog.add_filter('*.frag')
+	dialog.add_filter('*.gdshader')
 
-func selected_shader(file: String = ''):
-	disconnect_to_dialog(selected_shader)
-	shader_menu.text = file.get_file().get_basename()
-	
-func addShader(tag: String = shader_tag.text, file: String = shader_menu.text, objects: PackedStringArray = []):
+func addMediaShader(path: String):
 	var shader = EditorMaterial.new()
-	shader.loadShader(file)
-	
+	shader.loadShader(path)
 	if !shader.shader: return
-	if !tag: tag = shader_tag.placeholder_text
-	
-	if !objects:
-		if shader_objects.text: objects = StringUtils.split_no_space(shader_objects.text,',')
-		else: objects = StringUtils.split_no_space(shader_objects.placeholder_text,',')
-	
-	shader.shader_name = file.get_base_dir().get_basename()
-	shader.objects = objects
-	
-	for i in objects:
+	Media.add_shader(shader)
+
+func addShader(shader_media: MediaData):
+	if !shader_media.media: return
+	if !shader_media.media.objects:
+		Global.show_label_error("Insert the objects in Property Menu before add the shader.")
+		return
+	var shader = shader_media.shader
+	for i in shader.objecs:
 		var obj = FunkinGD._find_object(i)
 		if !obj: Global.show_label_error("Can't add shader to "+i+", object don't found."); continue
 		if obj is CameraCanvas: obj.addFilters(shader); continue
@@ -570,8 +545,7 @@ func addShader(tag: String = shader_tag.text, file: String = shader_menu.text, o
 		if obj is CanvasItem:
 			if obj.material: Global.show_label_error("Can't add shader to "+i+", object already as a material."); continue
 			obj.material = shader
-	addFileToEditor(tag,shader)
-
+	addFileToEditor(shader_media.name,shader)
 #endregion
 
 #region Modchart Area
@@ -582,13 +556,11 @@ func _process(delta: float) -> void:
 	_explorer_obj_selected_color(delta)
 
 func save_modchart(path_absolute: String): Paths.saveFile(ModchartState.get_keys_data(),path_absolute)
-
 #endregion
 
 #region Song Position
 func set_song_editor_position(new_pos: float) -> void:
 	if new_pos == songPosition: return
-	
 	
 	if Conductor.step_float < 0: 
 		grid_x = -26
@@ -824,12 +796,6 @@ func add_keys_duration(value: float):
 		i.data.duration += value
 		if !has_duration: has_duration = !!i.data.duration
 	
-	if is_duration_different: duration.text = '...'
-
-func set_keys_transition(trans: Tween.TransitionType): for i in keys_selected: i.data.transition = trans
-
-func set_keys_ease(ease: Tween.EaseType): for i in keys_selected: i.data.ease = ease
-
 func set_keys_value(value: float): for i in keys_selected: 
 		var key_array = get_keys_grid_from_key(i)
 		var key_index = key_array.find(i.data)
@@ -958,8 +924,8 @@ func grid_input(event: InputEvent, grid: Grid):
 				property,
 				default_value,
 				0,
-				cur_transition,
-				cur_ease
+				Tween.TRANS_LINEAR,
+				Tween.EASE_OUT
 			)
 			
 			var key = grid.keys[property][index].key_node
@@ -1063,13 +1029,6 @@ func _set_playstate_value(value: Variant, property: String): playState.set(prope
 #endregion
 
 #region Signals
-func object_submitted(obj_name: String):
-	object_options.release_focus()
-	object_options.visible = false
-	obj_name = obj_name.strip_edges()
-	if !obj_name: return
-	addFileToEditor(obj_name,null)
-
 func _on_modchart_options_index_selected(index: int):
 	match index:
 		0:
@@ -1082,7 +1041,6 @@ func _on_song_options_index_selected(index: int):
 	match index:
 		0: load_json()
 #endregion
-
 
 class PropertySeparator extends VBoxContainer:
 	var button: Button = Button.new()

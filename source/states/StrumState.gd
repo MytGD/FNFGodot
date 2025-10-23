@@ -22,7 +22,7 @@ static var isModding: bool = true
 static var inModchartEditor: bool = false
 static var week_data: Dictionary = {}
 
-const ChartEditor = preload("res://source/states/ChartEditor/ChartEditor.gd")
+const ChartEditor = preload("res://source/states/Editors/ChartEditor/ChartEditor.gd")
 
 @export_group("Song Data")
 

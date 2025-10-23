@@ -1,5 +1,5 @@
-const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
-const EditorShader = preload("res://source/states/Modchart/Shaders/EditorShader.gd")
+const KeyInterpolator = preload("res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd")
+const EditorShader = preload("res://source/states/Editors/Modchart/Shaders/EditorShader.gd")
 ##Keys to Update:
 ##Must be like that:
 ##[codeblock]{"camGame":{

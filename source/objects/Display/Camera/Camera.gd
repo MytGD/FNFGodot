@@ -105,18 +105,15 @@ func setFilters(shaders: Array = []) -> void: ##Set Shaders in the Camera
 		_addViewportShader(filtersArray[index])
 		index -= 1
 
-func addFilters(shaders: Variant) -> void: ##Add shaders to the existing ones.
-	if !shaders is Array: shaders = [shaders]
-	shaders = _convertFiltersToMaterial(shaders)
-	
+
+func addFilter(shader: ShaderMaterial):
 	create_viewport()
-	
-	if _shader_image.material: _addViewportShader(_shader_image.material)
-	_shader_image.material = shaders[0]
-	var index: int = 1
-	while index < shaders.size(): _addViewportShader(shaders[index]); index += 1
-	if shaders: filtersArray.append_array(shaders)
-	filtersArray.append(_shader_image.material)
+	_addViewportShader(shader)
+	filtersArray.append(shader)
+	_shader_image.material = shader
+
+func addFilters(shaders: Array) -> void: ##Add shaders to the existing ones.
+	for i in _convertFiltersToMaterial(shaders): addFilter(i)
 
 func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	if !_last_viewport_added: return

@@ -173,6 +173,7 @@ pointing/emulate_touch_from_mouse=true
 
 renderer/rendering_method="mobile"
 textures/vram_compression/import_s3tc_bptc=true
+textures/default_filters/use_nearest_mipmap_filter=true
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)
 viewport/transparent_background=true
 2d/sdf/scale=0

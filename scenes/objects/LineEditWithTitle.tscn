@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3 uid="uid://cpfmmk0shl6f6"]
+
+[ext_resource type="Script" uid="uid://bjtresqbto27n" path="res://scenes/objects/LineEditWithTitle.gd" id="1_a3ovx"]
+
+[node name="Line_Edit_With_Title" type="Label"]
+custom_minimum_size = Vector2(0, 25)
+offset_right = 57.0
+offset_bottom = 20.0
+text = "Title:"
+vertical_alignment = 1
+script = ExtResource("1_a3ovx")
+
+[node name="LineEdit" type="LineEdit" parent="."]
+layout_mode = 0
+offset_left = 57.0
+offset_top = 3.0
+offset_right = 153.0
+offset_bottom = 26.0
+expand_to_text_length = true

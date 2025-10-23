@@ -1,9 +1,9 @@
 @tool
 extends ColorRect
-const ModchartEditor = preload("res://source/states/Modchart/Editor/ModchartEditor.gd")
-const ModchartState = preload("res://source/states/Modchart/ModchartState.gd")
-const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
-const KeyInterpolatorNode = preload("res://source/states/Modchart/Editor/KeyInterpolatorNode.gd")
+const ModchartEditor = preload("res://source/states/Editors/Modchart/Editor/ModchartEditor.gd")
+const ModchartState = preload("res://source/states/Editors/Modchart/ModchartState.gd")
+const KeyInterpolator = preload("res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd")
+const KeyInterpolatorNode = preload("res://source/states/Editors/Modchart/Editor/KeyInterpolatorNode.gd")
 
 var keys: Dictionary[String,Array] = {}
 var keys_index: Dictionary[String,PackedInt64Array] = {}

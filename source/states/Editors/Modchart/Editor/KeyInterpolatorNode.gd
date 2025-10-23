@@ -1,6 +1,6 @@
 extends Control
-const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
-const ModchartEditor = preload("res://source/states/Modchart/Editor/ModchartEditor.gd")
+const KeyInterpolator = preload("res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd")
+const ModchartEditor = preload("res://source/states/Editors/Modchart/Editor/ModchartEditor.gd")
 const Points: PackedVector2Array = [
 	Vector2(0, 0.5), #Left
 	Vector2(0.5, 0), #Top

@@ -8,19 +8,19 @@ const ICON_SCALE = Vector2(0.6,0.6)
 const CHESS_OFFSET: Vector2 = Vector2(40,100)
 
 const Song = preload("res://source/backend/Song.gd")
-const Chess = preload("res://source/states/ChartEditor/Chess.gd")
+const Chess = preload("res://source/states/Editors/ChartEditor/Chess.gd")
 
 const MouseSelection = preload("res://source/general/mouse/MouseSelection.gd")
 
 const Note = preload("res://source/objects/Notes/Note.gd")
-const Note_Chart = preload("res://source/states/ChartEditor/NoteChart.gd")
+const Note_Chart = preload("res://source/states/Editors/ChartEditor/NoteChart.gd")
 
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 
 const EventNote = preload("res://source/objects/Notes/EventNote.gd")
-const EventChart = preload("res://source/states/ChartEditor/Event.gd")
+const EventChart = preload("res://source/states/Editors/ChartEditor/Event.gd")
 
-const Waveform = preload("res://source/states/ChartEditor/Waveform.gd")
+const Waveform = preload("res://source/states/Editors/ChartEditor/Waveform.gd")
 
 const ButtonRangeScene = preload("res://scenes/objects/ButtonRange.tscn")
 const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")

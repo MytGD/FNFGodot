@@ -23,8 +23,7 @@ func _ready() -> void:
 	line_edit.set_value_no_signal(value)
 	line_edit.min_value = min_value
 	line_edit.max_value = max_value
-	
-	
+
 func set_minimum_value(val: float):
 	min_value = val
 	if value < val: value = val

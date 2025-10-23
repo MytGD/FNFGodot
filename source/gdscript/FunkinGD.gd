@@ -1221,22 +1221,21 @@ static func initShader(shader: String, tag: String = '', obrigatory: bool = fals
 ##[b]Note:[/b] The same works for [method removeShaderCamera].
 ##[br][br]See also [method setSpriteShader].
 static func addShaderCamera(camera: Variant, shader: Variant) -> void:
+	if !shader: return
 	var cameras = camera if camera is Array else [camera]
-	
 	#Detect Shaders
-	var shaders_array: Array[Material]
-	if shader is String or shader is Material: shader = [shader]
-	
-	##Add Shaders to array
-	for i in shader:
-		if i is String: i = _find_shader_material(i)
-		if i: shaders_array.append(i)
-	
+	if shader is String: shader = _find_shader_material(shader)
+	if shader is ShaderMaterial:
+		for cam in cameras:
+			cam = getCamera(cam)
+			if !cam: continue
+			cam.addFilter(shader)
+		return
 	#Set Shaders to Cameras
 	for cam in cameras:
 		cam = getCamera(cam)
 		if !cam: return
-		cam.addFilters(shaders_array)
+		cam.addFilters(shader)
 	
 ##Remove shader from the camera, [code]shader[/code] can be a [String] or a [Array].
 ##[br]See also [method addShaderCamera].

@@ -1,5 +1,5 @@
 extends ScrollContainer
-const Explorer = preload("res://source/states/Modchart/Editor/Explorer.gd")
+const Explorer = preload("res://source/states/Editors/Modchart/Editor/Explorer.gd")
 const nodes_offset = Vector2(20,20)
 const nodes_offset_center = Vector2(10,10)
 @export var object: Node: set = set_object

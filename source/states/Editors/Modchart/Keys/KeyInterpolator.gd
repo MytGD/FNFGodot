@@ -1,5 +1,5 @@
 extends Object
-const KeyInterpolator = preload("res://source/states/Modchart/Keys/KeyInterpolator.gd")
+const KeyInterpolator = preload("res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd")
 #Key Data
 var time: float: set = _set_time
 var length: float = 0.0

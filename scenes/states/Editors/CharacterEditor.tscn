@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://droixhbemd0xd"]
 
-[ext_resource type="Script" uid="uid://dkyvojm86n535" path="res://source/states/CharacterEditor/CharacterEditor.gd" id="1_qbwox"]
-[ext_resource type="Script" uid="uid://cdw8oloedo54f" path="res://source/states/CharacterEditor/Marker.gd" id="2_6y1bd"]
+[ext_resource type="Script" uid="uid://dkyvojm86n535" path="res://source/states/Editors/CharacterEditor/CharacterEditor.gd" id="1_qbwox"]
+[ext_resource type="Script" uid="uid://cdw8oloedo54f" path="res://source/states/Editors/CharacterEditor/Marker.gd" id="2_6y1bd"]
 [ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_atq18"]
 [ext_resource type="Script" uid="uid://cvvli26q7wviq" path="res://source/general/popup/PopupDir.gd" id="4_6y1bd"]
 

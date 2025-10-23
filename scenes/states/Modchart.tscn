@@ -1,15 +1,14 @@
 [gd_scene load_steps=22 format=3 uid="uid://dgigti34bmg6s"]
 
-[ext_resource type="Script" uid="uid://blf6ig37np2mt" path="res://source/states/Modchart/Editor/ModchartEditor.gd" id="1_2kx6s"]
+[ext_resource type="Script" uid="uid://blf6ig37np2mt" path="res://source/states/Editors/Modchart/Editor/ModchartEditor.gd" id="1_2kx6s"]
 [ext_resource type="Script" uid="uid://cg2ig10imhwri" path="res://source/states/PlayState.gd" id="2_2kx6s"]
 [ext_resource type="Texture2D" uid="uid://cggfq2j244bhe" path="res://icons/ArrowDown.svg" id="3_3fulc"]
-[ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="3_c5smy"]
 [ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/Shader.svg" id="3_n2vt6"]
-[ext_resource type="Script" uid="uid://du1rbf6kg1jmr" path="res://source/states/Modchart/Editor/Explorer.gd" id="3_rhtdg"]
+[ext_resource type="Script" uid="uid://du1rbf6kg1jmr" path="res://source/states/Editors/Modchart/Editor/Explorer.gd" id="3_rhtdg"]
 [ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="5_n2vt6"]
 [ext_resource type="Texture2D" uid="uid://d3ler7oyh2kc5" path="res://icons/Remove.svg" id="6_3fulc"]
-[ext_resource type="Script" uid="uid://bwuthavuunu4c" path="res://source/states/Modchart/Editor/Timeline.gd" id="7_rhtdg"]
-[ext_resource type="Script" uid="uid://cvvli26q7wviq" path="res://source/general/popup/PopupDir.gd" id="9_xr4tk"]
+[ext_resource type="Texture2D" uid="uid://sqp64xvjhqvv" path="res://icons/Image.svg" id="6_mbk3t"]
+[ext_resource type="Script" uid="uid://bwuthavuunu4c" path="res://source/states/Editors/Modchart/Editor/Timeline.gd" id="7_rhtdg"]
 [ext_resource type="Texture2D" uid="uid://cdbm117l1dtf" path="res://icons/Keyboard.svg" id="11_x5qun"]
 
 [sub_resource type="GDScript" id="GDScript_rhtdg"]
@@ -21,6 +20,32 @@ func _ready():
 	if !Engine.is_editor_hint(): set_script(null)
 "
 
+[sub_resource type="GDScript" id="GDScript_f01ue"]
+resource_name = "Media"
+script/source = "extends Panel
+const ModchartEditor = preload(\"res://source/states/Editors/Modchart/Editor/ModchartEditor.gd\")
+const MediaData = preload(\"uid://ckoa4kdjfntbw\")
+const ShaderIcon = preload(\"uid://ch3c07tawwa8r\")
+const ImageIcon = preload(\"uid://sqp64xvjhqvv\")
+
+@onready var editor = $\"../../../..\"
+@onready var shader_container = $HBoxContainer/Shaders/Container
+@onready var image_container = $HBoxContainer/Images/Container
+
+func add_shader(shader: ModchartEditor.EditorMaterial, rename: bool = true):
+	if !shader: return
+	var media = MediaData.new()
+	media.media = shader
+	media.icon = ShaderIcon
+	add(media)
+	media.line_edit.text = shader.resource_name
+	if rename: media._line_grab_focus()
+
+func add(data: MediaData):
+	shader_container.add_child(data)
+	data.pressed.connect(editor._on_explorer_media_button_pressed.bind(data))
+"
+
 [sub_resource type="ViewportTexture" id="ViewportTexture_vxf07"]
 viewport_path = NodePath("SubViewport")
 
@@ -30,7 +55,7 @@ script/source = "@tool
 extends TabContainer
 func _ready() -> void:
 	set_tab_icon(0,load(\"res://icons/ListSelect.svg\"))
-	set_tab_icon(1,load(\"res://icons/KeyValue.svg\"))
+	#set_tab_icon(1,load(\"res://icons/KeyValue.svg\"))
 	if !Engine.is_editor_hint(): set_script(null)
 "
 
@@ -55,11 +80,21 @@ func _on_index_pressed(id: int):
 [sub_resource type="GDScript" id="GDScript_3fulc"]
 resource_name = "KeyOptions"
 script/source = "extends PopupMenu
-
+const KeyInterpolator = preload(\"uid://cy7liw7g73so2\")
+@onready var editor = $\"../\"
 func _ready():
 	add_submenu_node_item('Transitions',$Transitions)
 	add_submenu_node_item('Easing',$Easings)
 	add_item('Delete')
+
+func set_key_ease(ease: Tween.EaseType):
+	for i in editor.keys_selected: i.ease = ease
+
+func set_key_trans(trans: Tween.TransitionType):
+	for i in editor.keys_selected: i.transition = trans
+
+func _index_pressed(index: int):
+	if index == 3: editor.removeKeysSelected()
 "
 
 [sub_resource type="GDScript" id="GDScript_x5qun"]
@@ -168,7 +203,7 @@ split_offset = 520
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit"]
 layout_mode = 2
-split_offset = 200
+split_offset = 300
 
 [node name="PanelContainer" type="TabContainer" parent="VSplit/HSplit"]
 clip_contents = true
@@ -194,23 +229,27 @@ offset_right = -0.1000061
 offset_bottom = -0.018005371
 color = Color(0.011087579, 0.011087578, 0.01108758, 1)
 
-[node name="Explorer" type="ScrollContainer" parent="VSplit/HSplit/PanelContainer/Explorator/ColorRect" node_paths=PackedStringArray("object")]
+[node name="Explorer" type="ScrollContainer" parent="VSplit/HSplit/PanelContainer/Explorator" node_paths=PackedStringArray("object")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -1.0
-offset_top = 1.0
+anchors_preset = -1
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 3.0
+offset_top = 5.0
+offset_right = -0.1000061
+offset_bottom = -0.024017334
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_rhtdg")
-object = NodePath("../../../../../../SubViewport/PlayState")
+object = NodePath("../../../../../SubViewport/PlayState")
+add_parent = null
 
 [node name="Media" type="Panel" parent="VSplit/HSplit/PanelContainer"]
 layout_mode = 2
+script = SubResource("GDScript_f01ue")
 metadata/_tab_index = 1
 
-[node name="ColorRect2" type="ColorRect" parent="VSplit/HSplit/PanelContainer/Media"]
+[node name="bg" type="ColorRect" parent="VSplit/HSplit/PanelContainer/Media"]
 clip_contents = true
 layout_mode = 1
 anchors_preset = -1
@@ -222,40 +261,47 @@ offset_right = -0.1000061
 offset_bottom = -0.018005371
 color = Color(0.011087579, 0.011087578, 0.01108758, 1)
 
-[node name="Explorer" type="ScrollContainer" parent="VSplit/HSplit/PanelContainer/Media/ColorRect2" node_paths=PackedStringArray("object")]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -1.0
-offset_top = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("3_rhtdg")
-object = NodePath("../../../../../../SubViewport/PlayState")
-
 [node name="HBoxContainer" type="VBoxContainer" parent="VSplit/HSplit/PanelContainer/Media"]
-layout_mode = 0
-offset_left = 4.0
-offset_top = 5.0
-offset_right = 124.0
-offset_bottom = 65.0
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.013
+anchor_top = 0.008
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 0.099999905
+offset_top = 0.031999826
+offset_right = -0.1000061
+offset_bottom = -0.024017334
 
 [node name="Shaders" type="FoldableContainer" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
+focus_mode = 0
 title = "Shaders"
+title_text_overrun_behavior = 4
 
-[node name="Add" type="Button" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer/Shaders"]
+[node name="Container" type="VBoxContainer" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer/Shaders"]
 layout_mode = 2
+
+[node name="Add" type="Button" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer/Shaders/Container"]
+layout_mode = 2
+focus_mode = 0
 text = "+"
 icon = ExtResource("3_n2vt6")
 
 [node name="Images" type="FoldableContainer" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer"]
-visible = false
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 0
 title = "Images"
+
+[node name="Container" type="VBoxContainer" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer/Images"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer/Images/Container"]
+layout_mode = 2
+focus_mode = 0
+text = "+"
+icon = ExtResource("6_mbk3t")
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit/HSplit"]
 layout_mode = 2
@@ -278,32 +324,28 @@ script = SubResource("GDScript_xr4tk")
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="BG" type="Panel" parent="VSplit/HSplit/HSplit/Property/Properties"]
-modulate = Color(0.11119685, 0.11119684, 0.11119684, 1)
+[node name="bg" type="ColorRect" parent="VSplit/HSplit/HSplit/Property/Properties"]
 clip_contents = true
 layout_mode = 1
 anchors_preset = -1
-anchor_top = 0.012
-anchor_right = 0.994
+anchor_right = 0.98700005
 anchor_bottom = 0.994
-offset_left = 3.0
-offset_top = 0.035999775
-offset_right = -0.052001953
-offset_bottom = -0.024017334
-grow_horizontal = 2
-grow_vertical = 2
-metadata/_edit_lock_ = true
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -0.1000061
+offset_bottom = -0.018005371
+color = Color(0.011087579, 0.011087578, 0.01108758, 1)
 
 [node name="InfoText" type="Label" parent="VSplit/HSplit/HSplit/Property/Properties"]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.008
-anchor_top = 0.012
-anchor_right = 0.994
+anchor_top = 0.008
+anchor_right = 0.98700005
 anchor_bottom = 0.994
 offset_left = 0.13599992
-offset_top = 0.035999775
-offset_right = 0.14797974
+offset_top = 0.03200078
+offset_right = 0.0040283203
 offset_bottom = -0.018005371
 text = "Select a Valid Object from Explorer"
 horizontal_alignment = 1
@@ -317,70 +359,16 @@ anchor_left = 0.008
 anchor_top = 0.012
 anchor_right = 0.994
 anchor_bottom = 0.994
-offset_left = 0.13599992
-offset_top = 0.035999775
-offset_right = 0.14797974
-offset_bottom = -0.018005371
+offset_left = 1.5359998
+offset_top = -1.9640002
+offset_right = 1.5479736
+offset_bottom = -2.0180054
 
 [node name="Container" type="VBoxContainer" parent="VSplit/HSplit/HSplit/Property/Properties/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 13
-
-[node name="Key" type="VBoxContainer" parent="VSplit/HSplit/HSplit/Property"]
-visible = false
-clip_contents = true
-layout_mode = 2
-theme_override_constants/separation = 34
-metadata/_edit_lock_ = true
-metadata/_tab_index = 1
-
-[node name="TitleTween" type="Label" parent="VSplit/HSplit/HSplit/Property/Key"]
-layout_mode = 2
-size_flags_vertical = 0
-text = "=============Tween Options============"
-horizontal_alignment = 1
-clip_text = true
-
-[node name="Duration" parent="VSplit/HSplit/HSplit/Property/Key" instance=ExtResource("3_c5smy")]
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-text = "Duration: "
-
-[node name="Transition" type="Label" parent="VSplit/HSplit/HSplit/Property/Key"]
-layout_mode = 2
-text = "Transition:"
-
-[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/Key/Transition"]
-layout_mode = 0
-offset_left = 103.0
-offset_top = -5.0
-offset_right = 207.0
-offset_bottom = 21.0
-flat = false
-
-[node name="Ease" type="Label" parent="VSplit/HSplit/HSplit/Property/Key"]
-layout_mode = 2
-text = "Ease: "
-
-[node name="Options" type="MenuButton" parent="VSplit/HSplit/HSplit/Property/Key/Ease"]
-layout_mode = 0
-offset_left = 50.0
-offset_top = -4.0
-offset_right = 116.0
-offset_bottom = 19.0
-text = "In"
-flat = false
-item_count = 4
-popup/item_0/text = "In"
-popup/item_0/id = 0
-popup/item_1/text = "Out"
-popup/item_1/id = 1
-popup/item_2/text = "InOut"
-popup/item_2/id = 2
-popup/item_3/text = "OutIn"
-popup/item_3/id = 3
 
 [node name="HSplitP" type="HSplitContainer" parent="VSplit"]
 layout_mode = 2
@@ -450,8 +438,8 @@ metadata/_edit_lock_ = true
 [node name="BG" type="Node2D" parent="."]
 visible = false
 modulate = Color(0, 0, 0, 0.584314)
-scale = Vector2(1280, 720)
 script = ExtResource("5_n2vt6")
+size = Vector2(1280, 720)
 metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
 
 [node name="FileDialog" type="FileDialog" parent="."]
@@ -466,89 +454,13 @@ file_filter_toggle_enabled = false
 file_sort_options_enabled = false
 
 [node name="ConfirmationDialog" type="ConfirmationDialog" parent="."]
+oversampling_override = 1.0
 title = "Alert"
 initial_position = 2
 size = Vector2i(541, 100)
 unresizable = true
 ok_button_text = "Confirm"
 dialog_text = "This will remove every shader in this section, you sure?"
-
-[node name="ShaderTab" type="Panel" parent="."]
-visible = false
-offset_left = 391.0
-offset_top = 196.0
-offset_right = 863.0
-offset_bottom = 422.0
-
-[node name="Label" type="Label" parent="ShaderTab"]
-layout_mode = 0
-offset_top = 1.0
-offset_right = 471.0
-offset_bottom = 228.0
-text = "                   Add Shader
-
-
-Shader File:
-
-Shader Tag:
-
-Objects:
-
-"
-metadata/_edit_lock_ = true
-
-[node name="Shaders" type="MenuButton" parent="ShaderTab"]
-layout_mode = 0
-offset_left = 114.0
-offset_top = 52.0
-offset_right = 279.0
-offset_bottom = 73.0
-flat = false
-script = ExtResource("9_xr4tk")
-dir_to_look = "shaders"
-filters = PackedStringArray("gdshader", "frag")
-show_with_extenstion = true
-
-[node name="SelectShader" type="Button" parent="ShaderTab"]
-layout_mode = 0
-offset_left = 288.0
-offset_top = 51.0
-offset_right = 465.0
-offset_bottom = 74.0
-text = "Selected from File"
-
-[node name="AddShader" type="Button" parent="ShaderTab"]
-layout_mode = 0
-offset_left = 150.0
-offset_top = 198.0
-offset_right = 187.0
-offset_bottom = 221.0
-focus_mode = 0
-text = "Add"
-
-[node name="Cancel" type="Button" parent="ShaderTab"]
-layout_mode = 0
-offset_left = 224.0
-offset_top = 196.0
-offset_right = 289.0
-offset_bottom = 219.0
-focus_mode = 0
-text = "Cancel"
-
-[node name="Objects" type="LineEdit" parent="ShaderTab"]
-layout_mode = 0
-offset_left = 78.0
-offset_top = 128.0
-offset_right = 312.0
-offset_bottom = 151.0
-placeholder_text = "camGame, camHUD, camOther"
-
-[node name="Tag" type="LineEdit" parent="ShaderTab"]
-layout_mode = 0
-offset_left = 109.0
-offset_top = 88.0
-offset_right = 261.0
-offset_bottom = 111.0
 
 [node name="EditOptions" type="PopupMenu" parent="."]
 oversampling_override = 1.0
@@ -570,6 +482,7 @@ script = SubResource("GDScript_u3sa4")
 oversampling_override = 1.0
 initial_position = 1
 size = Vector2i(77, 27)
+visible = true
 script = SubResource("GDScript_3fulc")
 
 [node name="Transitions" type="PopupMenu" parent="KeyOptions"]
@@ -612,7 +525,6 @@ oversampling_override = 1.0
 title = "ShortCuts"
 position = Vector2i(400, 100)
 size = Vector2i(328, 300)
-visible = true
 wrap_controls = false
 borderless = false
 
@@ -637,21 +549,14 @@ label_settings = SubResource("LabelSettings_rhtdg")
 [connection signal="pressed" from="Panel/HBoxContainer/Modchart" to="ModchartOptions" method="show"]
 [connection signal="pressed" from="Panel/HBoxContainer/Song" to="SongOptions" method="show"]
 [connection signal="pressed" from="Panel/HBoxContainer/Help" to="HelpOptions" method="show"]
-[connection signal="on_button_selected" from="VSplit/HSplit/PanelContainer/Explorator/ColorRect/Explorer" to="." method="_on_explorer_button_selected"]
-[connection signal="on_button_selected" from="VSplit/HSplit/PanelContainer/Media/ColorRect2/Explorer" to="." method="_on_explorer_button_selected"]
-[connection signal="value_added" from="VSplit/HSplit/HSplit/Property/Key/Duration" to="." method="add_keys_duration"]
+[connection signal="on_button_selected" from="VSplit/HSplit/PanelContainer/Explorator/Explorer" to="." method="_on_explorer_button_selected"]
+[connection signal="pressed" from="VSplit/HSplit/PanelContainer/Media/HBoxContainer/Shaders/Container/Add" to="." method="_on_select_shader_media_pressed"]
 [connection signal="resized" from="VSplit/HSplitP/Panel/Panel/Scroll/VBox" to="." method="updateAllGrids"]
 [connection signal="gui_input" from="VSplit/HSplitP/HTimeline/Timeline" to="." method="timeline_input"]
-[connection signal="draw" from="ShaderTab" to="BG" method="show"]
-[connection signal="hidden" from="ShaderTab" to="BG" method="hide"]
-[connection signal="pressed" from="ShaderTab/SelectShader" to="." method="_on_select_shader_pressed"]
-[connection signal="pressed" from="ShaderTab/AddShader" to="." method="addShader"]
-[connection signal="pressed" from="ShaderTab/AddShader" to="BG" method="hide"]
-[connection signal="pressed" from="ShaderTab/AddShader" to="ShaderTab" method="hide"]
-[connection signal="pressed" from="ShaderTab/Cancel" to="BG" method="hide"]
-[connection signal="pressed" from="ShaderTab/Cancel" to="ShaderTab" method="hide"]
 [connection signal="index_pressed" from="EditOptions/AddObject" to="EditOptions/AddObject" method="_on_index_pressed"]
 [connection signal="index_pressed" from="KeyOptions" to="." method="key_options_menu_pressed"]
+[connection signal="index_pressed" from="KeyOptions/Transitions" to="KeyOptions" method="set_key_trans"]
+[connection signal="index_pressed" from="KeyOptions/Easings" to="KeyOptions" method="set_key_ease"]
 [connection signal="index_pressed" from="ModchartOptions" to="." method="_on_modchart_options_index_selected"]
 [connection signal="index_pressed" from="SongOptions" to="." method="_on_song_options_index_selected"]
 [connection signal="index_pressed" from="HelpOptions" to="HelpOptions" method="_on_index_pressed"]
