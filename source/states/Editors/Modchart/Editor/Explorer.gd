@@ -34,26 +34,24 @@ func _get_node_icon(node: Object) -> Texture:
 	return _get_class_icon(node.get_class())
 
 func _get_class_icon(_class: String,default_icon: String = 'Node') -> Texture:
-	var getting_default: bool = false
 	while _class:
 		if _icon_exists(_class): return icons_found[_class]
 		_class = ClassDB.get_parent_class(_class)
-		if !_class and !getting_default: _class = default_icon 
-	return null
+	return _save_icon(default_icon)
 
 func _icon_exists(_name: Variant) -> bool:
 	var icon = icons_found.get(_name)
 	if icon: return true
+	return !!_save_icon(_name)
+
+func _save_icon(_name: Variant) -> Texture:
 	var path: String
-	if _name is Script:
-		path = 'res://icons/'+_name.resource_path.get_basename().get_file()+'.svg'
+	if _name is Script: path = 'res://icons/'+_name.resource_path.get_basename().get_file()+'.svg'
 	else: path = 'res://icons/'+_name+'.svg'
 	
-	if ResourceLoader.exists(path):
-		icons_found[_name] = load(path)
-		return true
-	return false
-
+	var icon: Texture
+	if ResourceLoader.exists(path): icon = load(path); icons_found[_name] = icon
+	return icon
 func add_childs(childs: Array,parent: Control = null):
 	for i in childs: 
 		var button = add_new_child(i,parent)
@@ -90,6 +88,7 @@ class ButtonExplorer extends Control:
 		
 		interator.set("theme_override_constants/icon_max_width",16)
 		interator.flat = true
+		interator.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	func _ready() -> void:
 		interator.position.x = 15
 		interator.pressed.connect(func(): explorer.on_button_selected.emit(self))

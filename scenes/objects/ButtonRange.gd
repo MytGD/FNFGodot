@@ -14,7 +14,7 @@ var _value_str: String = ''
 @export var limit_max: bool = false
 @export var value: float = 0.0: set = set_value
 @export var step: float = 1.0##The value that will be added when the arrows are been pressed.
-@export var shift_step: float = 1.0##The value to add when pressing SHIFT key([param KEY_SHIFT])
+@export var shift_step_mult: float = 2.0##When pressing [param KEY_SHIFT], the [param value] will be multiplicated for this value.
 @export var int_value: bool = false: set = set_int_val
 var _call_emit: bool = true
 #endregion
@@ -39,9 +39,9 @@ func _ready():
 	_update_minimums_sizes()
 
 #region Value Methods
-func addValue() -> void: value += shift_step if Input.is_action_pressed("shift") else step
+func addValue() -> void: value += step*shift_step_mult if Input.is_action_pressed("shift") else step
 
-func subValue() -> void: value -= shift_step if Input.is_action_pressed("shift") else step
+func subValue() -> void: value -= step*shift_step_mult if Input.is_action_pressed("shift") else step
 
 func set_value_no_signal(_value: float):
 	_call_emit = false
@@ -54,7 +54,7 @@ func set_value(_value: float):
 	
 	var emit: bool = _call_emit and value != _value
 	var difference: float = _value - value
-	value = _value
+	value = snappedf(_value,0.0001)
 	update_value_text()
 	if emit:
 		value_changed.emit(_value)
@@ -80,6 +80,7 @@ func _update_nodes_position():
 		width += i.size.x + 2
 		i.position.y = min_center - 20
 	line_edit.position.x -= 4
+
 func _update_minimums_sizes() -> void:
 	if update_min_size_x: update_minimum_size_x()
 	if update_min_size_y: update_minimum_size_y()
@@ -92,7 +93,7 @@ func update_value_text()  -> void:
 	if !line_edit: return
 	var value_int = int(value)
 	if int_value or value_int == value: _value_str = str(value_int)
-	else: _value_str = str(snappedf(value,0.0001))
+	else: _value_str = str(value)
 	_set_value_text()
 
 func _set_value_text() -> void: if line_edit: line_edit.text = prefix+_value_str+suffix

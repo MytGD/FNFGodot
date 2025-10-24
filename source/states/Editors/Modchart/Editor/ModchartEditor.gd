@@ -13,6 +13,8 @@ const Character = preload("res://source/objects/Sprite/Character.gd")
 const CameraCanvas = preload("res://source/objects/Display/Camera/Camera.gd")
 const SpriteGroup = preload("res://source/general/groups/SpriteGroup.gd")
 const PlayState = preload("res://source/states/PlayState.gd")
+const Bar = preload("res://source/objects/UI/Bar.gd")
+const GDText = preload("res://source/objects/Display/GDText.gd")
 
 const KeyInterpolator = preload("res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd")
 const KeyInterpolatorNode = preload("res://source/states/Editors/Modchart/Editor/KeyInterpolatorNode.gd")
@@ -50,16 +52,31 @@ var PropertiesAvaliable := {
 	Sprite:{
 		'x': null,
 		'y': null,
-		'velocity': null,
+		'velocity': {'step_x': 10,'step_y': 10},
 		'acceleration': null,
-		'scale': {'type': TYPE_FLOAT,'range': [-12,12]},
 		'scrollFactor': {'range_x': [0.0,10.0,0.1],'range_y': [0.0,10.0,0.1]}
 	},
 	SpriteGroup: {
 		'x': null,
 		'y': null
 	},
-	StrumNote:{'direction': {'range': [-360,360]}}
+	Bar: {
+		'position': null,
+		'scale': null,
+		'rotation': null,
+	},
+		GDText:{
+		'x': null,
+		'y': null
+	},
+	StrumNote:{'direction': {'range': [-360,360]}},
+	'Label':{
+		'text': null,
+		"visible_ratio": {'range': [0.0,1.0,0.01]}
+	},
+	'Node2D': {
+		'scale': {'type': TYPE_FLOAT,'range': [-12,12]}
+	}
 }
 
 
@@ -259,19 +276,7 @@ func show_object_properties(object: Object) -> bool:
 	if object is ShaderMaterial: return false
 	
 	_clear_properties()
-	var script: Script = object.get_script()
-	
-	var properties: Dictionary = {}
-	if script:
-		while script:
-			var props = PropertiesAvaliable.get(script)
-			if props: 
-				var _class_n = script.resource_path.get_basename().get_file()
-				properties[_class_n] = [props,explorer_nodes._get_node_icon(script)]
-			script = script.get_base_script()
-
-	#var base_class_props = PropertiesAvaliable.get(ClassDB.instantiate(object.get_class()))
-	#if base_class_props: properties.append_array(base_class_props)
+	var properties: Dictionary = _get_object_properties(object)
 	
 	if !properties: properties_select_obj_text.visible = true; return false
 	properties_select_obj_text.visible = false
@@ -286,6 +291,21 @@ func show_object_properties(object: Object) -> bool:
 			if property: separator.properties_to_hide.append_array(property)
 	return true
 
+func _get_object_properties(object: Object):
+	var script: Script = object.get_script()
+	var props: Dictionary
+	if script:
+		while script:
+			var val = PropertiesAvaliable.get(script)
+			if val: 
+				var _class_n = script.resource_path.get_basename().get_file()
+				props[_class_n] = [val,explorer_nodes._get_node_icon(script)]
+			script = script.get_base_script()
+	
+	var name_class = object.get_class()
+	var class_props = PropertiesAvaliable.get(name_class)
+	if class_props: props[name_class] = [class_props,explorer_nodes._get_class_icon(name_class)]
+	return props
 func show_media_material_properties(material: EditorMaterial):
 	_clear_properties()
 	
@@ -359,13 +379,20 @@ func _create_property_range_vector(obj: Object, property: Variant, index: int, i
 	var value = obj[property]
 	var index_name = VectorUtils.vectors_index[index]
 	var range_name = 'range_'+index_name
+	var step_name = 'step_'+index_name
 	var button
-	if data and data.has(range_name): button = _create_property_hslider(data[range_name],int_value)
-	else: button = _create_property_button_range(int_value)
+	
+	var custom_step: bool = false
+	if data: 
+		if data.has(range_name): button = _create_property_hslider(data[range_name],int_value)
+		elif data.has(step_name): custom_step = true
+	
+	if !button: button = _create_property_button_range(int_value)
 	button.set_value_no_signal(value[index])
 	button.name = property+':'+index_name
 	button.text = property+' '+index_name+': '
 	button.label_settings = property_label_settings
+	if custom_step: button.step = data[step_name]
 	return button
 	
 func _create_vectors_properties(obj: Object, property: Variant, type: Variant.Type, data = null) -> Array[Node]:
@@ -456,11 +483,11 @@ func _update_reset_button_pos(reset_button: Button) -> void:
 	reset_button.position = Vector2(min_size.x,parent.size.y/2.0 - 8)
 
 func _check_properties_update(delta: float):
-	if properties_created:
-		property_update_el += delta
-		if property_update_el >= UPDATE_PROPERTY_EVERY:
-			property_update_el = 0.0
-			_update_properties()
+	if !properties_created: return
+	property_update_el += delta
+	if property_update_el >= UPDATE_PROPERTY_EVERY:
+		property_update_el = 0.0
+		_update_properties()
 
 func _get_obj_property_default(obj: Object, property: String):
 	var default = default_values.get_or_add(obj,{}).get(property)
@@ -1082,7 +1109,8 @@ class PropertySeparator extends VBoxContainer:
 	func _init() -> void:
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		
+		button.set("theme_override_constants/icon_max_width",23)
+	
 	func _ready() -> void:
 		button.toggle_mode = true
 		button.button_pressed = true

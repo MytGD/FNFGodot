@@ -385,7 +385,6 @@ func loadChart(file: String):
 
 func updateBpm():
 	note_current_sustain_length.step = Conductor.stepCrochet/2.0
-	note_current_sustain_length.shift_step = Conductor.stepCrochet
 	_update_chart_positions()
 	
 func changeBpm(to: float = new_bpm_value.value) -> void:

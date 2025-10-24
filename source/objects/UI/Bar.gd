@@ -5,6 +5,7 @@ var bg: Sprite = Sprite.new()
 var x: float:
 	set(value): position.x = value
 	get(): return position.x
+	
 var y: float:
 	set(value):position.y = value
 	get():return position.y

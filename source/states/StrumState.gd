@@ -373,23 +373,31 @@ func reset_strums_state():
 		strum.modulate.a = defaultStrumAlpha[i]
 
 func _create_strums() -> void:
-	for i in strumLineNotes.members: i.queue_free()
+	for i in strumLineNotes.members: i.remove_child(i.get_parent()); i.queue_free()
 	
 	strumLineNotes.members.clear()
 	playerStrums.members.clear()
 	opponentStrums.members.clear()
 	
 	updateStrumsPosition()
-	for i in (keyCount*2):
-		var opponent_strum = i < keyCount
-		var strum = createStrum(i,opponent_strum,defaultStrumPos[i])
-		strum.mustPress = (playAsOpponent == opponent_strum and not botplay)
+	var i = 0
+	#Opponent Notes
+	while i < keyCount:
+		var strum = createStrum(i,true,defaultStrumPos[i])
+		strum.mustPress = playAsOpponent and !botplay
 		strum.modulate.a = defaultStrumAlpha[i]
+		i += 1
+	i = 0
+	#Player Notes
+	while i < keyCount:
+		var strum = createStrum(i,false,defaultStrumPos[i+keyCount])
+		strum.mustPress = !playAsOpponent and !botplay
+		strum.modulate.a = defaultStrumAlpha[i+keyCount]
+		i += 1
 func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
-	i %= keyCount
 	var strum = StrumNote.new(i)
 	strum.loadFromStyle(arrowStyle)
-	strum.name = "StrumNote"+str(i)
+	
 	
 	strum.mustPress = !opponent_strum and !botplay
 	if opponent_strum: opponentStrums.add(strum)
@@ -399,6 +407,7 @@ func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZER
 	strum._position = pos
 	
 	strumLineNotes.add(strum)
+	strum.name = "StrumNote"
 	return strum
 
 func _process(_d) -> void:  if generateMusic: _songPos = Conductor.songPositionDelayed; updateNotes()
