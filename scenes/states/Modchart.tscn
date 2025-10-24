@@ -16,7 +16,8 @@ resource_name = "ExplorerIcons"
 script/source = "@tool
 extends TabContainer
 func _ready():
-	set_tab_icon(0,load(\"res://icons/Panels2.svg\"))
+	set_tab_icon(0,load(\"uid://bld6aqytqnhev\"))
+	set_tab_icon(1,load(\"uid://cm420vho75ttu\"))
 	if !Engine.is_editor_hint(): set_script(null)
 "
 
@@ -38,8 +39,10 @@ func add_shader(shader: ModchartEditor.EditorMaterial, rename: bool = true):
 	media.media = shader
 	media.icon = ShaderIcon
 	add(media)
-	media.line_edit.text = shader.resource_name
-	if rename: media._line_grab_focus()
+	media.line_edit.text = shader.shader.resource_name
+	if rename: 
+		media._line_grab_focus()
+		media.line_edit.caret_column = media.line_edit.text.length()
 
 func add(data: MediaData):
 	shader_container.add_child(data)
@@ -54,6 +57,7 @@ resource_name = "PropertiesIcon"
 script/source = "@tool
 extends TabContainer
 func _ready() -> void:
+	
 	set_tab_icon(0,load(\"res://icons/ListSelect.svg\"))
 	#set_tab_icon(1,load(\"res://icons/KeyValue.svg\"))
 	if !Engine.is_editor_hint(): set_script(null)
@@ -160,6 +164,7 @@ scale = Vector2(0.99999994, 0.99999994)
 texture = ExtResource("3_3fulc")
 
 [node name="Panel" type="Panel" parent="."]
+texture_filter = 2
 offset_right = 1282.0
 offset_bottom = 30.0
 size_flags_horizontal = 3
@@ -208,6 +213,7 @@ split_offset = 300
 [node name="PanelContainer" type="TabContainer" parent="VSplit/HSplit"]
 clip_contents = true
 layout_mode = 2
+theme_override_constants/icon_max_width = 16
 current_tab = 1
 tab_focus_mode = 0
 script = SubResource("GDScript_rhtdg")
@@ -242,7 +248,6 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_rhtdg")
 object = NodePath("../../../../../SubViewport/PlayState")
-add_parent = null
 
 [node name="Media" type="Panel" parent="VSplit/HSplit/PanelContainer"]
 layout_mode = 2
@@ -287,6 +292,7 @@ layout_mode = 2
 focus_mode = 0
 text = "+"
 icon = ExtResource("3_n2vt6")
+expand_icon = true
 
 [node name="Images" type="FoldableContainer" parent="VSplit/HSplit/PanelContainer/Media/HBoxContainer"]
 layout_mode = 2
@@ -302,6 +308,7 @@ layout_mode = 2
 focus_mode = 0
 text = "+"
 icon = ExtResource("6_mbk3t")
+expand_icon = true
 
 [node name="HSplit" type="HSplitContainer" parent="VSplit/HSplit"]
 layout_mode = 2
@@ -316,6 +323,7 @@ metadata/_edit_lock_ = true
 
 [node name="Property" type="TabContainer" parent="VSplit/HSplit/HSplit"]
 layout_mode = 2
+theme_override_constants/icon_max_width = 16
 current_tab = 0
 tab_focus_mode = 0
 script = SubResource("GDScript_xr4tk")
@@ -373,7 +381,6 @@ theme_override_constants/separation = 13
 [node name="HSplitP" type="HSplitContainer" parent="VSplit"]
 layout_mode = 2
 split_offset = 140
-metadata/_edit_lock_ = true
 
 [node name="Panel" type="VBoxContainer" parent="VSplit/HSplitP"]
 layout_mode = 2
@@ -384,9 +391,11 @@ layout_mode = 2
 [node name="Delete" type="Button" parent="VSplit/HSplitP/Panel/PanelContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
+size_flags_vertical = 0
 tooltip_text = "Delete Current Select"
 icon = ExtResource("6_3fulc")
 flat = true
+icon_alignment = 2
 
 [node name="Panel" type="PanelContainer" parent="VSplit/HSplitP/Panel"]
 layout_mode = 2

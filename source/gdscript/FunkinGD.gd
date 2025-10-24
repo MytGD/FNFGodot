@@ -1172,7 +1172,6 @@ static func startNoteTween(tag: String, noteID, values: Dictionary[String,Varian
 ##Returns a new Strum Note. If you want to add the Strum to a group, see also [method addSpriteToGroup].
 static func createStrumNote(image_path: String, note_data: int = 0, tag: String = ''):
 	var strum: StrumNote = StrumNote.new(note_data)
-	
 	strum.texture = image_path
 	
 	if tag: _insert_sprite(tag,strum)
@@ -1244,7 +1243,7 @@ static func removeShaderCamera(camera: Variant, shader: Variant) -> void:
 	if !cam: return
 	shader = _find_shader_material(shader)
 	
-	if !shader:return
+	if !shader: return
 	cam.removeFilter(shader)
 
 ##Set the sprite's shader, [code]shader[/code] can be a [ShaderMaterial] or a [String].

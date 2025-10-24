@@ -9,22 +9,18 @@ var icons_found: Dictionary = {}
 signal on_button_selected(node: ButtonExplorer)
 func set_object(obj: Node):
 	object = obj
-	if is_node_ready():
-		for i in get_children(): i.queue_free()
-		update()
+	if !is_node_ready(): return
+	for i in get_children(): i.queue_free()
+	update()
 
 func _ready() -> void: update()
 
 func add_new_child(obj: Node, parent: ButtonExplorer = null):
 	var node_button = ButtonExplorer.new()
+	
+	node_button.interator.icon = _get_node_icon(obj)
 	node_button.explorer = self
 	node_button.object = obj
-	
-	var sprite = Sprite2D.new()
-	sprite.texture = _get_node_icon(obj)
-	sprite.centered = false
-	sprite.position = Vector2(15,5)
-	node_button.add_child(sprite)
 	
 	if !parent: add_child(node_button)
 	else: parent.add_item(node_button)
@@ -92,6 +88,7 @@ class ButtonExplorer extends Control:
 		minize_button.button_pressed = !is_minized
 		_check_minimize()
 		
+		interator.set("theme_override_constants/icon_max_width",16)
 		interator.flat = true
 	func _ready() -> void:
 		interator.position.x = 15
@@ -151,7 +148,7 @@ class ButtonExplorer extends Control:
 			object.child_exiting_tree.disconnect(_child_exited)
 			object.tree_exiting.disconnect(queue_free)
 		if !obj: return
-		interator.text = '  '+obj.name
+		interator.text = obj.name
 		object = obj
 		object.child_entered_tree.connect(_child_entered)
 		object.child_exiting_tree.connect(_child_exited)

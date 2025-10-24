@@ -384,8 +384,8 @@ func loadChart(file: String):
 	set_section(0)
 
 func updateBpm():
-	note_current_sustain_length.value_to_add = Conductor.stepCrochet/2.0
-	note_current_sustain_length.shift_value = Conductor.stepCrochet
+	note_current_sustain_length.step = Conductor.stepCrochet/2.0
+	note_current_sustain_length.shift_step = Conductor.stepCrochet
 	_update_chart_positions()
 	
 func changeBpm(to: float = new_bpm_value.value) -> void:
@@ -1036,7 +1036,7 @@ func createEventVariables(event_name: String, variables: Dictionary = {}):
 					needs_text = false
 					variable_node = ButtonRangeScene.instantiate()
 					variable_node.value = float(value)
-					variable_node.value_to_add = 0.1
+					variable_node.step = 0.1
 					variable_node.value_changed.connect(func(v):
 						if event_selected:
 							event_selected.set_variable(i,v)
@@ -1078,8 +1078,7 @@ func createEventVariables(event_name: String, variables: Dictionary = {}):
 					type = TYPE_STRING
 				
 		
-		if !variable_node:
-			continue
+		if !variable_node: continue
 		
 		#Add Node to Scene
 		event_variable_container.add_child(variable_node)

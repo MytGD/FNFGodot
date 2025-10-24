@@ -3,14 +3,18 @@ var line_edit = LineEdit.new()
 var media: Resource: set = set_media
 func _init() -> void:
 	focus_mode = Control.FOCUS_CLICK
+	expand_icon = true
+	custom_minimum_size.y = 23
 	line_edit.position.x = 30
 	line_edit.flat = true
 	line_edit.focus_mode = Control.FOCUS_NONE
 	line_edit.text_changed.connect(_line_edit_text_changed)
 	line_edit.text_submitted.connect(func(_t): line_edit.focus_mode = Control.FOCUS_NONE)
 	line_edit.expand_to_text_length = true
+	resized.connect(_update_line_pos)
 	add_child(line_edit)
 
+func _update_line_pos(): line_edit.position.y = (size.y - line_edit.size.y)/2.0
 func _line_edit_text_changed(new_text: String):
 	if !new_text: line_edit.text = line_edit.placeholder_text
 

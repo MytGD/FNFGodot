@@ -73,7 +73,6 @@ enabled=PackedStringArray("res://addons/discord-rpc-gd/plugin.cfg")
 
 [gui]
 
-common/snap_controls_to_pixels=false
 theme/custom_font="uid://dd562b358n3k0"
 
 [importer_defaults]

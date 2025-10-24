@@ -50,5 +50,8 @@ static func get_shader_uniforms(material: Material):
 		var type = i.type
 		var default_value = RenderingServer.shader_get_parameter_default(uid,i.name)
 		if default_value == null: default_value = MathUtils.get_new_value(type)
-		list[i.name] = {'default': default_value,'type': type}
+		var data: Dictionary[String,Variant] = {'default': default_value,'type': type}
+		var hint_string: String = i.get('hint_string')
+		if hint_string: data.range = hint_string.split_floats(',')
+		list[i.name] = data
 	return list

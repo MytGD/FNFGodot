@@ -87,7 +87,7 @@ static func createOptionInterator(option_data: Dictionary, value: Variant, at: F
 			else:
 				object = NumberRange.new()
 				object.int_value = true
-				object.value_to_add = 1
+				object.step = 1
 				if min != null:
 					object.limit_min = true
 					object.value_min = min

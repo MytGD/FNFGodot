@@ -43,10 +43,11 @@ offset_right = 1280.0
 offset_bottom = 722.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
-current_tab = 0
+current_tab = 1
 tab_focus_mode = 0
 
 [node name="Animation Data" type="ScrollContainer" parent="TabContainer"]
+visible = false
 layout_mode = 2
 focus_mode = 2
 mouse_filter = 0
@@ -235,18 +236,16 @@ offset_top = 342.0
 offset_right = 90.0
 offset_bottom = 357.0
 text = "Offset X:"
-shift_value = 10.0
 
 [node name="anim_offset_y" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("3_atq18")]
 layout_mode = 0
 anchors_preset = 0
 anchor_bottom = 0.0
 offset_left = 288.0
-offset_top = 350.0
+offset_top = 342.0
 offset_right = 373.0
-offset_bottom = 365.0
+offset_bottom = 357.0
 text = "Offset Y:"
-shift_value = 10.0
 
 [node name="FrameRate" parent="TabContainer/Animation Data/Container/Label" instance=ExtResource("3_atq18")]
 layout_mode = 0
@@ -257,10 +256,8 @@ offset_top = 249.0
 offset_right = 333.0
 offset_bottom = 264.0
 text = "FPS:"
-shift_value = 10.0
 
 [node name="Json Data" type="Panel" parent="TabContainer"]
-visible = false
 self_modulate = Color(1, 1, 1, 0.0705882)
 layout_mode = 2
 metadata/_tab_index = 1
@@ -282,7 +279,7 @@ offset_top = 64.0
 offset_right = 61.0
 offset_bottom = 79.0
 text = "Scale:"
-value_to_add = 0.1
+step = 0.1
 
 [node name="antialiasing" type="CheckBox" parent="TabContainer/Json Data"]
 layout_mode = 0
@@ -338,7 +335,6 @@ offset_top = 226.0
 offset_right = 21.0
 offset_bottom = 241.0
 text = "x:"
-shift_value = 10.0
 
 [node name="position_y" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
@@ -349,7 +345,6 @@ offset_top = 267.0
 offset_right = 20.0
 offset_bottom = 282.0
 text = "y:"
-shift_value = 10.0
 
 [node name="Camera X" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
@@ -359,7 +354,6 @@ offset_left = 223.0
 offset_top = 225.0
 offset_right = 224.0
 offset_bottom = 240.0
-shift_value = 10.0
 
 [node name="Camera Y" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
@@ -369,7 +363,6 @@ offset_left = 223.0
 offset_top = 268.0
 offset_right = 224.0
 offset_bottom = 283.0
-shift_value = 10.0
 
 [node name="Origin X" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
@@ -379,7 +372,6 @@ offset_left = 419.0
 offset_top = 225.0
 offset_right = 420.0
 offset_bottom = 240.0
-shift_value = 10.0
 
 [node name="Origin Y" parent="TabContainer/Json Data" instance=ExtResource("3_atq18")]
 layout_mode = 0
@@ -389,14 +381,13 @@ offset_left = 420.0
 offset_top = 267.0
 offset_right = 421.0
 offset_bottom = 282.0
-shift_value = 10.0
 
 [node name="HealthBar" type="Label" parent="TabContainer/Json Data"]
 layout_mode = 0
 offset_left = 1.0
-offset_top = 295.0
+offset_top = 302.0
 offset_right = 603.0
-offset_bottom = 380.0
+offset_bottom = 387.0
 text = "====Health Bar====
 
 Color:             Icon:"

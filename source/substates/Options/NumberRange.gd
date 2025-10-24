@@ -4,7 +4,7 @@ var value: float = 0: set = set_value
 
 var value_max: float = 999
 var value_min: float = -999
-var value_to_add: float = 0.1
+var step: float = 0.1
 var int_value: bool = false
 
 var limit_max: bool = false

@@ -160,7 +160,7 @@ func _input(event: InputEvent) -> void:
 			KEY_LEFT:
 				var obj = _get_object_selected()
 				if obj is OptionMenu.NumberRange: 
-					obj.value -= obj.value_to_add
+					obj.value -= obj.step
 					_call_setter(obj.value)
 				elif obj is OptionMenu.TextRange: 
 					obj.value -= 1
@@ -169,7 +169,7 @@ func _input(event: InputEvent) -> void:
 			KEY_RIGHT:
 				var obj = _get_object_selected()
 				if obj is OptionMenu.NumberRange:
-					obj.value += obj.value_to_add
+					obj.value += obj.step
 					_call_setter(obj.value)
 				elif obj is OptionMenu.TextRange: 
 					obj.value += 1

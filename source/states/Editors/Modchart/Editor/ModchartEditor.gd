@@ -17,6 +17,7 @@ const PlayState = preload("res://source/states/PlayState.gd")
 const KeyInterpolator = preload("res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd")
 const KeyInterpolatorNode = preload("res://source/states/Editors/Modchart/Editor/KeyInterpolatorNode.gd")
 
+#region Ranges Const
 const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")
 const ButtonRangeScene = preload("res://scenes/objects/ButtonRange.tscn")
 
@@ -25,9 +26,11 @@ const HSliderRangeScene = preload("res://scenes/objects/HSliderRange.tscn")
 
 const LineEditWithTitleScene = preload("res://scenes/objects/LineEditWithTitle.tscn")
 const LineEditWithTitle = preload("res://scenes/objects/LineEditWithTitle.gd")
+#endregion
 
 var screen_size_mult = ScreenUtils.screenSize*2
-var PropertiesAvaliable: Dictionary = {
+
+var PropertiesAvaliable := {
 	PlayState: {
 		'defaultCamZoom': {'range': [-5,5]},
 		'cameraSpeed': {'range': [0.2,10]},
@@ -38,10 +41,10 @@ var PropertiesAvaliable: Dictionary = {
 	CameraCanvas:{
 		'x': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
 		'y': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
-		'shakeIntensity': {'range': [0,1,0.001]},
+		'shakeIntensity': {'range': [0,0.3,0.001]},
 		'scroll': null,
 		'zoom': null,
-		'defaultZoom': null,
+		'defaultZoom': {'range': [-7,7,0.1]},
 		'angle': {'range': [-360,360,0.1]}
 	},
 	Sprite:{
@@ -58,6 +61,7 @@ var PropertiesAvaliable: Dictionary = {
 	},
 	StrumNote:{'direction': {'range': [-360,360]}}
 }
+
 
 var default_values: Dictionary[Object,Dictionary] = {}
 var modchart_keys = ModchartState.keys
@@ -164,7 +168,7 @@ var explorer_select_effect: bool = false
 var explorer_modulate_delta: float = 0.0
 var explorer_properties_can_be_update: bool = true
 @onready var explorer_area_selected = $SubViewport/ObjectSelected
-const SELECT_OBJECT_COLOR = Color.DIM_GRAY
+const SELECT_OBJECT_COLOR = Color(0.68,0.68,0.68)
 
 func _on_explorer_button_selected(button) -> void:
 	var obj = button.object
@@ -189,7 +193,9 @@ func _on_explorer_button_selected(button) -> void:
 	explorer_object_selected = obj
 
 func _on_explorer_media_button_pressed(button: Button):
+	if button == explorer_object_selected: return
 	explorer_properties_can_be_update = false
+	explorer_object_selected = button
 	if button.media is EditorMaterial: show_media_material_properties(button.media)
 
 func _explorer_obj_selected_color(delta: float):
@@ -283,7 +289,9 @@ func show_object_properties(object: Object) -> bool:
 func show_media_material_properties(material: EditorMaterial):
 	_clear_properties()
 	
-	for i in material.uniforms: pass
+	var uniforms = material.uniforms
+	for i in uniforms: _create_property_buttons(material,i,uniforms[i])
+		
 	#Load Objects Text
 	var objects_edit: LineEditWithTitle = LineEditWithTitleScene.instantiate()
 	objects_edit.text = 'Objects:'
@@ -306,15 +314,15 @@ func _create_property_separator(text: String, icon: Texture):
 	properties_tab.add_child(separator)
 	return separator
 
-func _create_property_buttons(object: Node, property: String, data = null) -> Array[Node]:
-	var value = object.get(property)
-	var type = typeof(value)
+func _create_property_buttons(object: Object, property: String, data = null) -> Array[Node]:
+	var type = typeof(get_object_value(object,property))
 	var nodes: Array[Node] = []
 	
 	match type:
-		TYPE_FLOAT,TYPE_INT: nodes.append(_create_property_range(object,property,type == TYPE_INT,data))
+		TYPE_FLOAT,TYPE_INT: 
+			nodes.append(_create_property_range(object,property,type == TYPE_INT,data))
 		TYPE_VECTOR2,TYPE_VECTOR3,TYPE_VECTOR4,TYPE_VECTOR2I,TYPE_VECTOR3I,TYPE_VECTOR4I:
-			nodes.append_array(_create_property_range_vector(object,property,type,data))
+			nodes.append_array(_create_vectors_properties(object,property,type,data))
 		TYPE_BOOL: nodes.append(_create_property_box_button(object,property))
 		_: return nodes
 	
@@ -323,20 +331,19 @@ func _create_property_buttons(object: Node, property: String, data = null) -> Ar
 		_create_interpolator_key_to_button(i)
 	return nodes
 
-func _create_property_range(obj: Node, property: Variant, int_value: bool = false, data = null):
+func _create_property_range(obj: Object, property: Variant, int_value: bool = false, data = null):
 	var button
 	if data and data.has('range'): button = _create_property_hslider(data.range,int_value)
 	else: button = _create_property_button_range(int_value)
-	button.set_value_no_signal(obj[property])
+	button.set_value_no_signal(get_object_value(obj,property))
 	button.name = property
 	button.text = property+': '
 	button.label_settings = property_label_settings
-	button.value_changed.connect(func(_v): obj[property] = _v)
+	button.value_changed.connect(func(_v): set_object_value(obj,property,_v))
 	properties_created.append([button,obj,property])
 	
 	var default_value = _get_obj_property_default(obj,property)
-	if default_value != null:
-		_connect_reset_button(_create_reset_property_button(),button,default_value)
+	if default_value != null: _create_reset_property_button(button,default_value)
 	return button
 
 func _create_property_button_range(int_value: bool = false) -> ButtonRange:
@@ -345,41 +352,35 @@ func _create_property_button_range(int_value: bool = false) -> ButtonRange:
 	button.update_min_size_y = true
 	button.int_value = int_value
 	button.label_settings = property_label_settings
-	if !int_value: button.value_to_add = 0.1
+	if !int_value: button.step = 0.1
 	return button
 
-func _create_property_range_vector(obj: Node, property: Variant, type: Variant.Type, data = null) -> Array[Node]:
+func _create_property_range_vector(obj: Object, property: Variant, index: int, int_value: bool = false, data = null):
+	var value = obj[property]
+	var index_name = VectorUtils.vectors_index[index]
+	var range_name = 'range_'+index_name
+	var button
+	if data and data.has(range_name): button = _create_property_hslider(data[range_name],int_value)
+	else: button = _create_property_button_range(int_value)
+	button.set_value_no_signal(value[index])
+	button.name = property+':'+index_name
+	button.text = property+' '+index_name+': '
+	button.label_settings = property_label_settings
+	return button
+	
+func _create_vectors_properties(obj: Object, property: Variant, type: Variant.Type, data = null) -> Array[Node]:
 	var index: int = 0
-	var length = VectorUtils.get_vector_length_from_type(type)
+	var size = VectorUtils.get_vector_size(type)
 	var int_value = type == TYPE_VECTOR2I or type == TYPE_VECTOR3I or type == TYPE_VECTOR4I
-	var vector_index = VectorUtils.vectors_index[length-1]
 	
 	var nodes: Array[Node] = []
-	
-	var default_value = obj.property_get_revert(property)
-	while index < vector_index.size():
-		var button
-		var i = vector_index[index]
-		
-		var range_name = 'range_'+i
-		if data and data.has(range_name): button = _create_property_hslider(data[range_name],int_value)
-		else: button = _create_property_button_range(int_value)
-		button.set_value_no_signal(obj[property][index])
-		button.name = property+':'+i
-		button.text = property+' '+i+': '
-		button.label_settings = property_label_settings
+	var default_value = _get_obj_property_default(obj,property)
+	while index < size:
+		var button = _create_property_range_vector(obj,property,index,int_value,data)
 		nodes.append(button)
-		
-		if default_value != null:
-			_connect_reset_button(_create_reset_property_button(),button,default_value[index])
-		
-		match index:
-			0: button.value_changed.connect(func(_v): obj[property].x = _v)
-			1: button.value_changed.connect(func(_v): obj[property].y = _v)
-			2: button.value_changed.connect(func(_v): obj[property].z = _v)
-			3: button.value_changed.connect(func(_v): obj[property].w = _v)
 		properties_created.append([button,obj,property,index])
-		
+		button.value_changed.connect(func(_v): set_object_vector_value(obj,property,index,_v))
+		if default_value: _create_reset_property_button(button,default_value[index])
 		index += 1
 	return nodes
 
@@ -388,10 +389,10 @@ func _create_property_hslider(range_data: Array, rounded: bool = false) -> HSlid
 	button.min_value = range_data[0]
 	button.int_value = rounded
 	button.max_value = range_data[1]
-	if range_data.size() >= 3: print(range_data); button.step = range_data[2]
+	if range_data.size() >= 3: button.step = range_data[2]
 	return button
 
-func _create_property_box_button(obj: Node, property: String) -> CheckBox:
+func _create_property_box_button(obj: Object, property: String) -> CheckBox:
 	var button = CheckBox.new()
 	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	button.name = property
@@ -401,23 +402,20 @@ func _create_property_box_button(obj: Node, property: String) -> CheckBox:
 	button.toggled.connect(func(_v): obj[property] = _v)
 	return button
 
-func _update_properties():
+func _update_properties() -> void:
 	for i in properties_created:
 		var obj = i[0]
-		var val = i[1][i[2]]
-		if i.size() >= 4: obj.set_value_no_signal(val[i[3]])
-		elif obj is CheckBox:obj.set_pressed_no_signal(val)
+		var val = get_object_value(i[1],i[2]) if i.size() < 4 else get_object_index_value(i[1],i[2],i[3])
+		if obj is CheckBox:
+			obj.set_pressed_no_signal(val)
 		else: 
-			if !obj.line_edit.has_focus() and not (obj is HSliderRange and obj.slider.has_focus()): 
-				obj.set_value_no_signal(val)
-			else:
-				print(obj)
+			if obj.line_edit.has_focus() or obj is HSliderRange and obj.slider.has_focus(): return
+			obj.set_value_no_signal(val)
 
 func _create_interpolator_key_to_button(button: Control) -> void:
 	var key = KeyValue.new()
-	
 	var bind = _update_interpolator_key_pos.bind(key)
-	button.minimum_size_changed.connect(bind)
+	button.resized.connect(bind)
 	button.add_child(key)
 	bind.call_deferred()
 
@@ -426,35 +424,37 @@ func _update_interpolator_key_pos(key: Control):
 	if parent is HSliderRange:
 		key.position = Vector2(parent.slider.position.x + parent.slider.size.x + 40,parent.size.y/2.0 - 8)
 		return
-	var min_size = parent.get_minimum_size()
+	var min_size = parent.get_combined_minimum_size()
 	key.position = Vector2(min_size.x + 40,parent.size.y/2.0 - 8)
 
-func _create_reset_property_button():
+func _create_reset_property_button(button_to_connect: Control, default: Variant):
 	var button = Button.new()
 	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
 	button.icon = RESET_TEXTURE
-	return button
-
-func _connect_reset_button(reset_b: Button, button_to_connect: Control, default: Variant):
-	reset_b.pressed.connect(func(): button_to_connect.value = default)
+	button.custom_minimum_size = Vector2(23,23)
+	button.expand_icon = true
 	
-	var func_bind = _check_reset_visible.bind(default,reset_b)
-	
-	
-	var pos_func = _update_reset_button_pos.bind(reset_b)
+	button.pressed.connect(func(): button_to_connect.value = default)
+	var func_bind = _check_reset_visible.bind(default,button)
+	var pos_func = _update_reset_button_pos.bind(button)
 	button_to_connect.value_changed.connect(func_bind)
-	button_to_connect.minimum_size_changed.connect(pos_func)
-	button_to_connect.add_child(reset_b)
-	pos_func.call()
-	
-	func_bind.call(button_to_connect.value)
+	button_to_connect.resized.connect(pos_func)
+	button_to_connect.add_child(button)
+	pos_func.call_deferred()
+	func_bind.call_deferred(button_to_connect.value)
+	return button
 
 func _check_reset_visible(value: Variant, default: Variant,b: Button): b.visible = value != default
 
 func _update_reset_button_pos(reset_button: Button) -> void:
-	var parent = reset_button.get_parent()
-	var min_size = parent.get_minimum_size()
+	var parent: Control = reset_button.get_parent()
+	if parent is HSliderRange:
+		reset_button.position = Vector2(parent.slider.position.x + parent.slider.size.x,parent.size.y/2.0 - 8)
+		return
+	var min_size = parent.get_combined_minimum_size()
 	reset_button.position = Vector2(min_size.x,parent.size.y/2.0 - 8)
+
 func _check_properties_update(delta: float):
 	if properties_created:
 		property_update_el += delta
@@ -463,7 +463,40 @@ func _check_properties_update(delta: float):
 			_update_properties()
 
 func _get_obj_property_default(obj: Object, property: String):
-	return default_values.get_or_add(obj,{}).get_or_add(property,obj.property_get_revert(property))
+	var default = default_values.get_or_add(obj,{}).get(property)
+	if default == null: 
+		if obj is EditorMaterial: default = obj.uniforms[property].default
+		else: default = obj.property_get_revert(property)
+		default_values[obj][property] = default
+	return default
+
+func set_object_value(obj: Object, property: String,value: Variant) -> void:
+	if obj is ShaderMaterial: obj.set_shader_parameter(property,value); return
+	obj.set(property,value)
+
+func set_object_vector_value(obj: Object, property: String, index: int, value: Variant):
+	if obj is ShaderMaterial:
+		var vector = obj.get_shader_parameter(property)
+		match index:
+			0: vector.x = value
+			1: vector.y = value
+			2: vector.z = value
+			3: vector.w = value
+		obj.set_shader_parameter(property,value)
+		return
+	match index:
+		0: obj[property].x = value
+		1: obj[property].y = value
+		2: obj[property].z = value
+		3: obj[property].w = value
+
+func get_object_index_value(obj: Object, property: String, index: int) -> Variant:
+	if obj is ShaderMaterial: return obj.get_shader_parameter(property)[index];
+	return obj.get(property)[index]
+
+func get_object_value(obj: Object, property: String) -> Variant:
+	if obj is ShaderMaterial: return obj.get_shader_parameter(property);
+	return obj.get(property)
 #endregion
 
 #region Song

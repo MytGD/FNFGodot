@@ -1,7 +1,45 @@
-[gd_scene load_steps=3 format=3 uid="uid://b1a3jlb7iu130"]
+[gd_scene load_steps=5 format=3 uid="uid://b1a3jlb7iu130"]
 
 [ext_resource type="Script" uid="uid://bscbt2dibch22" path="res://scenes/objects/ButtonRange.gd" id="1_238s7"]
 [ext_resource type="Script" uid="uid://50thfspe3s66" path="res://source/objects/UI/LineEditNumber.gd" id="2_eujyj"]
+
+[sub_resource type="GDScript" id="GDScript_eujyj"]
+script/source = "@tool
+extends Button
+@onready var range = $\"..\"
+var _press_time: float
+var _is_holding: bool = false
+func _process(delta: float) -> void:
+	if button_pressed: 
+		_press_time += delta*10 if _is_holding else delta
+		if _press_time >= 0.8: 
+			_is_holding = true
+			_press_time = 0.0
+			range.addValue()
+
+func _on_button_up() -> void:
+	_is_holding = false
+	_press_time = 0.0
+"
+
+[sub_resource type="GDScript" id="GDScript_vb4f3"]
+script/source = "@tool
+extends Button
+@onready var range = $\"..\"
+var _press_time: float
+var _is_holding: bool = false
+func _process(delta: float) -> void:
+	if button_pressed: 
+		_press_time += delta*10 if _is_holding else delta
+		if _press_time >= 0.8: 
+			_is_holding = true
+			_press_time = 0.0
+			range.subValue()
+
+func _on_button_up() -> void:
+	_is_holding = false
+	_press_time = 0.0
+"
 
 [node name="ButtonRange" type="Label"]
 anchors_preset = -1
@@ -19,6 +57,7 @@ offset_right = 138.0
 offset_bottom = 26.5
 focus_mode = 0
 text = "^"
+script = SubResource("GDScript_eujyj")
 
 [node name="ButtonDown" type="Button" parent="."]
 layout_mode = 0
@@ -30,6 +69,7 @@ rotation = 3.14159
 pivot_offset = Vector2(19.5, 19.5)
 focus_mode = 0
 text = "^"
+script = SubResource("GDScript_vb4f3")
 
 [node name="Value" type="LineEdit" parent="."]
 layout_mode = 0
@@ -45,5 +85,7 @@ characters_allowed = PackedStringArray("0", "1", "2", "3", "4", "5", "6", "7", "
 
 [connection signal="minimum_size_changed" from="." to="." method="_on_minimum_size_changed"]
 [connection signal="button_down" from="ButtonUp" to="." method="addValue"]
+[connection signal="button_up" from="ButtonUp" to="ButtonUp" method="_on_button_up"]
 [connection signal="button_down" from="ButtonDown" to="." method="subValue"]
+[connection signal="button_up" from="ButtonDown" to="ButtonDown" method="_on_button_up"]
 [connection signal="text_submitted" from="Value" to="." method="_on_value_text_submitted"]

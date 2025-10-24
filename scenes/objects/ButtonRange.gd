@@ -13,8 +13,8 @@ var _value_str: String = ''
 @export var limit_min: bool = false
 @export var limit_max: bool = false
 @export var value: float = 0.0: set = set_value
-@export var value_to_add: float = 1.0##The value that will be added when the arrows are been pressed.
-@export var shift_value: float = 1.0##The value to add when pressing SHIFT key([param KEY_SHIFT])
+@export var step: float = 1.0##The value that will be added when the arrows are been pressed.
+@export var shift_step: float = 1.0##The value to add when pressing SHIFT key([param KEY_SHIFT])
 @export var int_value: bool = false: set = set_int_val
 var _call_emit: bool = true
 #endregion
@@ -39,11 +39,9 @@ func _ready():
 	_update_minimums_sizes()
 
 #region Value Methods
-func addValue() -> void:
-	value += shift_value if Input.is_action_pressed("shift") else value_to_add
+func addValue() -> void: value += shift_step if Input.is_action_pressed("shift") else step
 
-func subValue() -> void:
-	value -= shift_value if Input.is_action_pressed("shift") else value_to_add
+func subValue() -> void: value -= shift_step if Input.is_action_pressed("shift") else step
 
 func set_value_no_signal(_value: float):
 	_call_emit = false
@@ -105,6 +103,7 @@ func set_max(_v: float) -> void: max = _v; value = value
 func set_prefix(_v: String): prefix = _v; _set_value_text()
 func set_suffix(_v: String): suffix = _v; _set_value_text()
 func set_int_val(_int: bool): int_value = _int; update_value_text()
+func set_step(_s: float): step = _s
 func set_update_min_size_x(upd: bool) -> void: 
 	update_min_size_x = upd
 	if !upd: custom_minimum_size.x = 0
