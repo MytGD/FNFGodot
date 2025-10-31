@@ -32,16 +32,12 @@ static func set_array_index(array: Array,index: int,variable: Variant,fill: Vari
 	array[index] = variable
 
 static func get_array_index(array: Array, index: int, default: Variant = null) -> Variant:
-	return array[index] if array_has_index(array,index) else default
+	return array[index] if index >= 0 and index < array.size() else default
 
 static func create_array_via_string(elements: StringName, type: int = TYPE_NIL, delimiter: String = ',') -> Array:
 	var array = []
-	if type == TYPE_NIL:
-		for i in elements.split(delimiter):
-			array.append(i)
-	else:
-		for i in elements.split(delimiter):
-			array.append(type_convert(i,type))
+	if type == TYPE_NIL: for i in elements.split(delimiter): array.append(i)
+	else: for i in elements.split(delimiter): array.append(type_convert(i,type))
 	return array
 
 static func sort_array_from_first_index(a,b):
