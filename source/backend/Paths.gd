@@ -482,24 +482,26 @@ static func clearDirsCache(): _files_directories_cache.clear(); _dir_exists_cach
 
 static func getFilesAt(folder: String, return_folder: bool = false, filters: Variant = '', with_extension: bool = false) -> PackedStringArray:
 	var files: PackedStringArray = PackedStringArray()
-
-	#if folder.ends_with('/'): folder = folder.left(-1)
-	
-	if filters and filters is String: filters = PackedStringArray([filters])
+	if filters and filters is String: 
+		filters = PackedStringArray([filters.right(-1) if filters.begins_with('.') else filters])
+	_check_filters(filters)
 	for i in dirsToSearch:
 		files.append_array(getFilesAtAbsolute(i+folder,return_folder,filters,with_extension))
 	
 	return files
 
+static func _check_filters(filters: PackedStringArray) -> void:
+	var index: int = 0
+	while index < filters.size():
+		var string = filters[index]
+		if !string.begins_with('.'): filters[index] = '.'+string
+		index += 1
 static func getFilesAtAbsolute(
 	folder: String, 
 	return_folder: bool = false, 
-	filters: Variant = PackedStringArray(), 
+	filters: PackedStringArray = PackedStringArray(), 
 	with_extension: bool = false
 ) -> PackedStringArray:
-	if filters and filters is String:
-		if filters.begins_with('.'): filters = PackedStringArray([filters.right(-1)])
-		else: filters = PackedStringArray([filters])
 	if !dir_exists(folder):   return PackedStringArray()
 	return _getFilesNoCheck(folder,return_folder,filters,with_extension)
 
@@ -509,7 +511,6 @@ static func _getFilesNoCheck(
 	filters: Variant = PackedStringArray(), 
 	with_extension: bool = false
 ) -> PackedStringArray:
-	
 	if !filters and with_extension: return get_dir(folder).get_files()
 	
 	var files: Dictionary[String,bool] = {}

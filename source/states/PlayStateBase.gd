@@ -389,6 +389,7 @@ func noteMiss(note, character: Variant = null) -> void:
 func _load_song_scripts():
 	if loadScripts:
 		print('Loading Scripts from Scripts Folder')
+		print(Paths.getFilesAt('scripts',true,'.gd'))
 		for i in Paths.getFilesAt('scripts',true,'.gd'): FunkinGD.addScript(i)
 	
 	if loadStageScript:
@@ -447,7 +448,7 @@ func loadSongObjects() -> void:
 	
 func loadEventsScripts():
 	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i+'.gd')
-	for i in Paths.getFilesAtAbsolute(Paths.exePath+'/assets/custom_events',false,'.gd',true):
+	for i in Paths.getFilesAtAbsolute(Paths.exePath+'/assets/custom_events',false,['.gd'],true):
 		FunkinGD.addScript('custom_events/'+i)
 	
 	for event in eventNotes: 

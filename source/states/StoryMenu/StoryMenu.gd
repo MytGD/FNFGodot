@@ -60,7 +60,7 @@ func loadWeeks():
 	for i in Paths.modsEnabled: folders_to_look.append('/mods/'+i+'/weeks')
 	
 	for i in folders_to_look:
-		for json_s in Paths.getFilesAtAbsolute(Paths.exePath+i,true,'.json',true):
+		for json_s in Paths.getFilesAtAbsolute(Paths.exePath+i,true,['.json'],true):
 			var json = Paths.loadJsonNoCache(json_s)
 			json.mod = Paths.getModFolder(json_s)
 			

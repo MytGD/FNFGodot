@@ -1598,7 +1598,7 @@ static func _load_script(path: String) -> Object:
 	var absolutePath: String = Paths.detectFileFolder(path)
 	if not absolutePath: return;
 	
-	#print('Adding: ',absolutePath,' script')
+	print('Adding: ',absolutePath,' script')
 	var GScript: GDScript = GDScript.new()
 	GScript.source_code = FileAccess.get_file_as_string(absolutePath)
 	GScript.reload()
