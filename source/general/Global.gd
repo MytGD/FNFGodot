@@ -20,10 +20,10 @@ func _start_clients():
 	Paths._init()
 	ClientPrefs._init()
 	ScreenUtils._init()
-	
+
 func _ready() -> void:
 	scene = get_parent()
-	
+
 ##Swap the Tree for a new [Node]. [br][br]
 ##[param newTree] can be a [Node], [PackedScene] or [GDScript].
 func swapTree(newTree: Variant, transition: bool = true, remove_current_scene: bool = true) -> void:
@@ -32,14 +32,15 @@ func swapTree(newTree: Variant, transition: bool = true, remove_current_scene: b
 		return
 	
 	if transition:
-		if !is_transiting:
-			is_transiting = true
-			doTransition().finished.connect(
-				func():
-					current_transition.removeTrans()
-					swapTree(newTree,false)
-					scene.move_child(current_transition,-1)
-			)
+		if is_transiting: return
+		is_transiting = true
+		doTransition().finished.connect(
+			func():
+				current_transition.removeTrans()
+				swapTree(newTree,false)
+				scene.move_child(current_transition,-1),
+				CONNECT_ONE_SHOT
+		)
 		return
 	is_transiting = false
 	if newTree is GDScript: newTree = newTree.new()
@@ -72,7 +73,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if mode == Window.MODE_EXCLUSIVE_FULLSCREEN:ScreenUtils.main_window.mode = Window.MODE_WINDOWED
 			else: ScreenUtils.main_window.mode = Window.MODE_EXCLUSIVE_FULLSCREEN
 		
-func show_label_error(text: Variant, time: float = 2.0, width: float = ScreenUtils.screenWidth) -> Label:
+func show_label_warning(text: Variant, time: float = 2.0, width: float = ScreenUtils.screenWidth) -> Label:
 	text = str(text)
 	for i in error_prints: i.position.y += 20
 	var label = Label.new()
@@ -89,6 +90,7 @@ func show_label_error(text: Variant, time: float = 2.0, width: float = ScreenUti
 			label.queue_free()
 		)
 	)
+	label.set('theme_override_constants/outline_size',10)
 	label.position.x = ScreenUtils.screenCenter.x - label.size.x/2.0
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	

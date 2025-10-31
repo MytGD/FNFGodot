@@ -28,17 +28,13 @@ const ButtonRange = preload("res://scenes/objects/ButtonRange.gd")
 const EVENT_VARIABLES_OFFSET: Vector2 = Vector2(180,50)
 const EVENT_VARIABLES_LIMIT_Y: float = 100
 
-
-
-
-
 const STEP_LENGTH: int = 16
 
 const Icon = preload("res://source/objects/UI/Icon.gd")
 const Character = preload('res://source/objects/Sprite/Character.gd')
 const PlayState = preload("res://source/states/PlayState.gd")
 
-
+static var back_to: Variant
 #endregion
 
 #region Mouse Properties
@@ -66,7 +62,6 @@ var is_shift_pressed: bool = false
 @onready var chess_array: Array[Chess] = [chess_opponent,chess_player,chess_events]
 @onready var note_chess: Array[Chess] = [chess_player,chess_opponent]
 #endregion
-
 var start_song_from_current_position: bool = true
 var update_notes: bool = false
 var update_events: bool = false
@@ -415,6 +410,7 @@ func set_zoom(new_zoom: float):
 	
 func updateBeatLinePosition(line: ColorRect, beat: int = 0):
 	if line: line.position = Vector2(0,4*beat*BLOCK_SIZE.y*cur_zoom)
+
 func load_game():
 	song_playing = false
 	autoSwapSection = false
@@ -427,6 +423,10 @@ func load_game():
 	
 
 	Global.swapTree(playstate)
+
+func leave_editor():
+	if !back_to: return
+	Global.swapTree(back_to)
 
 func setWaveform(audio: String):
 	chart_set_waveform.text = audio
@@ -969,14 +969,14 @@ func removeEventFromJson(event: EventChart):
 		current_event_section_index -= 1
 	
 func eraseEvents(remove_from_json: bool = true):
-	if remove_from_json:
-		for i in _events_created:
-			events_data.erase(i.json_data)
-			i.queue_free()
-	else:
-		for i in _events_created:
-			i.queue_free()
+	if !remove_from_json: 
+		for i in _events_created: i.queue_free()
+		return
 	
+	for i in _events_created:
+		events_data.erase(i.json_data)
+		i.queue_free()
+
 	_events_created.clear()
 func createEventVariables(event_name: String, variables: Dictionary = {}):
 	var default_values = EventNote.get_event_variables(event_name)
@@ -1101,13 +1101,10 @@ func createEventVariables(event_name: String, variables: Dictionary = {}):
 			pos.y = 0
 			pos.x += limit_offset_x + 15
 			limit_offset_x = EVENT_VARIABLES_OFFSET.x
-			
 
 func setEvent(event_name: String):
-	if event_selected and event_selected.event_selected_name != event_name:
-		event_selected.replaceEvent(event_name)
-	if event_name == events_menu.text:
-		return
+	if event_selected and event_selected.event_selected_name != event_name: event_selected.replaceEvent(event_name)
+	if event_name == events_menu.text: return
 	events_menu.text = event_name
 	event_description.text = EventNote.get_event_description(event_name)
 	createEventVariables(event_name)
@@ -1117,22 +1114,18 @@ func selectEvent(event: EventChart = event_selected) -> void:
 	unselectNotes()
 	event_selected = event
 	event_index.max = event.events.size()-1
-	if event.events:
-		var cur_event = event.events[event.event_index]
-		setEvent(cur_event[0])
-		for i in event.event_selected_variables:
-			set_event_chart_value(i,event.event_selected_variables[i])
-		
+	if !event.events: return
+	var cur_event = event.events[event.event_index]
+	setEvent(cur_event[0])
+	for i in event.event_selected_variables: set_event_chart_value(i,event.event_selected_variables[i])
+	
 func toggleEvent(event_node: EventChart):
-	if event_selected and event_node == event_selected:
-		unselectEvent()
-		return
+	if event_selected and event_node == event_selected: unselectEvent(); return
 	selectEvent(event_node)
 	
 func set_event_chart_value(variable: String, value: Variant):
 	var node = event_variable_container.get_node_or_null(variable)
-	if !node:
-		return
+	if !node: return
 	if node is ButtonRange: node.value = value
 	elif node is Label or node is LineEdit: node.text = str(value)
 	elif node is ColorPickerButton: node.color = Color.html(str(value))
@@ -1156,8 +1149,7 @@ func getEventChartVariables():
 
 func getEventAtMouse() -> EventChart:
 	for i in _events_created:
-		if MathUtils.is_pos_in_area(mouse_pos,i.global_position,CHESS_REAL_SIZE):
-			return i
+		if MathUtils.is_pos_in_area(mouse_pos,i.global_position,CHESS_REAL_SIZE): return i
 	return null
 
 func getEventData(strumTime: float) -> Array:
@@ -1247,12 +1239,13 @@ func enable_mouse_rect(enable: bool):
 	else: mouse_rect_follow.create_tween().tween_property(mouse_rect_follow,'modulate:a',0,0.1)
 
 func _input(event: InputEvent) -> void:
-	if event is InputEvent and event.keycode == KEY_SHIFT: is_shift_pressed = event.pressed; enable_mouse_rect(is_shift_pressed)
+	if event is InputEventKey and event.keycode == KEY_SHIFT: is_shift_pressed = event.pressed; enable_mouse_rect(is_shift_pressed)
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_SPACE: song_playing = !song_playing
 			KEY_ENTER: load_game()
+			KEY_BACKSPACE: leave_editor()
 			KEY_A: set_song_position(Conductor.get_section_time(curSection-(4 if is_shift_pressed else 1)))
 			KEY_D: set_song_position(Conductor.get_section_time(curSection+(4 if is_shift_pressed else 1)))
 			KEY_X: if not event.echo: cur_zoom += 0.5

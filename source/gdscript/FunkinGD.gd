@@ -37,6 +37,7 @@ const methods_parameters: Dictionary = {
 	'onMoveCamera': [TYPE_STRING]
 }
 
+static var debugMode: bool = false
 #region Public Vars
 @export_category('Class Vars')
 static var started: bool = false
@@ -189,7 +190,7 @@ static var arguments: Dictionary[int,Dictionary] = {}
 
 func _init() -> void:
 	if scriptMod in Paths.commomFolders: scriptMod = ''
-	
+
 static var Conductor_Signals: Dictionary[String,Callable] = {
 	'section_hit': _section_hit,
 	'section_hit_once': callOnScripts.bind('onSectionHitOnce'),
@@ -202,8 +203,8 @@ static var Conductor_Signals: Dictionary[String,Callable] = {
 static func init_gd():
 	if started or !Conductor: return
 	started = true
-	for i in Conductor_Signals:
-		Conductor[i].connect(Conductor_Signals[i])
+	for i in Conductor_Signals: Conductor[i].connect(Conductor_Signals[i])
+	debugMode = OS.is_debug_build()
 	_bpm_changes()
 
 static func _bpm_changes():
@@ -308,7 +309,9 @@ static func _clear_scripts(absolute: bool = false):
 	
 	if !started: return
 	started = false
+	debugMode = false
 	for i in Conductor_Signals: Conductor[i].disconnect(Conductor_Signals[i])
+	
 #endregion
 
 
@@ -788,21 +791,26 @@ static func setGraphicSize(object: Variant, sizeX: float = -1, sizeY: float = -1
 ##Move the [param object] to the center of his camera.[br]
 ##[param type] can be: [code]""xy,x,y[/code]
 static func screenCenter(object: Variant, type: String = 'xy') -> void:
-	object = _find_object(object)
+	object = _find_object(object) as Node
 	if !object: return
-		
-	var pos = Vector2.ZERO
-	if object.has_method('screenCenter'): object.screenCenter(type)
-	else:
-		pos = screenSize/2.0
-		
-		var tex = object.get('texture')
-		if tex: object -= tex.get_size()/2.0
-		
-		match type:
-			'x': object.position.x = pos.x
-			'y': object.position.y = pos.x
-			_: object.position = pos
+	
+	var viewport = object.get_viewport()
+	if !viewport: 
+		show_funkin_warning('Error in screenCenter: '+object.name+' must be add first before using this method.')
+		return
+	
+	
+	var tex = object.get('texture')
+	var size: Vector2 = Vector2.ZERO
+	
+	if tex: size = tex.get_size()
+	else: size = object.get('size') as Vector2
+	
+	var pos = viewport.size/2.0 - size/2.0
+	match type:
+		'x': object.position.x = pos.x
+		'y': object.position.y = pos.x
+		_: object.position = pos
 
 ##Scale object.
 ##If not [param centered], the sprite will scale from his top left corner.
@@ -925,24 +933,19 @@ static func setTextColor(text: Variant, color: Variant) -> void:
 static func setTextBorder(text: Variant, border: float, color: Color = Color.BLACK) -> void:
 	text = _find_object(text)
 	if !text is GDText: return
-	text.label_settings.outline_color = color
-	text.label_settings.outline_size = border
-	
+	text.set("theme_override_colors/font_outline_color",color)
+	text.set("theme_override_constants/outline_size",border)
+
 ##Set the Font of the Text
 static func setTextFont(text: Variant, font: Variant = 'vcr.ttf') -> void:
-	text = _find_object(text)
+	text = _find_object(text) as Label
 	font = _find_font(font)
-	if not (font and text is Label): return
-	
-	if !text.label_settings: text.label_settings = LabelSettings.new()
-	text.label_settings.font = font
-
+	if not (font and text): return
+	text.set('theme_override_fonts/font',font)
 static func getTextFont(text: Variant) -> FontFile:
-	text = _find_object(text)
-	if text is Label and text.label_settings: 
-		return text.label_settings.font if text.label_settings.font else ThemeDB.fallback_font
-	return null
-	
+	text = _find_object(text) as Label
+	return text.get("theme_override_fonts/font") if text else ThemeDB.fallback_font
+
 static func _find_font(font: Variant) -> Font:
 	if font is String: return Paths.font(font)
 	return font as Font
@@ -972,11 +975,10 @@ static func setTextAlignment(tag: Variant, alignmentHorizontal: StringName = 'le
 
 ##Set the font's size of the Text
 static func setTextSize(text: Variant, size: float = 15) -> void:
-	text = _find_object(text)
-	if !text is Label: return
-	if !text.label_settings: text.label_settings = LabelSettings.new()
-	text.label_settings.font_size = size
-		
+	text = _find_object(text) as Label
+	if !text: return
+	text.set("theme_override_font_sizes/font_size",size)
+
 ##Add Text to game
 static func addText(text: Variant, front: bool = false) -> void:
 	text = _find_object(text)
@@ -1036,7 +1038,7 @@ static func startTweenNoCheck(tag: String,object: Object, what: Dictionary[Strin
 	var tween = TweenService.createTween(object,what,time,easing)
 	
 	tween.bind_node = bind_node
-	tween.finished.connect(_tween_completed.bind(tag))
+	tween.finished.connect(_tween_completed.bind(tag),CONNECT_ONE_SHOT)
 	if !tag: return tween
 	cancelTween(tag)
 	tweensCreated[tag] = tween
@@ -1455,7 +1457,7 @@ static func playSound(path, volume: float = 1.0, tag: String = "",force: bool = 
 		if tag:
 			audio.name = tag
 			soundsPlaying[tag] = audio
-			audio.finished.connect(cancelSound.bind(tag))
+			audio.finished.connect(stopSound.bind(tag),CONNECT_ONE_SHOT)
 		(game if game else Global).add_child(audio)
 	
 	if audio.stream: audio.stream.loop = loop
@@ -1464,7 +1466,7 @@ static func playSound(path, volume: float = 1.0, tag: String = "",force: bool = 
 	audio.volume_db = linear_to_db(volume)
 	return audio
 
-static func cancelSound(tag: StringName):
+static func stopSound(tag: StringName):
 	if !soundsPlaying.has(tag): return
 	soundsPlaying[tag].stop()
 	soundsPlaying.erase(tag)
@@ -1773,3 +1775,9 @@ static func getColorFromArray(array: Array, divided_by_255: bool = true) -> Colo
 static func getColorFromName(color_name: String, default: Color = Color.WHITE) -> Color:
 	return Color.from_string(color_name.to_lower(),default)
 #endregion
+
+static func show_funkin_warning(warning: String, color: Color = Color.RED, only_show_when_debugging: bool = true):
+	if only_show_when_debugging and !debugMode: return
+	var text = Global.show_label_warning(warning,5.0)
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	text.modulate = color 

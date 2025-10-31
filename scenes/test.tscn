@@ -1,3 +1,29 @@
-[gd_scene format=3 uid="uid://r43ug3iqri4f"]
+[gd_scene load_steps=4 format=3 uid="uid://r43ug3iqri4f"]
+
+[ext_resource type="Shader" uid="uid://dversuc1owccd" path="res://source/states/Editors/Modchart/Shaders/Grid.gdshader" id="1_bl13t"]
+[ext_resource type="Script" uid="uid://bkt70euxceryd" path="res://source/states/Editors/Modchart/Editor/GridNode.gd" id="1_errlg"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bl13t"]
+shader = ExtResource("1_bl13t")
+shader_parameter/grid_color = Color(0.2, 0.2, 0.2, 1)
+shader_parameter/grid_bg = Color(0, 0, 0, 0)
+shader_parameter/grid_beat_color = Color(0.4, 0.4, 0.4, 1)
+shader_parameter/grid_negative_bg = Color(0, 0, 0, 0)
+shader_parameter/grid_negative_beat_color = Color(0.4, 0, 0.4, 1)
+shader_parameter/grid_negative_color = Color(0.2, 0, 0, 1)
+shader_parameter/section_beats = 5
+shader_parameter/x = 0.0
+shader_parameter/y = 0.0
+shader_parameter/grid_size = Vector2(40, 24)
+shader_parameter/parent_size = Vector2(855, 104)
 
 [node name="Test" type="Node"]
+
+[node name="GridNode" type="Control" parent="."]
+material = SubResource("ShaderMaterial_bl13t")
+layout_mode = 3
+anchors_preset = 0
+offset_right = 855.0
+offset_bottom = 104.0
+script = ExtResource("1_errlg")
+metadata/_custom_type_script = "uid://bkt70euxceryd"

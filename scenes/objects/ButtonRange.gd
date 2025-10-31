@@ -56,9 +56,9 @@ func set_value(_value: float):
 	var difference: float = _value - value
 	value = snappedf(_value,0.0001)
 	update_value_text()
-	if emit:
-		value_changed.emit(_value)
-		value_added.emit(difference)
+	if !emit: return
+	value_changed.emit(_value)
+	value_added.emit(difference)
 
 func _on_value_text_submitted(new_text: String) -> void:
 	value = float(new_text)

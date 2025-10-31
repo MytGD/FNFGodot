@@ -40,6 +40,7 @@ var clear_song_after_exiting: bool = true
 
 var songSpeed: float: set = set_song_speed 
 var _songLength: float = 0.0
+var _isSongStarted: bool = false
 
 static var SONG: Dictionary:
 	set(dir): Conductor.songJson = dir
@@ -57,7 +58,7 @@ var keyCount: int = 4: ##The amount of notes that will be used, default is [b]4[
 var mustHitSection: bool = false ##When the focus is on the opponent.
 var gfSection: bool = false ##When the focus is on the girlfriend.
 
-	
+
 var _songPos: float
 @export_group("Notes")
 var strumLineNotes := SpriteGroup.new()#Strum's Group.
@@ -94,8 +95,6 @@ var splashesEnabled: bool = ClientPrefs.data.splashesEnabled and ClientPrefs.dat
 var opponentSplashes: bool = splashesEnabled and ClientPrefs.data.opponentSplashes
 var grpNoteSplashes: SpriteGroup = SpriteGroup.new() ##Note Splashes Group.
 var grpNoteHoldSplashes: Array[NoteSplash] = [] ##Note Hold Splashes Group.
-
-
 
 static var isPixelStage: bool = false
 @export var arrowStyle: String = 'funkin'
@@ -280,10 +279,6 @@ func clearSongNotes():
 	_unspawnIndex = 0
 	unspawnNotes.clear()
 
-func set_song_speed(value):
-	songSpeed = value
-	noteSpawnTime = NOTE_SPAWN_TIME/(value/2.0)
-
 ##Begins the song. See also [method loadSong].
 func startSong() -> void: 
 	if !Conductor.songs: return
@@ -301,6 +296,7 @@ func startSong() -> void:
 		audio.play(0.0)
 		songId += 1
 		pass
+	_isSongStarted = true
 	_songLength = songsArray[0].stream.get_length()*1000.0
 
 ##Seek the Song Position to [param time] in miliseconds.[br]
@@ -373,7 +369,9 @@ func reset_strums_state():
 		strum.modulate.a = defaultStrumAlpha[i]
 
 func _create_strums() -> void:
-	for i in strumLineNotes.members: i.remove_child(i.get_parent()); i.queue_free()
+	for i in strumLineNotes.members: 
+		if i.get_parent(): i.get_parent().remove_child(i)
+		i.queue_free()
 	
 	strumLineNotes.members.clear()
 	playerStrums.members.clear()
@@ -608,6 +606,7 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 		splash.visible = true
 		if splashGroup: splash.reparent(splashGroup,false)
 		elif splash._is_custom_parent: splash.reparent(grpNoteSplashes,false)
+		
 	splash._is_custom_parent = !!splashGroup
 	splash.strum = strum
 	splash.isPixelSplash = isPixelStage
@@ -754,7 +753,7 @@ func destroy(absolute: bool = true): ##Remove the state
 	Conductor.clearSong(exitingSong)
 	
 	Paths.clearLocalFiles()
-	if absolute: _reset_values()
+	if absolute: clear()
 	else: for note in notes.members: note.kill()
 	
 	if isModding: NoteSplash.splash_datas.clear()
@@ -766,14 +765,24 @@ func _set_botplay(is_botplay: bool) -> void:
 	for i in strumLineNotes.members: i.mustPress = false
 	
 
-func updateStrumsMustPress():
+func updateStrumsMustPress() -> void:
 	var strums = strumLineNotes.members
 	if !strums: return
 	
-	for key in strums.size():
-		var mustPress = key < keyCount
-		strums[key].mustPress = false if botplay else mustPress and playAsOpponent or !mustPress and !playAsOpponent
+	var index: int = 0
+	while index < strums.size():
+		if botplay: strums[index].mustPress = false; continue
+		if index < keyCount: strums[index].mustPress = !playAsOpponent
+		else: strums[index].mustPress = playAsOpponent
+		index += 1
+		
 	
+
+#region Setters
+func set_song_speed(value):
+	songSpeed = value
+	noteSpawnTime = NOTE_SPAWN_TIME/(value/2.0)
+
 func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
 	if playAsOpponent == isOpponent: return
 	playAsOpponent = isOpponent
@@ -792,7 +801,8 @@ func _set_middlescroll(value):
 	middleScroll = value
 	FunkinGD.middlescroll = value
 	updateStrumsPosition()
-	
+#endregion
+
 const noteSusVars: PackedStringArray = [
 	'noteData',
 	'noteType',
@@ -902,9 +912,15 @@ static func createSustainFromNote(note: Note,length: float, isEnd: bool = false)
 	#sus.multAlpha = 0.7
 	return sus
 
-func clear() -> void: clearSongNotes() #Replaced in PlayStateBase
-
-static func _reset_values() -> void:
+func clear() -> void: 
+	clearSongNotes() #Replaced in PlayStateBase
+	for i in grpNoteHoldSplashes: if i: i.queue_free()
+	grpNoteHoldSplashes.fill(null)
+	
+	for i in grpNoteSplashes.members: if i: i.queue_free()
+	grpNoteSplashes.members.clear()
+	
+	_splashes_loaded.clear()
 	inModchartEditor = false
 	isPixelStage = false
 	_notes_preload.clear()

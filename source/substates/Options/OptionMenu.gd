@@ -12,8 +12,8 @@ func _ready(): set_process_input(visible)
 
 func set_option_index(value: int):
 	if !data: return
-	if value > data.size()-1: value = 0
-	elif value < 0: value = data.size()-1
+	
+	value = wrapi(value,0,data.size())
 	
 	optionIndex = value
 	if cur_data:

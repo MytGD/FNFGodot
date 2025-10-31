@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://brsfxtx3maax7"]
-
-[ext_resource type="Script" uid="uid://dbcawd2so03ht" path="res://source/states/Menu/ModeSelect.gd" id="1_5j4ln"]
-
-[node name="ModeSelect" type="Node2D"]
-script = ExtResource("1_5j4ln")

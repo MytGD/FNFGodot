@@ -52,6 +52,9 @@ static func get_shader_uniforms(material: Material):
 		if default_value == null: default_value = MathUtils.get_new_value(type)
 		var data: Dictionary[String,Variant] = {'default': default_value,'type': type}
 		var hint_string: String = i.get('hint_string')
-		if hint_string: data.range = hint_string.split_floats(',')
+		if hint_string: 
+			var split: Array
+			for s in hint_string.split(','): split.append(snappedf(float(s),0.001))
+			data.range = split
 		list[i.name] = data
 	return list

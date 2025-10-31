@@ -1,5 +1,6 @@
 shader_type canvas_item;
 
+// UNIFORMS ORIGINAIS
 uniform vec4 grid_color: source_color = vec4(vec3(0.2),1.0);
 uniform vec4 grid_bg: source_color = vec4(0.0);
 uniform vec4 grid_beat_color: source_color = vec4(vec3(0.4),1.0);
@@ -8,41 +9,38 @@ uniform vec4 grid_negative_bg: source_color = vec4(0.0);
 uniform vec4 grid_negative_beat_color: source_color = vec4(vec3(0.4,0.0,0.4),1.0);
 uniform vec4 grid_negative_color: source_color = vec4(0.2,0.0,0.0,1.0);
 
-
 uniform int section_beats = 4;
-uniform bool grid_bg_enabled = true;
 
 uniform float x = 0.0;
-uniform float y = 0.0;
-uniform vec2 grid_size = vec2(40.0, 24.0);     // Tamanho de cada célula
-uniform vec2 parent_size = vec2(1070.0, 156.0); // Tamanho do Control (enviado pelo script)
+uniform float y = 0.0; 
+uniform vec2 grid_size = vec2(40.0, 24.0);
+uniform vec2 parent_size = vec2(1070.0, 156.0);
 
 void fragment() {
-	vec2 cells = parent_size / grid_size;
-	vec2 uv = UV * cells + vec2(x, y);
-	bool negative = (uv.x < 0.0 || uv.y < 0.0);
-	uv = abs(uv);
-	ivec2 uv_mod = ivec2(uv);
-	vec2 grid = uv - vec2(uv_mod);
-
-	vec2 px = max(vec2(0.05),fwidth(uv));
+	vec2 uv_scaled = UV * (parent_size / grid_size) + vec2(x, y);
+	
+	bool negative = (uv_scaled.x < 0.0 || uv_scaled.y < 0.0);
+	
+	vec2 abs_uv = abs(uv_scaled);
+	vec2 grid = fract(abs_uv);
+	
+	vec2 px = max(vec2(0.05), fwidth(uv_scaled));
 
 	bool left_margin = grid.x < px.x;
-	bool right_margin = grid.x > 1.0 - px.x;
 	bool top_margin = grid.y < px.y;
-	bool bottom_margin = grid.y > 1.0 - px.y;
-
-	if(grid_bg_enabled){
-		COLOR = negative ? grid_negative_bg : grid_bg;
-	}
-	if (left_margin || right_margin ||
-	    top_margin || bottom_margin) {
-		COLOR = negative ? grid_negative_color : grid_color;
-		if(uv_mod.x > 0){
-			int beat_mod = uv_mod.x % section_beats;
-			if(beat_mod == 0 && left_margin || beat_mod == 3 && right_margin){
-				COLOR = negative ? grid_negative_beat_color : grid_beat_color;
-			}
-		}
+	
+    bool is_on_line = left_margin || top_margin;
+	
+	int beat_mod = int(abs_uv.x) % section_beats;
+	bool is_beat_line = left_margin && (beat_mod == 0);
+	
+	if (negative) {
+		COLOR = grid_negative_bg;
+		if (is_on_line) COLOR = grid_negative_color;
+		if (is_beat_line) COLOR = grid_negative_beat_color;
+	} else {
+		COLOR = grid_bg;
+		if (is_on_line)COLOR = grid_color;
+		if (is_beat_line)COLOR = grid_beat_color;
 	}
 }

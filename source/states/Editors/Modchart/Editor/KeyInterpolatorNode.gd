@@ -11,7 +11,7 @@ const Points: PackedVector2Array = [
 const KEY_SIZE = Vector2(10,10)
 const KEY_CENTER = Vector2(5,5)
 static var polygon_points: PackedVector2Array = PackedVector2Array()
-
+static var key_length_size: float = 24
 var data: KeyInterpolator
 
 var step_crochet: float = 0.0: set = _set_step_crochet #Sets in ModchartEditor
@@ -30,7 +30,7 @@ func _init(interpolator: KeyInterpolator = KeyInterpolator.new()):
 	
 func _draw() -> void:
 	if data.duration: 
-		length = data.duration/step_crochet*ModchartEditor.GRID_SIZE.x
+		length = data.duration/step_crochet*key_length_size
 		draw_rect(Rect2(
 			Vector2(KEY_CENTER.x,KEY_CENTER.y/2.0),
 			Vector2(length,KEY_CENTER.y)
@@ -42,7 +42,8 @@ func _draw() -> void:
 	draw_polygon(polygon_points,PackedColorArray([Color.WHITE]))
 
 func updatePos():
-	if parent: position.x = -KEY_CENTER.x+step*ModchartEditor.grid_size.x - parent.position.x
+	if parent: position.x = -KEY_CENTER.x+step*key_length_size - parent.position.x
+
 func _set_step_crochet(crochet: float):
 	step_crochet = crochet
 	queue_redraw()

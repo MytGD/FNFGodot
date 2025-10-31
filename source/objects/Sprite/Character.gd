@@ -68,6 +68,7 @@ var origin_offset: Vector2 = Vector2.ZERO
 signal on_load_character(new_character: StringName, old_character: StringName)
 
 func _init(character:String = '', player: bool = false):
+	name = 'Character'
 	autoDance = not isPlayer
 	super._init('',true)
 	
@@ -245,6 +246,7 @@ func _add_animation_from_data(animName: String,animData: Dictionary, asset: Text
 	if !anim_frames: return {}
 	animData.frames = anim_frames
 	return animation.insertAnim(animName,animData)
+
 func addCharacterImage(path) -> Texture2D:
 	if path is Texture2D: return
 	if !path: path = json.assetPath
@@ -268,7 +270,7 @@ func dance() -> void: ##Make character returns to his dance animation.
 func _check_dance_anim(anim_name: StringName) -> void:
 	if anim_name.begins_with('singLEFT'): danced = false
 	elif anim_name.begins_with('singRIGHT'): danced = true
-	
+
 #endregion
 
 
@@ -320,19 +322,18 @@ static func _convert_psych_to_original(json: Dictionary):
 	
 	var anims = json.get('animations')
 	json.erase('animations')
-	if anims:
-		for i in anims:
-			var anim = getAnimBaseData()
-			
-			DictionaryUtils.merge_existing(anim,i)
-			if i.has('indices'): anim.frameIndices = i.indices
-			if i.has('loop'): anim.looped = i.loop
-			if i.has('anim'):  anim.name = i.anim; if i.has('name'): anim.prefix = i.name
-			
-			anim.offsets = PackedFloat32Array(i.get('offsets',[0,0]))
-			anim.fps = i.get('fps',24.0)
-			
-			new_json.animations.append(anim)
+	for i in anims:
+		var anim = getAnimBaseData()
+		
+		DictionaryUtils.merge_existing(anim,i)
+		if i.has('indices'): anim.frameIndices = i.indices
+		if i.has('loop'): anim.looped = i.loop
+		if i.has('anim'):  anim.name = i.anim; if i.has('name'): anim.prefix = i.name
+		
+		anim.offsets = PackedFloat32Array(i.get('offsets',[0,0]))
+		anim.fps = i.get('fps',24.0)
+		
+		new_json.animations.append(anim)
 	
 	new_json.offsets = json.get('position',[0,0])
 	new_json.flipX = json.get('flip_x',false)

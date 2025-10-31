@@ -7,6 +7,7 @@ const nodes_offset_center = Vector2(10,10)
 
 var icons_found: Dictionary = {}
 signal on_button_selected(node: ButtonExplorer)
+
 func set_object(obj: Node):
 	object = obj
 	if !is_node_ready(): return
@@ -52,6 +53,7 @@ func _save_icon(_name: Variant) -> Texture:
 	var icon: Texture
 	if ResourceLoader.exists(path): icon = load(path); icons_found[_name] = icon
 	return icon
+
 func add_childs(childs: Array,parent: Control = null):
 	for i in childs: 
 		var button = add_new_child(i,parent)
@@ -151,7 +153,7 @@ class ButtonExplorer extends Control:
 		object = obj
 		object.child_entered_tree.connect(_child_entered)
 		object.child_exiting_tree.connect(_child_exited)
-		object.tree_exited.connect(queue_free)
+		object.tree_exited.connect(queue_free,CONNECT_ONE_SHOT)
 	
 	#Draw Connection Lines
 	func _draw() -> void:

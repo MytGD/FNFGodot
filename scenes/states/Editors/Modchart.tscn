@@ -1,0 +1,1625 @@
+[gd_scene load_steps=28 format=3 uid="uid://dgigti34bmg6s"]
+
+[ext_resource type="Script" uid="uid://blf6ig37np2mt" path="res://source/states/Editors/Modchart/Editor/ModchartEditor.gd" id="1_2kx6s"]
+[ext_resource type="Script" uid="uid://cg2ig10imhwri" path="res://source/states/PlayState.gd" id="2_2kx6s"]
+[ext_resource type="Texture2D" uid="uid://cggfq2j244bhe" path="res://icons/ArrowDown.svg" id="3_3fulc"]
+[ext_resource type="Texture2D" uid="uid://ch3c07tawwa8r" path="res://icons/Shader.svg" id="3_n2vt6"]
+[ext_resource type="Script" uid="uid://du1rbf6kg1jmr" path="res://source/states/Editors/Modchart/Editor/Explorer.gd" id="3_rhtdg"]
+[ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="5_n2vt6"]
+[ext_resource type="Texture2D" uid="uid://d3ler7oyh2kc5" path="res://icons/Remove.svg" id="6_3fulc"]
+[ext_resource type="Texture2D" uid="uid://sqp64xvjhqvv" path="res://icons/Image.svg" id="6_mbk3t"]
+[ext_resource type="Script" uid="uid://bwuthavuunu4c" path="res://source/states/Editors/Modchart/Editor/Timeline.gd" id="7_rhtdg"]
+[ext_resource type="Texture2D" uid="uid://cv2qf1dmsc6jr" path="res://icons/Save.svg" id="10_mbk3t"]
+[ext_resource type="Texture2D" uid="uid://d10eacn2cxwej" path="res://icons/Load.svg" id="11_oop0l"]
+[ext_resource type="Texture2D" uid="uid://cdbm117l1dtf" path="res://icons/Keyboard.svg" id="11_x5qun"]
+
+[sub_resource type="GDScript" id="GDScript_rhtdg"]
+resource_name = "ExplorerIcons"
+script/source = "@tool
+extends TabContainer
+func _ready():
+	set_tab_icon(0,load(\"uid://bld6aqytqnhev\"))
+	set_tab_icon(1,load(\"uid://cm420vho75ttu\"))
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[sub_resource type="GDScript" id="GDScript_g3drg"]
+resource_name = "Explorator"
+script/source = "extends Panel
+const EditorMaterial = preload(\"uid://dva6hqf80sxay\")
+const SELECT_OBJECT_COLOR = Color(0.68,0.68,0.68)
+
+@onready var properties: Panel = $\"../../HSplit/Properties\"
+@onready var explorer_area_selected: Sprite2D = $\"../../../../SubViewport/ObjectSelected\"
+@onready var explorer_nodes = $Nodes
+var explorer_object_selected: Object
+var explorer_object_last_modulate: Color
+var explorer_select_effect: bool = false
+var explorer_modulate_delta: float = 0.0
+var explorer_properties_can_be_update: bool = true
+
+func _ready() -> void: explorer_nodes.on_button_selected.connect(_on_explorer_button_selected)
+	
+func _process(delta: float) -> void: _explorer_obj_selected_color(delta)
+
+func _on_explorer_button_selected(button) -> void:
+	var obj = button.object
+	explorer_properties_can_be_update = true
+	if explorer_object_selected:
+		if explorer_object_selected == obj: return
+		if explorer_select_effect: 
+			explorer_object_selected.modulate.r = explorer_object_last_modulate.r
+			explorer_object_selected.modulate.g = explorer_object_last_modulate.g
+			explorer_object_selected.modulate.b = explorer_object_last_modulate.b
+		
+	if !properties.show_object_properties(obj):
+		explorer_object_selected = null
+		explorer_area_selected.visible = false 
+		return
+	
+	explorer_area_selected.visible = true
+	explorer_select_effect = obj is CanvasItem
+	
+	if explorer_select_effect: explorer_object_last_modulate = obj.modulate
+	else: explorer_modulate_delta = 0.0
+	explorer_object_selected = obj
+
+func _on_explorer_media_button_pressed(button: Button):
+	if button == explorer_object_selected: return
+	explorer_properties_can_be_update = false
+	explorer_object_selected = button
+	if button.media is EditorMaterial: properties.show_media_material_properties(button.media)
+
+func _explorer_obj_selected_color(delta: float):
+	_explorer_update_area_selected()
+	if !explorer_select_effect or !explorer_object_selected: return
+	explorer_modulate_delta += delta
+	var col = explorer_object_last_modulate.lerp(
+		SELECT_OBJECT_COLOR,
+		abs(sin(explorer_modulate_delta*3.0))
+	)
+	explorer_object_selected.modulate = Color(col.r,col.g,col.b,explorer_object_selected.modulate.a)
+
+func _explorer_update_area_selected():
+	if !explorer_object_selected: return
+	var pos = explorer_object_selected.get('global_position')
+	if !pos: pos = Vector2.ZERO
+	explorer_area_selected.position = pos
+	
+	#var canvas_transform = explorer_area_selected.get_transform()
+	#print(canvas_transform)
+	#explorer_area_selected.size = Vector2(canvas_transform.x.y,canvas_transform.y.x)
+#endregion
+"
+
+[sub_resource type="GDScript" id="GDScript_f01ue"]
+resource_name = "Media"
+script/source = "extends Panel
+const ModchartEditor = preload(\"res://source/states/Editors/Modchart/Editor/ModchartEditor.gd\")
+const ShaderIcon = preload(\"uid://ch3c07tawwa8r\")
+const ImageIcon = preload(\"uid://sqp64xvjhqvv\")
+
+@onready var editor = $\"../../../..\"
+@onready var shader_container = $HBoxContainer/Shaders/Container
+@onready var image_container = $HBoxContainer/Images/Container
+@onready var properties: Panel = $\"../../HSplit/Properties\"
+
+func _on_media_pressed(media: MediaData):
+	if media.media is ShaderMaterial: properties.show_media_material_properties(media.media)
+
+func _on_select_shader_media_pressed() -> void: 
+	editor.show_dialog(); 
+	editor.connect_to_dialog(add_shader)
+	editor.dialog.add_filter('*.frag')
+	editor.dialog.add_filter('*.gdshader')
+
+func add_shader(path: String, rename: bool = true):
+	var shader = editor.EditorMaterial.new()
+	shader.loadShader(path)
+	if !shader.shader: return
+	
+	var media = MediaData.new()
+	media.media = shader
+	media.icon = ShaderIcon
+	add(media,shader_container)
+	media.line_edit.text = shader.shader.resource_name
+	if rename: 
+		media._line_grab_focus()
+		media.line_edit.caret_column = media.line_edit.text.length()
+
+func add(data: MediaData, container: Control):
+	container.add_child(data)
+	data.pressed.connect(_on_media_pressed.bind(data))
+
+class MediaData extends Button:
+	var line_edit = LineEdit.new()
+	var media: Resource: set = set_media
+	func _init() -> void:
+		focus_mode = Control.FOCUS_CLICK
+		expand_icon = true
+		custom_minimum_size.y = 23
+		line_edit.position.x = 30
+		line_edit.flat = true
+		line_edit.focus_mode = Control.FOCUS_NONE
+		line_edit.text_changed.connect(_line_edit_text_changed)
+		line_edit.text_submitted.connect(func(_t): line_edit.focus_mode = Control.FOCUS_NONE)
+		line_edit.expand_to_text_length = true
+		resized.connect(_update_line_pos)
+		add_child(line_edit)
+
+	func _update_line_pos(): line_edit.position.y = (size.y - line_edit.size.y)/2.0
+	func _line_edit_text_changed(new_text: String):
+		if !new_text: line_edit.text = line_edit.placeholder_text
+
+	func set_media(_media: Resource):
+		media = _media
+		line_edit.placeholder_text = _media.resource_name.get_file()
+
+	func _line_grab_focus():
+		line_edit.focus_mode = Control.FOCUS_CLICK
+		line_edit.grab_focus()
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventKey:
+			if event.pressed and not event.echo and event.keycode == KEY_F2: _line_grab_focus()
+		elif event is InputEventMouseButton:
+			if event.double_click and event.button_index == 1: _line_grab_focus()
+"
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_vxf07"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="GDScript" id="GDScript_u3sa4"]
+resource_name = "Properties"
+script/source = "extends Panel
+const EditorMaterial = preload(\"uid://dva6hqf80sxay\")
+
+const StrumNote = preload(\"res://source/objects/Notes/StrumNote.gd\")
+const Sprite = preload(\"res://source/objects/Sprite/Sprite.gd\")
+const Character = preload(\"res://source/objects/Sprite/Character.gd\")
+const CameraCanvas = preload(\"res://source/objects/Display/Camera/Camera.gd\")
+const SpriteGroup = preload(\"res://source/general/groups/SpriteGroup.gd\")
+const PlayState = preload(\"res://source/states/PlayState.gd\")
+const Bar = preload(\"res://source/objects/UI/Bar.gd\")
+const GDText = preload(\"res://source/objects/Display/GDText.gd\")
+
+var screen_size_mult = ScreenUtils.screenSize*2
+
+#region Ranges Const
+const ButtonRange = preload(\"res://scenes/objects/ButtonRange.gd\")
+const ButtonRangeScene = preload(\"res://scenes/objects/ButtonRange.tscn\")
+
+const HSliderRange = preload(\"res://scenes/objects/HSliderRange.gd\")
+const HSliderRangeScene = preload(\"res://scenes/objects/HSliderRange.tscn\")
+
+const LineEditWithTitleScene = preload(\"res://scenes/objects/LineEditWithTitle.tscn\")
+const LineEditWithTitle = preload(\"res://scenes/objects/LineEditWithTitle.gd\")
+#endregion
+
+#Textures
+const KeyNormalTexture = preload(\"res://icons/KeyBezierHandle.svg\")
+const KeySelectedTexture = preload(\"res://icons/KeySelected.svg\")
+
+const RESET_TEXTURE = preload(\"res://icons/Reload.svg\")
+
+
+var values := {
+	PlayState: {
+		'defaultCamZoom': {'range': [-5,5]},
+		'cameraSpeed': {'range': [0.2,10]},
+		'scrollSpeed':  {'range': [0.2,10]},
+		'zoomSpeed': {'range': [0.0,15.0]},
+		'camZooming': null,
+		'botplay': null
+	},
+	CameraCanvas:{
+		'x': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
+		'y': {'range': [-screen_size_mult.x,screen_size_mult.x,1]},
+		'width': {'range': [0,ScreenUtils.screenSize.x,5]},
+		'height': {'range': [0,ScreenUtils.screenSize.y,5]},
+		'shakeIntensity': {'range': [0,0.15,0.001]},
+		'scroll': {'step': 10},
+		'zoom': null,
+		'defaultZoom': {'range': [-7,7,0.1]},
+		'angle': {'range': [-360,360,0.1]}
+	},
+	Sprite:{
+		'x': null,
+		'y': null,
+		'offset': null,
+		'velocity': {'step': 10},
+		'acceleration': null,
+		'scrollFactor': {'range_x': [0.0,10.0,0.1],'range_y': [0.0,10.0,0.1]}
+	},
+	SpriteGroup: {
+		'x': null,
+		'y': null
+	},
+	Bar: {
+		'position': null,
+		'scale': null,
+		'rotation': null,
+	},
+		GDText:{
+		'x': null,
+		'y': null
+	},
+	StrumNote:{'direction': {'range': [-360,360]}},
+	
+	'Label':{
+		'text': null,
+		\"visible_ratio\": {'range': [0.0,1.0,0.01]}
+	},
+	'Node2D': {
+		'scale': {'type': TYPE_FLOAT,'range': [-12,12]}
+	},
+	'CanvasItem':{
+		'modulate': null,
+		'visible': null
+	},
+}
+
+@onready var editor = $\"../../../..\"
+@onready var properties_tab = $bg/Scroll/Container
+@onready var properties_select_obj_text = properties_tab.get_node('../../InfoText')
+
+var properties_created: Array
+var property_label_settings = LabelSettings.new()
+
+#region Property Editor Variables 
+@onready var explorer_nodes: ScrollContainer = $\"../../AssetManager/Explorator/Nodes\"
+@onready var keys_container = $\"../../../Timeline/Position/GridContainer\"
+const UPDATE_PROPERTY_EVERY = 1.0/5.0
+var property_update_el: float = 0.0
+#endregion
+
+
+var default_values: Dictionary[Object,Dictionary] = {}
+
+func _init() -> void:
+	property_label_settings.font_size = 13
+
+func _process(delta) -> void:
+	if editor.playState.process_mode != PROCESS_MODE_DISABLED: _check_properties_update(delta)
+
+func _clear_properties():
+	for i in properties_tab.get_children(): i.queue_free()
+	properties_created.clear()
+
+func show_object_properties(object: Object) -> bool:
+	if object is ShaderMaterial: return false
+	
+	_clear_properties()
+	var properties: Dictionary = _get_object_properties(object)
+	
+	if !properties: properties_select_obj_text.visible = true; return false
+	properties_select_obj_text.visible = false
+	
+	for i in properties:
+		var data = properties[i]
+		var separator = _create_property_separator(i,data[1])
+		
+		var _props = data[0]
+		for p in _props: 
+			var property = _create_property_buttons(object,p,_props[p])
+			if property: separator.properties_to_hide.append_array(property)
+	return true
+
+func show_media_material_properties(material: EditorMaterial):
+	_clear_properties()
+	
+	properties_select_obj_text.visible = false
+	
+	var uniforms = material.uniforms
+	for i in uniforms: _create_property_buttons(material,i,uniforms[i])
+		
+	#Load Objects Text
+	var objects_edit: LineEditWithTitle = LineEditWithTitleScene.instantiate()
+	objects_edit.text = 'Objects:'
+	objects_edit.tooltip_text = 'Objects that will contain the shader.'
+	objects_edit.edit_text = _get_shader_objects_str(material)
+	objects_edit.edit_text_changed.connect(func(_t): material.objects = _t.split(','))
+	
+	
+	properties_tab.add_child(objects_edit)
+
+func _get_object_properties(object: Object):
+	var script: Script = object.get_script()
+	var props: Dictionary
+	if script:
+		while script:
+			var val = values.get(script)
+			if val: 
+				var _class_n = script.resource_path.get_basename().get_file()
+				props[_class_n] = [val,explorer_nodes._get_node_icon(script)]
+			script = script.get_base_script()
+	
+	var name_class = object.get_class()
+	while name_class:
+		var class_props = values.get(name_class)
+		if !class_props: break
+		props[name_class] = [class_props,explorer_nodes._get_class_icon(name_class)]
+		name_class = ClassDB.get_parent_class(name_class)
+	return props
+
+
+func _get_shader_objects_str(material: EditorMaterial) -> String:
+	if !material.objects: return ''
+	var text: String = material.objects[0]
+	var index: int = 1
+	while index < material.objects.size(): text += ','+material.objects[index]; index += 1
+	return text
+
+func _create_property_separator(text: String, icon: Texture):
+	var separator = PropertySeparator.new()
+	separator.class_text = text
+	separator.button.icon = icon
+	properties_tab.add_child(separator)
+	return separator
+
+func _create_property_buttons(object: Object, property: String, data = null) -> Array[Node]:
+	var type = typeof(get_object_value(object,property))
+	var nodes: Array[Node] = []
+	
+	match type:
+		TYPE_FLOAT,TYPE_INT: 
+			nodes.append(_create_property_range(object,property,type == TYPE_INT,data))
+		TYPE_VECTOR2,TYPE_VECTOR3,TYPE_VECTOR4,TYPE_VECTOR2I,TYPE_VECTOR3I,TYPE_VECTOR4I:
+			nodes.append_array(_create_vectors_properties(object,property,type,data))
+		TYPE_BOOL: nodes.append(_create_property_box_button(object,property))
+		_: return nodes
+	return nodes
+
+func _create_property_range(obj: Object, property: String, int_value: bool = false, data = null):
+	var button
+	if data and data.has('range'): button = _create_property_hslider(data.range,int_value)
+	else: button = _create_property_button_range(int_value)
+	
+	button.set_value_no_signal(get_object_value(obj,property))
+	button.name = property
+	button.text = property+': '
+	button.label_settings = property_label_settings
+	button.value_changed.connect(func(_v): set_object_value(obj,property,_v))
+	
+	_add_property_node(button,obj,property)
+	
+	
+	var default_value = _get_obj_property_default(obj,property)
+	if default_value != null: _create_reset_property_button(button,default_value)
+	
+	_create_interpolator_key_to_button(button,obj,property)
+	return button
+
+func _add_property_node(button: Control, obj: Object, property: String, index: Variant = null):
+	properties_tab.add_child(button)
+	properties_created.append([button,obj,property,index] if index != null else [button,obj,property])
+	
+
+func _create_property_range_index(obj: Object, property: Variant, index: int, int_value: bool = false, data = null):
+	var button: Control
+	
+	var index_name = VectorUtils.vectors_index[index]
+	
+	var custom_step: bool = false
+	var step_name
+	
+	if data: 
+		var range_name = 'range_'+index_name
+		step_name = 'step_'+index_name
+		
+		if data.has(range_name): button = _create_property_hslider(data[range_name],int_value)
+		elif data.has('range'): button = _create_property_hslider(data.range,int_value)
+		
+		elif data.has(step_name): custom_step = true
+		elif data.has('step'): custom_step = true; step_name = 'step'
+		
+	if !button: button = _create_property_button_range(int_value)
+	
+	button.set_value_no_signal(obj[property][index])
+	button.name = property+':'+index_name
+	button.text = property+' '+index_name+': '
+	button.label_settings = property_label_settings
+	if custom_step: button.step = data[step_name]
+	return button
+	
+func _create_vectors_properties(obj: Object, property: Variant, type: Variant.Type, data = null) -> Array[Node]:
+	var index: int = 0
+	var size = VectorUtils.get_vector_size(type)
+	var int_value = type == TYPE_VECTOR2I or type == TYPE_VECTOR3I or type == TYPE_VECTOR4I
+	
+	var nodes: Array[Node] = []
+	var default_value = _get_obj_property_default(obj,property)
+	while index < size:
+		var button = _create_property_range_index(obj,property,index,int_value,data)
+		nodes.append(button)
+		_add_property_node(button,obj,property,index)
+		button.value_changed.connect(func(_v): set_object_vector_value(obj,property,index,_v))
+		if default_value != null: _create_reset_property_button(button,default_value[index])
+		index += 1
+	return nodes
+
+#region Interators
+func _create_property_hslider(range_data: Array, rounded: bool = false) -> HSliderRange:
+	var button = HSliderRangeScene.instantiate()
+	button.min_value = range_data[0]
+	button.int_value = rounded
+	button.max_value = range_data[1]
+	if range_data.size() >= 3: button.step = range_data[2]
+	return button
+
+func _create_property_button_range(int_value: bool = false) -> ButtonRange:
+	var button = ButtonRangeScene.instantiate()
+	button.update_min_size_x = true
+	button.update_min_size_y = true
+	button.int_value = int_value
+	button.label_settings = property_label_settings
+	if !int_value: button.step = 0.1
+	return button
+
+func _create_property_box_button(obj: Object, property: String) -> CheckBox:
+	var button: CheckBox = CheckBox.new()
+	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	button.name = property
+	button.text = ': '+property
+	button.add_theme_font_size_override('font_size',property_label_settings.font_size)
+	button.focus_mode = Control.FOCUS_NONE
+	button.toggled.connect(func(_v): obj[property] = _v)
+	
+	button.set_pressed_no_signal(obj[property])
+	_add_property_node(button,obj,property)
+	_create_interpolator_key_to_button(button,obj,property)
+	return button
+
+
+func _create_reset_property_button(button_to_connect: Control, default: Variant):
+	var button = Button.new()
+	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
+	button.icon = RESET_TEXTURE
+	button.custom_minimum_size = Vector2(23,23)
+	button.expand_icon = true
+	button.visible = false
+	button.pressed.connect(func(): button_to_connect.value = default)
+	
+	var func_bind = _check_reset_visible.bind(default,button)
+	var pos_func = _update_reset_button_pos.bind(button)
+	
+	button_to_connect.value_changed.connect(func_bind)
+	button_to_connect.resized.connect(pos_func)
+	button_to_connect.add_child(button)
+	
+	pos_func.call_deferred()
+	func_bind.call_deferred(button_to_connect.value)
+	return button
+#endregion
+
+func _check_reset_visible(value: Variant, default: Variant,b: Button): b.visible = value != default
+
+func _update_reset_button_pos(reset_button: Button) -> void:
+	var parent: Control = reset_button.get_parent()
+	if parent is HSliderRange:
+		reset_button.position = Vector2(parent.slider.position.x + parent.slider.size.x,parent.size.y/2.0 - 8)
+		return
+	var min_size = parent.get_combined_minimum_size()
+	reset_button.position = Vector2(min_size.x,parent.size.y/2.0 - 8)
+
+func _update_properties() -> void:
+	for i in properties_created:
+		var obj = i[0]
+		var val = get_object_value(i[1],i[2]) if i.size() < 4 else get_object_index_value(i[1],i[2],i[3])
+		if obj is CheckBox:
+			obj.set_pressed_no_signal(val)
+		else: 
+			if obj.line_edit.has_focus() or obj is HSliderRange and obj.slider.has_focus(): return
+			obj.set_value_no_signal(val)
+
+
+func _check_properties_update(delta: float):
+	if !properties_created: return
+	property_update_el += delta
+	if property_update_el >= UPDATE_PROPERTY_EVERY:
+		property_update_el = 0.0
+		_update_properties()
+
+func _get_obj_property_default(obj: Object, property: String):
+	var default = default_values.get_or_add(obj,{}).get(property)
+	if default != null: return default
+	
+	if obj is EditorMaterial: default = obj.uniforms[property].default
+	else: default = obj.property_get_revert(property)
+	default_values[obj][property] = default
+	
+	return default
+
+func set_object_value(obj: Object, property: String,value: Variant) -> void:
+	if obj is ShaderMaterial: obj.set_shader_parameter(property,value); return
+	obj.set(property,value)
+
+func set_object_vector_value(obj: Object, property: String, index: int, value: Variant):
+	if obj is ShaderMaterial:
+		var vector = obj.get_shader_parameter(property)
+		match index:
+			0: vector.x = value
+			1: vector.y = value
+			2: vector.z = value
+			3: vector.w = value
+		obj.set_shader_parameter(property,value)
+		return
+	match index:
+		0: obj[property].x = value
+		1: obj[property].y = value
+		2: obj[property].z = value
+		3: obj[property].w = value
+
+func get_object_index_value(obj: Object, property: String, index: int) -> Variant:
+	if obj is ShaderMaterial: return obj.get_shader_parameter(property)[index];
+	return obj.get(property)[index]
+
+func get_object_value(obj: Object, property: String) -> Variant:
+	if obj is ShaderMaterial: return obj.get_shader_parameter(property);
+	return obj.get(property)
+
+func _create_interpolator_key_to_button(button: Control, object: Object, property: String, index: Variant = null) -> void:
+	var key = KeyValue.new()
+	key.object = object
+	
+	var bind = _update_interpolator_key_pos.bind(key)
+	button.resized.connect(bind)
+	
+	button.add_child(key)
+	bind.call_deferred()
+	
+	key.toggled.connect(func(t):
+		if t: keys_container.addKey(
+			Conductor.step,
+			object,
+			property,
+			button.button_pressed if button is CheckBox else button.value,
+			index)
+	)
+func _connect_interpolator_key(obj: Object, property: String, value: Variant): obj[property] = value
+
+func _connect_interpolator_key_index(obj: Object, property: String, index: Variant, value: Variant):
+	var obj_value = obj[property]
+	match typeof(obj_value):
+		TYPE_VECTOR2,TYPE_VECTOR3,TYPE_VECTOR4,TYPE_VECTOR2I,TYPE_VECTOR3I,TYPE_VECTOR4I:
+			match index:
+				0: obj[property].x = value
+				1: obj[property].y = value
+				2: obj[property].z = value
+				3: obj[property].w = value
+		TYPE_NIL: return
+		_: obj_value[index] = value
+
+func _update_interpolator_key_pos(key: Control):
+	var parent: Control = key.get_parent()
+	if parent is HSliderRange:
+		key.position = Vector2(parent.slider.position.x + parent.slider.size.x + 40,parent.size.y/2.0 - 8)
+		return
+	var min_size = parent.get_combined_minimum_size()
+	key.position = Vector2(min_size.x + 40,parent.size.y/2.0 - 8)
+
+class PropertySeparator extends VBoxContainer:
+	var button: Button = Button.new()
+	var properties_to_hide: Array = []
+	var class_text: String = ''
+	func _init() -> void:
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.set(\"theme_override_constants/icon_max_width\",23)
+	
+	func _ready() -> void:
+		button.toggle_mode = true
+		button.button_pressed = true
+		add_child(button)
+		button.focus_mode = Control.FOCUS_NONE
+		button.toggled.connect(func(_t): for i in properties_to_hide: i.visible = _t; update_text())
+		update_text()
+	
+	func update_text(): button.text = class_text+(' v' if button.button_pressed else ' >')
+
+class KeyValue extends TextureButton:
+	var key_selected: Key
+	var object: Object
+	func _init() -> void:
+		stretch_mode = TextureButton.STRETCH_KEEP_CENTERED
+		texture_normal = KeyNormalTexture
+		texture_pressed = KeySelectedTexture
+		toggle_mode = true
+	func _draw() -> void:
+		draw_string(ThemeDB.fallback_font,Vector2(-15,16),'<   >')
+"
+
+[sub_resource type="GDScript" id="GDScript_tgc53"]
+resource_name = "GridExplorer"
+script/source = "extends PanelContainer
+const DropdownScene = preload(\"res://source/custom_nodes/DropdownBox.tscn\")
+
+var object_selected: DropdownBox
+var interators: Dictionary[Object,Dictionary] = {}
+
+@onready var container = $Scroll/VBox
+@onready var grid_container = $\"../../Position/GridContainer\"
+
+signal property_added(obj: Object, property: String)
+signal property_removed(obj: Object, property: String)
+func createObjectInterator(obj: Object) -> DropdownBox:
+	var dropdownBox = DropdownScene.instantiate()
+	dropdownBox.focus_mode = Control.FOCUS_CLICK
+	dropdownBox.focus_entered.connect(func(): object_selected = dropdownBox)
+	dropdownBox.focus_exited.connect(func(): if object_selected == dropdownBox: object_selected = null)
+	container.add_child(dropdownBox)
+	
+	var grid = grid_container.createGrid(obj)
+	dropdownBox.items_changed.connect(func():
+		grid.material.set_shader_parameter('size',
+		Vector2(grid_container.grid_size.x,20*dropdownBox.items.size())
+		)
+	)
+	
+	var data = {
+		'properties': {},
+		'interator': dropdownBox,
+		'grid': grid
+	}
+	
+	interators[obj] = data
+	grid.data = data
+	return dropdownBox
+	
+func createObjectProperty(obj: Object, property: String) -> Dictionary:
+	var interator: Dictionary = interators.get_or_add(obj,createObjectInterator(obj))
+	interator.interator.items.append(property)
+	interator.interator.update_items()
+	
+	var data = {
+		'keys': [],
+		'index': 0,
+		'default': 0,
+	}
+	interator.properties[property] = data
+	property_added.emit(obj,property)
+	return data
+	
+func getObjectPropertyData(obj: Object, property: String) -> Dictionary:
+	return interators.get(obj,createObjectInterator(obj)).properties.get(property,createObjectProperty(obj,property))
+"
+
+[sub_resource type="GDScript" id="GDScript_vqavu"]
+resource_name = "ConductorEditor"
+script/source = "extends Panel
+@onready var editor = $\"../../../..\"
+@onready var grid_container = $\"../GridContainer\"
+@onready var position_line = $Time/PositionLine
+
+func set_song_position_from_line() -> void:
+	editor.set_song_position(Conductor.get_step_time(
+		position_line.position.x/grid_container.grid_size.x
+		)
+	)
+
+func timeline_input(event: InputEvent):
+	if event is InputEventMouseButton:
+		if event.pressed:
+			var index = event.button_index
+			match index:
+				4,5: 
+					var pos = position_line.position.x
+					var size = grid_container.grid_size.x
+					if index == 5: size = -size
+					if Input.is_key_pressed(KEY_SHIFT): pos += size*2
+					else: pos += size
+					var step = floorf(pos/grid_container.grid_size.x)
+					step = maxf(-24,step)
+					position_line.position.x = step*grid_container.grid_size.x
+					set_song_position_from_line()
+"
+
+[sub_resource type="GDScript" id="GDScript_ods2j"]
+resource_name = "PositionLine"
+script/source = "extends ColorRect
+
+@onready var editor = $\"../../../../../..\"
+@onready var grid_container = $\"../../../GridContainer\"
+func _process(_d) -> void:
+	if editor.playState.process_mode != PROCESS_MODE_DISABLED:position.x = grid_container.grid_size.x*Conductor.step_float
+"
+
+[sub_resource type="GDScript" id="GDScript_8dk03"]
+resource_name = "GridContainer"
+script/source = "extends Panel
+const Grid = preload(\"res://source/states/Editors/Modchart/Editor/Grid.gd\")
+const grid_shader = preload(\"res://source/states/Editors/Modchart/Shaders/Grid.gdshader\")
+const EditorMaterial = preload(\"uid://dva6hqf80sxay\")
+const GRID_SIZE = Vector2(40,24)
+
+const KeyInterpolator = preload(\"res://source/states/Editors/Modchart/Keys/KeyInterpolator.gd\")
+const KeyInterpolatorNode = preload(\"res://source/states/Editors/Modchart/Editor/KeyInterpolatorNode.gd\")
+
+
+#region Grid
+@onready var editor = $\"../../../..\"
+
+var grid_material = ShaderMaterial.new()
+var grids: Dictionary[Object,Grid] = {}
+
+@onready var grid_explorer = $\"../../Objects/Explorer\"
+@onready var grid_scroll = $Panel
+
+var grid_x: float = 0.0
+var grid_real_x: float = 0.0
+
+static var grid_size: Vector2 = GRID_SIZE
+var grid_zoom: float = 1.0
+
+
+signal on_grid_added(grid: Grid)
+signal on_grid_removed(grid: Grid)
+
+func _ready():
+	grid_material.shader = grid_shader
+	grid_material.set_shader_parameter('grid_size',GRID_SIZE)
+
+func _on_song_position_changed(_v: float, is_processing_back: bool):
+	grid_scroll.position.x = -editor.scroll_pos
+	for i in grids:
+		var grid = grids[i]
+		updateGridX(grid)
+		updateGridKeys(grid,is_processing_back)
+	updateKeysPositions()
+
+#region Grid
+func createGrid(object: Variant) -> Grid:
+	var grid: Grid = Grid.new()
+	if object is Object: grid.object = object
+	grid.material = grid_material.duplicate()
+	grid.size = Vector2(ScreenUtils.screenWidth,10)
+	
+	grid_scroll.add_child(grid)
+	grid.gui_input.connect(grid_input.bind(grid))
+	return grid
+
+func updateGridKeys(grid: Grid, from_back: bool = false) -> void:
+	if from_back: grid.process_keys_behind()
+	else: grid.process_keys_front()
+	
+func updateKeysPositions(): 
+	for i in grids: for key in grids[i]._keys_created: key.updatePos()
+
+func updateGridX(grid: Grid) -> void:
+	grid.material.set_shader_parameter('x',editor.grid_x)
+	grid.position.x = editor.grid_real_x
+
+func updateGridY(grid: Grid) -> void: grid.position.y = grid.dropdownBox.position.y + 24.0
+
+func set_grid_zoom(new_zoom: float):
+	grid_size = Vector2(GRID_SIZE.x*new_zoom,GRID_SIZE.y)
+	for i in grid_explorer.grids:
+		var grid = grids[i]
+		grid.material.set_shader_parameter('grid_size',grid_size)
+		for key in grid._keys_created: key.updatePos()
+
+func updateAllGrids(update_size: bool = false) -> void: 
+	for i in grids:
+		var grid = grids[i]
+		updateGridY(grid)
+		if update_size: grid.updateSize()
+
+func removeAllGrids() -> void:
+	editor.ModchartState.clear()
+	for i in grids:
+		var grid = grids[i]
+		grid.dropdownBox.queue_free()
+		grid.queue_free()
+	grids.clear()
+	editor.keys_selected.clear()
+
+func removeGrid(grid: Grid) -> void:
+	if !grid: return
+	
+	for i in grid.keys.values(): for k in i: editor.keys_selected.erase(k.key_node)
+	
+	var obj = getGridObject(grid)
+	
+	if obj is EditorMaterial:
+		for i in obj.objects:
+			var node = FunkinGD._find_object(i)
+			if !node: continue
+			if node is CameraCanvas: node.removeFilter(obj)
+			else: node.material = null
+	elif obj:
+		#Return value to default
+		var grid_keys = grid.properties
+		for i in grid_keys: obj.set(i,grid_keys[i].default)
+	
+	editor.ModchartState.removeObject(grid.object_name)
+	grids.erase(grid.object_name)
+	grid.dropdownBox.queue_free()
+	grid.queue_free()
+
+func show_grid(show: bool, grid: Grid):
+	grid.visible = show
+	call_deferred('call_deferred','updateAllGrids')
+
+func getGridObject(grid: Variant) -> Object:
+	var obj = grid.object
+	if !obj: obj = FunkinGD._find_object(grid.object_name)
+	return obj
+
+func grid_input(event: InputEvent, grid: Grid):
+	if not event is InputEventMouseButton: return
+	match event.button_index:
+		1:
+			if event.pressed or is_moving_keys: return
+			if !Conductor.songs:
+				Global.show_label_error('Insert a Song First!')
+				return
+			
+			if !Conductor.bpm:
+				Global.show_label_error(\"Insert a Bpm First!\")
+				return
+			
+			var mouse_pos = event.position
+			
+			var grid_properties = grid.keys.keys()
+			var property = grid_properties[mini(grid.keys.size()-1,int(mouse_pos.y/24.0))]
+			
+			var default_value: Variant = grid.properties[property].default
+			
+			var step = getMouseXStep(mouse_pos.x+grid.position.x)
+			
+			var time: float = Conductor.get_step_time(step)
+			
+			for i in grid._keys_created:
+				var k = i.data
+				
+				if k.property == property and (k.time - 1.2 + maxf(k.duration,1.2) >= time):
+					toggle_key(i,is_shift_pressed)
+					return
+			
+			var index = grid.addKey(
+				step,
+				property,
+				default_value,
+				0,
+				Tween.TRANS_LINEAR,
+				Tween.EASE_OUT
+			)
+			
+			var key = grid.keys[property][index].key_node
+			key.updatePos()
+			key.gui_input.connect(key_input.bind(key))
+			select_key(key,false)
+#endregion
+
+#region Explorer
+#endregion
+
+#region Keys
+@onready var key_options = $\"../../../../KeyOptions\"
+
+var is_moving_keys: bool = false
+var is_shift_pressed: bool = false
+
+var keys_copied: Array[KeyInterpolator] = []
+
+var keys_selected: Array[KeyInterpolatorNode] = []
+var is_key_mouse_pressed: bool = false
+
+var key_last_mouse_pos: float = 0.0
+var key_type: Variant.Type = TYPE_NIL
+var key_is_int: bool = false
+
+var key_moving_first_pos: float = 0
+
+#region Key Interpolator Methods
+func addKey(time: float, obj: Object, property: String, value: Variant, index: Variant = null):
+	var data = grid_explorer.getObjectPropertyData(obj,property)
+	print(data)
+func _add_key_to_array():
+	pass
+func toggle_key(key: KeyInterpolatorNode, add: bool = is_shift_pressed):
+	if key in keys_selected: unselect_key(key)
+	else: select_key(key,add)
+
+func select_key(key: KeyInterpolatorNode,add: bool = is_shift_pressed):
+	if !add: unselect_keys()
+	key.modulate = Color.CYAN
+	keys_selected.append(key)
+
+func select_keys(keys: Array[KeyInterpolatorNode], add: bool = is_shift_pressed):
+	if !add:
+		unselect_keys()
+		keys_selected.assign(keys)
+	else: for i in keys: keys_selected.append(i)
+	
+	for i in keys: i.modulate = Color.CYAN
+
+func unselect_key(key: KeyInterpolatorNode):
+	key.modulate = Color.WHITE
+	keys_selected.erase(key)
+
+func unselect_keys():
+	for i in keys_selected: i.modulate = Color.WHITE
+	keys_selected.clear()
+
+func removeKey(key: KeyInterpolatorNode):
+	key.data.time = INF
+	editor.ModchartState.update_key(key.data)
+	key.parent.removeKey(key)
+	
+func removeKeysSelected():
+	for i in keys_selected: removeKey(i)
+	keys_selected.clear()
+
+func add_keys_step(step: float):
+	for i in keys_selected: 
+		i.step += step
+		i.data.time = Conductor.get_step_time(i.step)
+		i.updatePos()
+	editor.ModchartState.process_keys(step > 0.0)
+
+func add_keys_duration(value: float):
+	var has_duration: bool = false
+	for i in keys_selected: 
+		i.data.duration += value
+		if !has_duration: has_duration = !!i.data.duration
+	
+func set_keys_value(value: float): for i in keys_selected: 
+		var key_array = get_keys_grid_from_key(i)
+		var key_index = key_array.find(i.data)
+		var prev_key: KeyInterpolator
+		if key_index < key_array.size()-1:
+			prev_key = key_array[key_index+1]
+			prev_key.prev_val = value
+			if prev_key.init_val == i.data.init_val: prev_key.init_val = value
+		
+		i.data.value = value
+		if key_can_process(i.data): editor.ModchartState.update_key(i.data)
+
+func set_keys_value_index(index: String,value: float):
+	match index:
+		'x': for i in keys_selected: i.data.value.x = value
+		'y': for i in keys_selected: i.data.value.y = value
+		'z': for i in keys_selected: i.data.value.z = value
+		'w': for i in keys_selected: i.data.value.w = value
+	for i in keys_selected: if key_can_process(i.data): i.data._process()
+	
+func set_keys_init_value(value: float):
+	for i in keys_selected: 
+		i.data.init_val = value
+		if i.data.tween_started: i.data._process()
+
+func set_keys_init_value_index(index: String,value: float):
+	match index:
+		'x': for i in keys_selected: i.data.init_val.x = value
+		'y': for i in keys_selected: i.data.init_val.y = value
+		'z': for i in keys_selected: i.data.init_val.z = value
+		'w': for i in keys_selected: i.data.init_val.w = value
+
+func key_can_process(key: KeyInterpolator):
+	var prev = get_prev_key(key)
+	return Conductor.songPosition >= key.time and (!prev or prev.time >= Conductor.songPosition)
+	
+func get_prev_key(key: KeyInterpolator) -> KeyInterpolator:
+	var grid_array = get_keys_grid_from_key(key.key_node)
+	var index = grid_array.find(key)
+	return grid_array[index+1] if index < grid_array.size()-1 else null
+
+func get_keys_grid_from_key(key: KeyInterpolatorNode) -> Array: return key.parent.keys[key.data.property]
+
+func detect_key_index(key: KeyInterpolatorNode) -> int: return get_keys_grid_from_key(key).find(key.data)
+
+func disable_moving_keys(): is_moving_keys = false
+
+func copy_keys_selected() -> void:
+	keys_copied.clear()
+	for i in keys_selected: keys_copied.append(i.data)
+
+func paste_keys(round_step: bool = !is_shift_pressed):
+	if !keys_copied: return
+	var time_add: float = Conductor.step_float - keys_copied[0].key_node.step
+	if round_step: time_add = roundf(time_add)
+	var keys_created: Array[KeyInterpolatorNode]
+	var last_key: KeyInterpolator
+	
+	var max_time: float = Conductor.songPosition
+	for i in keys_copied:
+		var grid = i.key_node.parent
+		var time = i.key_node.step + time_add
+		var index = grid.addKey(
+			time,
+			i.property,
+			i.value,
+			i.duration,
+			i.transition,
+			i.ease
+		)
+		max_time = maxf(max_time,time+i.duration)
+		last_key = grid.keys[i.property][index]
+		last_key.init_val = i.init_val
+		keys_created.append(last_key.key_node)
+	
+	select_keys(keys_created,false)
+	editor.set_song_editor_position(max_time)
+#endregion
+
+func key_input(event: InputEvent,key: KeyInterpolatorNode):
+	if event is InputEventMouseButton:
+		match event.button_index:
+			1:
+				if event.pressed: 
+					is_key_mouse_pressed = true
+					key_moving_first_pos = getMouseXStep(get_viewport().get_mouse_position().x)
+					return
+				
+				if !is_moving_keys: 
+					toggle_key(key)
+					is_key_mouse_pressed = false
+			2: 
+				key_options.show()
+				key_options.position = get_viewport().get_mouse_position()
+
+func key_options_menu_pressed(index: int):
+	match index: 
+		0: removeKeysSelected()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		if !event.pressed: return
+		match event.keycode:
+			KEY_C: if Input.is_key_pressed(KEY_CTRL): copy_keys_selected()
+			KEY_V: if Input.is_key_pressed(KEY_CTRL): paste_keys()
+			KEY_LEFT: add_keys_step(-2.0 if is_shift_pressed else -1.0)
+			KEY_RIGHT: add_keys_step(2.0 if is_shift_pressed else 1.0)
+			KEY_DELETE: removeKeysSelected()
+
+func getMouseXStep(mouse_pos: float, rounded: bool = !Input.is_key_pressed(KEY_SHIFT)):
+	mouse_pos /= grid_size.x
+	return roundf(mouse_pos) if !rounded else mouse_pos
+	
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == 1 and !event.pressed:
+			is_key_mouse_pressed = false
+			disable_moving_keys.call_deferred()
+	elif event is InputEventKey: 
+		if event.keycode == KEY_SHIFT: is_shift_pressed = event.pressed
+	elif event is InputEventMouseMotion:
+		if !is_key_mouse_pressed: return
+		var mouse_pos = getMouseXStep(event.position.x)
+		var pos_sub = (mouse_pos - key_moving_first_pos)
+		
+		if pos_sub >= 1.0 or pos_sub <= -1.0: is_moving_keys = true
+		if is_moving_keys and pos_sub:
+			add_keys_step(pos_sub)
+			key_moving_first_pos = mouse_pos
+"
+
+[sub_resource type="GDScript" id="GDScript_3fulc"]
+resource_name = "KeyOptions"
+script/source = "extends PopupMenu
+const KeyInterpolator = preload(\"uid://cy7liw7g73so2\")
+@onready var editor = $\"../\"
+func _ready():
+	add_submenu_node_item('Transitions',$Transitions)
+	add_submenu_node_item('Easing',$Easings)
+	add_item('Delete')
+
+func set_key_ease(ease: Tween.EaseType):for i in editor.keys_selected: i.ease = ease
+
+func set_key_trans(trans: Tween.TransitionType):for i in editor.keys_selected: i.transition = trans
+
+func _index_pressed(index: int):
+	if index == 3: editor.removeKeysSelected()
+"
+
+[sub_resource type="GDScript" id="GDScript_x5qun"]
+resource_name = "KeyTransitions"
+script/source = "extends PopupMenu
+func _ready() -> void:
+	for i in TweenService.transitions: add_item(i)
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[sub_resource type="GDScript" id="GDScript_mbk3t"]
+resource_name = "Easings"
+script/source = "extends PopupMenu
+func _ready() -> void:
+	for i in TweenService.easings: add_item(i)
+	if !Engine.is_editor_hint(): set_script(null)
+"
+
+[sub_resource type="GDScript" id="GDScript_ybanq"]
+resource_name = "Song Options"
+script/source = "extends PopupMenu
+@onready var modchart = $\"..\"
+
+func load_json() -> void:
+	modchart.show_dialog()
+	var array_empty = []
+	modchart.dialog.add_filter('*.json')
+	modchart.dialog.add_option(\"Load song's folder scripts\",array_empty,0)
+	modchart.dialog.add_option('Load scripts from \"scripts\" folder',array_empty,0)
+	modchart.dialog.add_option('Load events',array_empty,0)
+	modchart.dialog.add_option('Load stage script',array_empty,1)
+	modchart.connect_to_dialog(selected_json)
+
+func selected_json(file: String = ''):
+	if !file: return
+	var options = modchart.dialog.get_selected_options()
+	modchart.playState.loadSongScript = options.get(\"Load song's folder scripts\",true)
+	modchart.playState.loadScripts = options.get('Load scripts from \"scripts\" folder',true)
+	modchart.playState.loadEvents = options.get(\"Load events\",true)
+	modchart.playState.loadStageScript = options.get(\"Load stage script\",true)
+	modchart.show_dialog(false)
+	_load_song_from_json(file)
+
+func _load_song_from_json(dir_absolute: String):
+	Conductor.clearSong(true)
+	modchart.set_song_editor_position(0.0)
+	
+	Paths.curMod = Paths.getModFolder(dir_absolute)
+	modchart.playState.clear()
+	FunkinGD._clear_scripts(true)
+	
+	modchart.playState.loadSong(dir_absolute)
+	modchart.playState.loadSongObjects()
+	
+	if modchart.playState.process_mode != ProcessMode.PROCESS_MODE_DISABLED: modchart.playState.startSong()
+	
+	modchart._update_song_info()
+
+
+func _on_index_pressed(index: int) -> void:
+	match index:
+		0: load_json()
+"
+
+[sub_resource type="GDScript" id="GDScript_oop0l"]
+resource_name = "HelpOptions"
+script/source = "extends PopupMenu
+
+
+func _on_index_pressed(index: int) -> void:
+	match index:
+		0: $ShortCuts.visible = true;
+"
+
+[sub_resource type="LabelSettings" id="LabelSettings_rhtdg"]
+font_size = 14
+
+[node name="Modchart" type="Node"]
+script = ExtResource("1_2kx6s")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+snap_2d_transforms_to_pixel = true
+snap_2d_vertices_to_pixel = true
+gui_snap_controls_to_pixels = false
+size = Vector2i(1280, 720)
+
+[node name="PlayState" type="Node" parent="SubViewport"]
+script = ExtResource("2_2kx6s")
+canExitSong = false
+createPauseMenu = false
+canGameOver = false
+loadScripts = false
+loadSongScript = false
+countDownEnabled = false
+song_folder = "test"
+song_json_file = "test"
+botplay = false
+showCombo = false
+showRating = false
+showComboNum = false
+
+[node name="ObjectSelected" type="Sprite2D" parent="SubViewport"]
+visible = false
+position = Vector2(60, 60)
+rotation = -0.7853982
+scale = Vector2(0.99999994, 0.99999994)
+texture = ExtResource("3_3fulc")
+
+[node name="Panel" type="Panel" parent="."]
+texture_filter = 2
+offset_right = 1282.0
+offset_bottom = 30.0
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 367.0
+offset_bottom = 31.0
+
+[node name="Modchart" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "| Modchart"
+flat = true
+
+[node name="Song" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+text = "| Song |"
+flat = true
+
+[node name="Help" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
+focus_mode = 0
+text = "Help |"
+flat = true
+
+[node name="VSplit" type="VSplitContainer" parent="."]
+offset_top = 32.0
+offset_right = 1280.0
+offset_bottom = 720.0
+split_offset = 520
+
+[node name="Interator" type="HSplitContainer" parent="VSplit"]
+layout_mode = 2
+split_offset = 265
+
+[node name="AssetManager" type="TabContainer" parent="VSplit/Interator"]
+clip_contents = true
+layout_mode = 2
+theme_override_constants/icon_max_width = 16
+current_tab = 1
+tab_focus_mode = 0
+script = SubResource("GDScript_rhtdg")
+
+[node name="Explorator" type="Panel" parent="VSplit/Interator/AssetManager"]
+visible = false
+layout_mode = 2
+script = SubResource("GDScript_g3drg")
+metadata/_tab_index = 0
+
+[node name="bg" type="ColorRect" parent="VSplit/Interator/AssetManager/Explorator"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -0.1000061
+offset_bottom = -0.018005371
+color = Color(0.011087579, 0.011087578, 0.01108758, 1)
+
+[node name="Nodes" type="ScrollContainer" parent="VSplit/Interator/AssetManager/Explorator" node_paths=PackedStringArray("object")]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 3.0
+offset_top = 5.0
+offset_right = -0.1000061
+offset_bottom = -0.024017334
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_rhtdg")
+object = NodePath("../../../../../SubViewport/PlayState")
+
+[node name="Media" type="Panel" parent="VSplit/Interator/AssetManager"]
+layout_mode = 2
+script = SubResource("GDScript_f01ue")
+metadata/_tab_index = 1
+
+[node name="bg" type="ColorRect" parent="VSplit/Interator/AssetManager/Media"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -0.1000061
+offset_bottom = -0.018005371
+color = Color(0.011087579, 0.011087578, 0.01108758, 1)
+metadata/_edit_lock_ = true
+
+[node name="HBoxContainer" type="VBoxContainer" parent="VSplit/Interator/AssetManager/Media"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.013
+anchor_top = 0.008
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 0.099999905
+offset_top = 0.031999826
+offset_right = -0.1000061
+offset_bottom = -0.024017334
+metadata/_edit_lock_ = true
+
+[node name="Shaders" type="FoldableContainer" parent="VSplit/Interator/AssetManager/Media/HBoxContainer"]
+layout_mode = 2
+focus_mode = 0
+title = "Shaders"
+title_text_overrun_behavior = 4
+
+[node name="Container" type="VBoxContainer" parent="VSplit/Interator/AssetManager/Media/HBoxContainer/Shaders"]
+layout_mode = 2
+
+[node name="Add" type="Button" parent="VSplit/Interator/AssetManager/Media/HBoxContainer/Shaders/Container"]
+layout_mode = 2
+focus_mode = 0
+text = "+"
+icon = ExtResource("3_n2vt6")
+expand_icon = true
+
+[node name="Images" type="FoldableContainer" parent="VSplit/Interator/AssetManager/Media/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+title = "Images"
+
+[node name="Container" type="VBoxContainer" parent="VSplit/Interator/AssetManager/Media/HBoxContainer/Images"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="VSplit/Interator/AssetManager/Media/HBoxContainer/Images/Container"]
+layout_mode = 2
+focus_mode = 0
+text = "+"
+icon = ExtResource("6_mbk3t")
+expand_icon = true
+
+[node name="HSplit" type="HSplitContainer" parent="VSplit/Interator"]
+layout_mode = 2
+split_offset = 650
+
+[node name="GameView" type="TextureRect" parent="VSplit/Interator/HSplit"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+texture = SubResource("ViewportTexture_vxf07")
+expand_mode = 1
+stretch_mode = 5
+metadata/_edit_lock_ = true
+
+[node name="Properties" type="Panel" parent="VSplit/Interator/HSplit"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+script = SubResource("GDScript_u3sa4")
+
+[node name="bg" type="ColorRect" parent="VSplit/Interator/HSplit/Properties"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = 4.0
+offset_top = 25.0
+offset_right = -0.1000061
+offset_bottom = -0.018005371
+color = Color(0.011087579, 0.011087578, 0.01108758, 1)
+
+[node name="Scroll" type="ScrollContainer" parent="VSplit/Interator/HSplit/Properties/bg"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.008
+anchor_right = 1.0
+anchor_bottom = 0.994
+offset_left = -2.399168
+offset_right = 0.104003906
+offset_bottom = 3.0891724
+
+[node name="Container" type="VBoxContainer" parent="VSplit/Interator/HSplit/Properties/bg/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 13
+
+[node name="InfoText" type="Label" parent="VSplit/Interator/HSplit/Properties/bg"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.008
+anchor_top = 0.008
+anchor_right = 0.98700005
+anchor_bottom = 0.994
+offset_left = -2.399168
+offset_top = -3.9348962
+offset_right = 4.0026245
+offset_bottom = 3.0891724
+text = "Select a Valid Object from Explorer"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+metadata/_edit_lock_ = true
+
+[node name="Label" type="Label" parent="VSplit/Interator/HSplit/Properties"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 7.0
+offset_right = 99.0
+offset_bottom = 22.0
+text = "Properties"
+
+[node name="Timeline" type="HSplitContainer" parent="VSplit"]
+layout_mode = 2
+split_offset = 186
+
+[node name="Objects" type="VBoxContainer" parent="VSplit/Timeline"]
+layout_mode = 2
+
+[node name="Buttons" type="PanelContainer" parent="VSplit/Timeline/Objects"]
+layout_mode = 2
+
+[node name="Delete" type="Button" parent="VSplit/Timeline/Objects/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+tooltip_text = "Delete Current Select"
+theme_override_constants/icon_max_width = 16
+icon = ExtResource("6_3fulc")
+flat = true
+icon_alignment = 2
+
+[node name="Explorer" type="PanelContainer" parent="VSplit/Timeline/Objects"]
+layout_mode = 2
+size_flags_vertical = 3
+script = SubResource("GDScript_tgc53")
+
+[node name="Scroll" type="ScrollContainer" parent="VSplit/Timeline/Objects/Explorer"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="VSplit/Timeline/Objects/Explorer/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Position" type="VBoxContainer" parent="VSplit/Timeline"]
+clip_contents = true
+layout_mode = 2
+
+[node name="Steps" type="Panel" parent="VSplit/Timeline/Position"]
+texture_filter = 1
+custom_minimum_size = Vector2(48, 24)
+layout_mode = 2
+script = SubResource("GDScript_vqavu")
+metadata/_edit_lock_ = true
+
+[node name="Time" type="Node2D" parent="VSplit/Timeline/Position/Steps"]
+script = ExtResource("7_rhtdg")
+steps = 30
+draw_limit = 29
+
+[node name="PositionLine" type="ColorRect" parent="VSplit/Timeline/Position/Steps/Time"]
+z_index = 1
+offset_left = 32.440002
+offset_right = 41.440002
+offset_bottom = 9.0
+rotation = 0.785398
+script = SubResource("GDScript_ods2j")
+
+[node name="Line" type="ColorRect" parent="VSplit/Timeline/Position/Steps/Time/PositionLine"]
+layout_mode = 0
+offset_left = 8.469205
+offset_top = 7.087172
+offset_right = 184.75961
+offset_bottom = 8.988585
+rotation = 0.7853982
+
+[node name="GridContainer" type="Panel" parent="VSplit/Timeline/Position"]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 3
+script = SubResource("GDScript_8dk03")
+metadata/_edit_lock_ = true
+
+[node name="Panel" type="Node2D" parent="VSplit/Timeline/Position/GridContainer"]
+
+[node name="BG" type="Node2D" parent="."]
+visible = false
+modulate = Color(0, 0, 0, 0.584314)
+script = ExtResource("5_n2vt6")
+size = Vector2(1280, 720)
+metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
+
+[node name="FileDialog" type="FileDialog" parent="."]
+oversampling_override = 1.0
+title = "Open a File"
+initial_position = 1
+size = Vector2i(700, 500)
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+hidden_files_toggle_enabled = false
+file_filter_toggle_enabled = false
+file_sort_options_enabled = false
+
+[node name="KeyOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+initial_position = 1
+size = Vector2i(77, 27)
+theme_override_constants/icon_max_width = 16
+script = SubResource("GDScript_3fulc")
+
+[node name="Transitions" type="PopupMenu" parent="KeyOptions"]
+oversampling_override = 1.0
+theme_override_constants/icon_max_width = 16
+script = SubResource("GDScript_x5qun")
+
+[node name="Easings" type="PopupMenu" parent="KeyOptions"]
+theme_override_constants/icon_max_width = 16
+script = SubResource("GDScript_mbk3t")
+
+[node name="ModchartOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+position = Vector2i(10, 30)
+size = Vector2i(106, 80)
+item_count = 2
+item_0/text = "Save"
+item_0/icon = ExtResource("10_mbk3t")
+item_0/id = 0
+item_1/text = "Load"
+item_1/icon = ExtResource("11_oop0l")
+item_1/id = 1
+
+[node name="SongOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+position = Vector2i(120, 30)
+size = Vector2i(215, 50)
+theme_override_constants/icon_max_width = 16
+item_count = 1
+item_0/text = "Load from Song Data"
+item_0/icon = ExtResource("11_oop0l")
+item_0/id = 0
+script = SubResource("GDScript_ybanq")
+
+[node name="HelpOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+position = Vector2i(180, 30)
+size = Vector2i(121, 100)
+theme_override_constants/icon_max_width = 16
+item_count = 1
+item_0/text = "ShortCuts"
+item_0/icon = ExtResource("11_x5qun")
+item_0/id = 0
+script = SubResource("GDScript_oop0l")
+
+[node name="ShortCuts" type="PopupPanel" parent="HelpOptions"]
+oversampling_override = 1.0
+title = "ShortCuts"
+position = Vector2i(400, 100)
+size = Vector2i(328, 300)
+wrap_controls = false
+borderless = false
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HelpOptions/ShortCuts"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 324.0
+offset_bottom = 296.0
+horizontal_scroll_mode = 0
+
+[node name="Label" type="Label" parent="HelpOptions/ShortCuts/ScrollContainer"]
+layout_mode = 2
+text = "============Keys ShortCuts=============
+KEY_LEFT = Move Keys One Step Back
+KEY_RIGHT = Move Keys One Step Front
+
+Ctrl+C = Copy Keys Selected
+Ctrl+V = Paste Keys"
+label_settings = SubResource("LabelSettings_rhtdg")
+
+[node name="MediaOptions" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+size = Vector2i(109, 100)
+theme_override_constants/icon_max_width = 16
+item_count = 1
+item_0/text = "Delete"
+item_0/icon = ExtResource("6_3fulc")
+item_0/id = 0
+
+[connection signal="pressed" from="Panel/HBoxContainer/Modchart" to="ModchartOptions" method="show"]
+[connection signal="pressed" from="Panel/HBoxContainer/Song" to="SongOptions" method="show"]
+[connection signal="pressed" from="Panel/HBoxContainer/Help" to="HelpOptions" method="show"]
+[connection signal="on_button_selected" from="VSplit/Interator/AssetManager/Explorator/Nodes" to="." method="_on_explorer_button_selected"]
+[connection signal="pressed" from="VSplit/Interator/AssetManager/Media/HBoxContainer/Shaders/Container/Add" to="VSplit/Interator/AssetManager/Media" method="_on_select_shader_media_pressed"]
+[connection signal="resized" from="VSplit/Timeline/Objects/Explorer/Scroll/VBox" to="." method="updateAllGrids"]
+[connection signal="gui_input" from="VSplit/Timeline/Position/Steps" to="." method="timeline_input"]
+[connection signal="index_pressed" from="KeyOptions" to="." method="key_options_menu_pressed"]
+[connection signal="index_pressed" from="KeyOptions/Transitions" to="KeyOptions" method="set_key_trans"]
+[connection signal="index_pressed" from="KeyOptions/Easings" to="KeyOptions" method="set_key_ease"]
+[connection signal="index_pressed" from="ModchartOptions" to="." method="_on_modchart_options_index_selected"]
+[connection signal="index_pressed" from="SongOptions" to="SongOptions" method="_on_index_pressed"]
+[connection signal="index_pressed" from="HelpOptions" to="HelpOptions" method="_on_index_pressed"]

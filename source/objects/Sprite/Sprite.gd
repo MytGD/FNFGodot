@@ -120,10 +120,13 @@ func _process(delta: float) -> void:
 	_update_scroll_factor(); 
 	_updatePos()
 
-func _updatePos() -> void:  position = _position + _scroll_offset - _real_offset - _real_pivot_offset - _graphic_offset
+func _updatePos() -> void:  
+	position = _position + _scroll_offset - _real_offset - _real_pivot_offset - _graphic_offset
 
 func screenCenter(type: StringName = 'xy') -> void: ##Move the sprite to the center of the screen
-	var midScreen: Vector2 = get_viewport().size/2.0
+	var viewport = get_viewport()
+	if !viewport: return
+	var midScreen: Vector2 = viewport.size/2.0
 	match type:
 		'xy': _position = midScreen - (pivot_offset*scale)
 		'x': x = midScreen.x - (pivot_offset.x * scale.x)
@@ -213,6 +216,7 @@ func set_scroll_factor(fac: Vector2):
 func set_graphic_scale(_scale: Vector2): 
 	_graphic_scale = _scale; 
 	_graphic_offset = image.pivot_offset*_scale
+
 func set_camera(_cam: Node):
 	if camera == _cam: return
 	if camera and _camera_is_canvas: camera.remove.call(self)
@@ -248,8 +252,9 @@ func _notification(what: int) -> void:
 			if _last_rotation == rotation and _last_scale == scale: return
 			_last_rotation = rotation
 			_last_scale = scale 
-			_recalculate_pivot_offset()
 			_update_real_offset()
+			_recalculate_pivot_offset()
+			
 
 func _connect_animation():
 	super._connect_animation()
@@ -260,5 +265,6 @@ func _connect_animation():
 
 func _property_get_revert(property: StringName) -> Variant:
 	match property:
-		'scale': return Vector2.ONE
+		'scale','scrollFactor': return Vector2.ONE
+		'velocity','acceleration','offset': return Vector2.ZERO
 	return null

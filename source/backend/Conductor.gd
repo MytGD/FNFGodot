@@ -146,9 +146,11 @@ func setSongPosition(pos: float) -> void:
 	songPosition = pos
 	songPositionSeconds = pos/1000.0
 	if !songs: return
+	if songPosition < 0.0:
+		for i in songs: if i: i.stop()
+		return
 	for i in songs:
-		if !i: continue
-		i.seek(minf(songPositionSeconds,i.stream.get_length()))
+		if i: i.seek(clampf(songPositionSeconds,0.0,i.stream.get_length()))
 	
 
 func playSongs(at: float = 0) -> void: ##Play songs.[br][b]Note:[/b] [param at] have to be in milliseconds, if set.

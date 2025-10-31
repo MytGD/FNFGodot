@@ -91,7 +91,7 @@ func loadStage(stage: StringName,loadScript: bool = true):
 	moveCamera(detectSection())
 	
 func _process(delta: float) -> void:
-	if camZooming: camGame.zoom = lerpf(camGame.zoom,defaultCamZoom,delta*3*zoomSpeed)
+	if camZooming: camGame.zoom = lerpf(camGame.zoom,camGame.defaultZoom,delta*3*zoomSpeed)
 	super._process(delta)
 	camGame.scroll = camGame.scroll.lerp(
 		camFollow - ScreenUtils.defaultSizeCenter + ScreenUtils.screenOffset,
@@ -208,8 +208,8 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 		
 		character_obj.visible = false
 		character_obj.process_mode = PROCESS_MODE_DISABLED
-	else:
-		newCharacter.dance()
+	else: newCharacter.dance()
+
 	match type:
 		0:
 			iconP1.reloadIconFromCharacterJson(newCharacter.json)
@@ -217,11 +217,12 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 		1:
 			healthBar.set_colors(newCharacter.healthBarColors)
 			iconP2.reloadIconFromCharacterJson(newCharacter.json)
-	updateIconsImage(_healthBar_State)
 	
+	updateIconsImage(_healthBar_State)
 	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
 	updateIconsPivot()
 	if !isCameraOnForcedPos and detectSection() == char_name: moveCamera(char_name)
+	
 	
 	return newCharacter
 
@@ -237,7 +238,9 @@ func clear():
 	gf = null
 
 #region Setters
-func set_default_zoom(value: float) -> void: defaultCamZoom = value; camGame.defaultZoom = value;
+func set_default_zoom(value: float) -> void: 
+	super.set_default_zoom(value);
+	camGame.defaultZoom = value;
 #endregion
 
 func getCharacterNote(note: Note) -> Character: return gf if note.gfNote else (boyfriend if note.mustPress else dad)

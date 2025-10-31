@@ -19,17 +19,20 @@ const Graphic = preload("res://source/objects/Sprite/Graphic.gd")
 ##Can be a [Sprite2D] with [member Sprite2D.region_enabled] enabled
 ## or a [NinePatchRect]
 @export var image: CanvasItem = Graphic.new(): set = set_image_node
+
 var autoUpdateImage: bool = true:
 	set(value):
 		if autoUpdateImage == value: return
-		if image:
-			if value: image.texture_changed.connect(_update_texture)
-			else: image.texture_changed.disconnect(_update_texture)
 		autoUpdateImage = value
+		if !image: return
+		if value: image.texture_changed.connect(_update_texture)
+		else: image.texture_changed.disconnect(_update_texture)
+		
 @export var flipX: bool: set = flip_h ##Flip the sprite horizontally.
 @export var flipY: bool: set = flip_v ##Flip the sprite vertically.
 func _init():
 	_create_animation()
+	image.name = 'Sprite'
 	add_child(image)
 	_update_image()
 
@@ -40,22 +43,22 @@ func _update_image(image_node: CanvasItem = image):
 
 func _update_texture() -> void:
 	if is_animated: animation.clearLibrary(); return
-	
-	if image.texture: 
-		var size = image.texture.get_size()
-		image.region_rect = Rect2(Vector2.ZERO,size)
-		pivot_offset = size/2.0
-		image.pivot_offset = pivot_offset
-	else:
+	if !image.texture: 
 		pivot_offset = Vector2.ZERO
 		image.pivot_offset = pivot_offset
+		return
+	
+	var size = image.texture.get_size()
+	image.region_rect = Rect2(Vector2.ZERO,size)
+	pivot_offset = size/2.0
+	image.pivot_offset = pivot_offset
 
 func _update_image_flip() -> void:
 	image.scale = Vector2(-1 if flipX else 1, -1 if flipY else 1)
 	if image is Graphic: image._update_offset()
 
 #region Animation Methods
-func _create_animation() -> void:
+func _create_animation() -> void: 
 	if animation or !is_animated: return
 	animation = Anim.new()
 	_connect_animation()
@@ -78,7 +81,11 @@ func set_anim_process(process: bool) -> void:
 #endregion
 
 #region Setters
-func set_image_node(node: CanvasItem): image = node; _update_animation_image()
+func set_image_node(node: CanvasItem): 
+	image = node; 
+	_update_animation_image()
+	if image: image.name = 'Sprite'
+
 func set_pivot_offset(value: Vector2) -> void: pivot_offset = value
 
 func flip_h(flip: bool = flipX) -> void:
@@ -91,7 +98,6 @@ func flip_v(flip: bool = flipY) -> void:
 	flipY = flip
 	_update_image_flip()
 #endregion
-
 
 func _notification(what: int) -> void:
 	if !animation: return

@@ -73,7 +73,7 @@ func _ready():
 	pressStart._position = Vector2(bpm_data.get('startx',100),bpm_data.get('starty',ScreenUtils.screenHeight - 150))
 	pressStart.name = 'pressStart'
 	
-	Global.onSwapTree.connect(queue_free)
+	Global.onSwapTree.connect(queue_free,CONNECT_ONE_SHOT)
 	if not playIntroText: changeState(1)
 	
 func changeState(state: int = 0):

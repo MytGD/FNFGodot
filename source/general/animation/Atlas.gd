@@ -4,6 +4,7 @@ static func loadAtlas(file: String) -> Dictionary[String, Array]:
 	
 	if atlas_loaded.get(file): return atlas_loaded[file]
 	var data: Dictionary[String, Array] = {}
+	
 	for i in FileAccess.get_file_as_string(file).split('\n'):
 		if not i: continue
 			
@@ -23,7 +24,7 @@ static func loadAtlas(file: String) -> Dictionary[String, Array]:
 		var frame: int = int(animName.right(-find_underline))
 		animName = animName.left(find_underline+1)
 		
-		var anim_frames = data.get_or_add(animName,[])
+		var anim_frames: Array[Dictionary] = data.get_or_add(animName,Array([],TYPE_DICTIONARY,'',null))
 		
 		var anim_data = i.right(-find_equals-1).split(' ',false)
 		var rect = Rect2(

@@ -51,7 +51,6 @@ func _draw() -> void:
 		pos_x += timeline_space
 		step += 1
 
-
 func _notification(what: int) -> void: 
 	if what == NOTIFICATION_LOCAL_TRANSFORM_CHANGED: _update_real_step_init()
 

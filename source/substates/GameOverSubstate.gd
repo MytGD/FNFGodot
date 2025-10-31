@@ -25,15 +25,13 @@ func _init():
 	
 func _ready():
 	var char_name = opponentName if isOpponent else characterName
-	if !character:
-		character = Character.new(char_name,!isOpponent)
+	if !character: character = Character.new(char_name,!isOpponent)
 	else:
 		if character.curCharacter != char_name:
 			var old_pos = character._position
 			character = Character.new(char_name,character.isPlayer)
 			character._position = old_pos
-		else:
-			character.reparent(self)
+		else: character.reparent(self)
 	
 	character.material = null
 	character.animation.animation_finished.connect(func(anim):
@@ -73,14 +71,12 @@ func confirm() -> void:
 func back() -> void:
 	if !back_state: return
 	Global.swapTree(back_state,true)
-	Global.onSwapTree.connect(queue_free)
+	Global.onSwapTree.connect(queue_free,CONNECT_ONE_SHOT)
 	
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey:
-		if event.keycode == KEY_ENTER and not state == 2:
-			confirm()
-		elif event.keycode == KEY_BACKSPACE:
-			back()
+		if event.keycode == KEY_ENTER and not state == 2: confirm()
+		elif event.keycode == KEY_BACKSPACE: back()
 	elif event is InputEventMouseButton:
 		if !event.pressed: return
 		if event.button_index == 1: confirm()

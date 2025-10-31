@@ -128,13 +128,12 @@ func _ready():
 	setModSelected(curMod)
 	setSongSelected(old_selected,false)
 	exiting.connect(func():
-		if cur_week_node:
-			remove_children()
+		if cur_week_node: remove_children()
 		queue_free()
 	)
 	Global.onSwapTree.connect(func():
 		exiting.emit()
-		menuSong.queue_free()
+		menuSong.queue_free(),CONNECT_ONE_SHOT
 	)
 	
 	bar_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
@@ -217,13 +216,12 @@ func loadWeeks():
 	for i in Paths.getModsEnabled():
 		loadWeekFrom('mods/'+i+'/weeks')
 	#loadSongs(mod)
-	
+
 func setSongSelected(selected: int = 0, play_sound: bool = true):
 	var song_list = cur_mod_data[3]
 	
-	if selected < 0: selected = song_list.size()-1; scroll_index = selected
-	elif selected > song_list.size()-1: selected = 0; scroll_index = 0
-	
+	selected = wrapi(selected,0,song_list.size())
+	scroll_index = selected
 	curSongIndex = selected
 
 	if cur_song_data:
@@ -268,8 +266,7 @@ func setModSelected(banner_id: int = 0):
 	FunkinGD.playSound(Paths.sound('scrollMenu'))
 	if cur_week_node: remove_child(cur_week_node)
 	
-	if banner_id < 0: banner_id = mods.size()-1
-	elif banner_id >= mods.size(): banner_id = 0
+	banner_id = wrapi(banner_id,0,mods.size())
 	cur_mod_data = mods[banner_id]
 	
 	Paths.curMod = cur_mod_data[0]
@@ -309,13 +306,10 @@ func createDifficulty():
 	
 	
 func setDifficulty(id: int = curDifficulty):
-	
 	if !cur_song_data: return
 	if !isSettingDifficulty: createDifficulty()
 	
-	
-	if id < 0: id = cur_song_difficulties.size()-1
-	elif id >= cur_song_difficulties.size(): id = 0
+	id = wrapi(id,0,cur_song_difficulties.size())
 	
 	difficulty = cur_song_difficulties[id]
 	curDifficulty = id
@@ -323,53 +317,46 @@ func setDifficulty(id: int = curDifficulty):
 	difficultySprite.animation.clearLibrary()
 	
 	var path = Paths.imagePath('menudifficulties/'+difficulty.to_lower())
-	
-	var sprite_reference = difficultySprite
-	
-	var is_text: bool = !path
-	
-	if is_text: 
-		difficultySprite.image.texture = null
-		sprite_reference = difficultyText
-		difficultyText.text = difficulty
-	else:
+	if path: 
 		difficultyText.text = ''
-		if FileAccess.file_exists(path.get_basename()+'.xml'):
-			difficultySprite.is_animated = true
-			difficultySprite.image.texture = Paths.imageTexture(path)
-			difficultySprite.animation.addAnimByPrefix('anim','idle',24,true)
-			difficultySprite.animation.play('anim')
-		else:
-			difficultySprite.is_animated = false
-			difficultySprite.image.texture = Paths.imageTexture(path)
-	
-	var difWidth = sprite_reference.pivot_offset.x*2*sprite_reference.scale.x
-	
-	
-	if is_text:
-		var offset = -difWidth + 180
-		difficultyText.position.x = offset
-		diffiSelectLeft.position.x = offset -80
-		diffiSelectRight.position.x = offset + difWidth + 50
+		_load_difficulty_image(path)
 	else:
-		difficultySprite.position.x = ScreenUtils.screenWidth - difWidth - 100
-		diffiSelectLeft.position.x = -50
-		diffiSelectRight.position.x = difWidth + 20
+		_set_difficulty_text(difficulty)
 	
-
-
+func _set_difficulty_text(text: String):
+	difficultySprite.image.texture = null
+	difficultyText.text = difficulty
+	
+	var offset = -difficultySprite.pivot_offset.x*2*difficultySprite.scale.x + 180
+	difficultyText.position.x = offset
+	diffiSelectLeft.position.x = offset - 80
+	diffiSelectRight.position.x = offset
+func _load_difficulty_image(path_absolute: String):
+	if FileAccess.file_exists(path_absolute.get_basename()+'.xml'):
+		difficultySprite.is_animated = true
+		difficultySprite.image.texture = Paths.imageTexture(path_absolute)
+		difficultySprite.animation.addAnimByPrefix('anim','idle',24,true)
+		difficultySprite.animation.play('anim')
+	else:
+		difficultySprite.is_animated = false
+		difficultySprite.image.texture = Paths.imageTexture(path_absolute)
+	
+	var difWidth = difficultySprite.pivot_offset.x*2*difficultySprite.scale.x
+	difficultySprite.position.x = ScreenUtils.screenWidth - difWidth - 100
+	diffiSelectLeft.position.x = -50
+	diffiSelectRight.position.x = difWidth + 20
 func exitDifficulty():
 	if diffiTween: diffiTween.kill()
 	diffiTween = create_tween().parallel().set_ease(Tween.EASE_IN)
 	diffiTween.tween_property(difficultySprite,'modulate:a',0,0.5)
 	diffiTween.parallel().tween_property(cur_week_node,'modulate',Color.WHITE,0.4)
 	isSettingDifficulty = false
-	
+
 
 func _process(_delta):
-	if cur_song_data:
-		var node = cur_song_data[1]
-		cur_week_node.position = cur_week_node.position.lerp(Vector2(-node.position.x,-node.position.y + 320),0.1)
+	if !cur_song_data: return
+	var node = cur_song_data[1]
+	cur_week_node.position = cur_week_node.position.lerp(Vector2(-node.position.x,-node.position.y + 320),0.1)
 	
 
 
@@ -461,7 +448,7 @@ func _input(event: InputEvent) -> void:
 		if int(scroll_index) != curSongIndex:
 			click_select_song = false
 			setSongSelected(scroll_index)
-	
+
 func startSong():
 	var song_name = cur_song_data[0].text
 	var songJson = song_name
@@ -476,11 +463,10 @@ func startSong():
 		audio_suffix = ArrayUtils.get_array_index(data,2,'')
 		
 		songData = Paths.data(songJson,'',songFolder)
-	else:
+	else: 
 		songData = Paths.data(songJson,difficulty,songFolder)
 	
 	if songData: load_game(song_name,difficulty,songFolder,songJson,audio_suffix)
 
 func remove_children():
-	for i in get_children():
-		remove_child(i)
+	for i in get_children(): remove_child(i)

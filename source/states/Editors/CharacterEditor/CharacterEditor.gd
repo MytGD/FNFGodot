@@ -3,7 +3,8 @@ const Character = preload("res://source/objects/Sprite/Character.gd")
 const Bar = preload("res://source/objects/UI/Bar.gd")
 const Icon = preload("res://source/objects/UI/Icon.gd")
 const AnimClass = preload("res://source/general/animation/AnimationService.gd")
-var back_to: Variant
+
+static var back_to: Variant
 
 var charactersFound: PackedStringArray = []
 var characterData: Dictionary = Character.getCharacterBaseData()
@@ -568,7 +569,7 @@ func _on_create_new_character_button_down() -> void:
 	var char_name = new_character_name.text
 	for i in charactersFound:
 		if i.get_file() == char_name and Paths.getModFolder(i,'') == Paths.curMod:
-			Global.show_label_error('Error: Character Name already exists!')
+			Global.show_label_warning('Error: Character Name already exists!')
 			return
 	
 	var json = Character.getCharacterBaseData()
