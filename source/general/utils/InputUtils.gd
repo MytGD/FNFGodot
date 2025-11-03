@@ -29,7 +29,7 @@ func get_touch_position(index: int) -> Vector2:
 func is_touching_2d_object(object: Variant) -> bool:
 	if !object: return false
 	
-	var obj_position = object._position if object is Sprite else object.get('position')
+	var obj_position = object._position if object is FunkinSprite else object.get('position')
 	if !obj_position: return false
 	
 	var texture = object.get('texture')

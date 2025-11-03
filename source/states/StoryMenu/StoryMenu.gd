@@ -2,7 +2,7 @@ extends Node
 
 var back_to: Object
 
-var characters: Dictionary[String,SpriteAnimated] = {}
+var characters: Dictionary[String,FunkinSprite] = {}
 
 var weeks_data: Dictionary = {}
 var weeks_data_keys: PackedStringArray = []
@@ -114,12 +114,12 @@ func setWeekIndex(index: int):
 	
 func createProp(data, prop_index:int =0):
 	var tex_path = Paths.imagePath(data.get('assetPath',''))
-	var sprite: SpriteAnimated
+	var sprite: FunkinSprite
 	if characters.has(tex_path):
 		sprite = characters[tex_path]
 		sprite.animation.clearLibrary()
 	else:
-		sprite = SpriteAnimated.new()
+		sprite = FunkinSprite.new()
 		sprite.image.texture = Paths.imageTexture(tex_path)
 		characters[tex_path] = sprite
 		add_child(sprite)

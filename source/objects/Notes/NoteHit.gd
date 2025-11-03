@@ -33,5 +33,5 @@ func setNoteData(_data: int) -> void:
 
 func followStrum(strum: StrumNote = strumNote):
 	super.followStrum(strum)
-	if copyAngle: angle = strumNote.angle
+	if copyAngle: rotation_degrees = strumNote.rotation_degrees
 	if copyScale: setGraphicScale(strumNote.scale * multScale)

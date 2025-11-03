@@ -17,8 +17,7 @@
 ##checkBox.value = true #Changes data[2] to true.
 ##[/codeblock]
 
-extends SpriteAnimated
-
+extends FunkinSprite
 signal toggled(toogle_on: bool)
 ##Boolean.
 var value: bool:
@@ -29,18 +28,11 @@ var value: bool:
 		else: animation.play_reverse('selection',true)
 		toggled.emit(value)
 
-var offset: Vector2 = Vector2.ZERO:
-	set(value):
-		position -= value - offset
-		offset = value
-		
 
 func _init():
-	super._init()
-	image.texture = Paths.imageTexture('checkboxThingie')
+	super._init(true,'checkboxThingie')
 	animation.animation_finished.connect(func(anim):
-		if anim == 'selection': 
-			animation.play('unselected' if animation.curAnim.reverse else 'selected')
+		if anim == 'selection': animation.play('unselected' if animation.curAnim.reverse else 'selected')
 	)
 	animation.animation_started.connect(func(anim):
 		match anim:

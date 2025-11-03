@@ -98,7 +98,7 @@ func loadModeSelectOptions():
 	option_parent.camera_limit_y = menu_data.camera_limit_y
 	for menus in menu_options_name:
 		var menu_pos = menu_data.get(menus+'_position',[0,0])
-		var menu: Sprite = Sprite.new('mainmenu/menu_'+menus,true)
+		var menu: FunkinSprite = FunkinSprite.new(true,'mainmenu/menu_'+menus)
 		menu.name = menus
 		menu.modulate = OptionScroll.UNSELECTED_COLOR
 		menu.animation.addAnimByPrefix('static',menus+' basic',24,true)
@@ -106,7 +106,7 @@ func loadModeSelectOptions():
 		menu.offset_follow_scale = true
 		menu.addAnimOffset('selected',menu.pivot_offset/3)
 		menu.addAnimOffset('static',Vector2.ZERO)
-		menu.set_pos(Vector2(menu_pos[0] - menu.pivot_offset.x,menu_pos[1]) - ScreenUtils.screenOffset/2.0)
+		menu._position = Vector2(menu_pos[0] - menu.pivot_offset.x,menu_pos[1]) - ScreenUtils.screenOffset/2.0
 		option_parent.add_child(menu)
 		option_parent.options.append(menu)
 		options.append(menu)
@@ -174,10 +174,10 @@ func return_tab():
 	do_tab_tween(cur_tab,{'modulate:a': 0.0},0.3,true)
 	
 	cur_tab = return_tabs.pop_back()
-	do_tab_tween(cur_tab,{'position': Vector2.ZERO,'modulate:a': 1.0,'scale': Vector2.ONE},0.8,true)
+	do_tab_tween(cur_tab,{'position:x': 0.0,'modulate:a': 1.0,'scale': Vector2.ONE},0.8,true)
 	var index: int = return_tabs.size()
 	for i in return_tabs:
-		do_tab_tween(i,{'position': Vector2(-200*index,0.0)},0.8,true)
+		do_tab_tween(i,{'position:x': -200*index},0.8,true)
 		index -= 1
 	
 func do_tab_tween(tab: OptionScroll, properties: Dictionary, duration: float, kill: bool = false):
@@ -293,8 +293,8 @@ class OptionScroll extends Node2D:
 	func _process(delta: float) -> void:
 		position.y = lerpf(
 			position.y,
-			-camera_limit_y*(float(option_index)/options.size()),
+			-camera_limit_y*(float(option_index)/options.size()) + (500*(1.0-scale.y)),
 			10*delta
-		)
+		) 
 	
 	

@@ -481,28 +481,28 @@ static func get_dir(dir: String):
 static func clearDirsCache(): _files_directories_cache.clear(); _dir_exists_cache.clear()
 
 static func getFilesAt(folder: String, return_folder: bool = false, filters: Variant = '', with_extension: bool = false) -> PackedStringArray:
-	var files: PackedStringArray = PackedStringArray()
+	var f: PackedStringArray = PackedStringArray()
 	if filters and filters is String: 
 		filters = PackedStringArray([filters.right(-1) if filters.begins_with('.') else filters])
 	_check_filters(filters)
-	for i in dirsToSearch:
-		files.append_array(getFilesAtAbsolute(i+folder,return_folder,filters,with_extension))
+	for i in dirsToSearch: f.append_array(_getFilesNoCheck(i+folder,return_folder,filters,with_extension))
 	
-	return files
+	return f
 
 static func _check_filters(filters: PackedStringArray) -> void:
 	var index: int = 0
 	while index < filters.size():
 		var string = filters[index]
-		if !string.begins_with('.'): filters[index] = '.'+string
+		if string.begins_with('.'): filters[index] = string.right(-1)
 		index += 1
+	
 static func getFilesAtAbsolute(
 	folder: String, 
 	return_folder: bool = false, 
 	filters: PackedStringArray = PackedStringArray(), 
 	with_extension: bool = false
 ) -> PackedStringArray:
-	if !dir_exists(folder):   return PackedStringArray()
+	_check_filters(filters)
 	return _getFilesNoCheck(folder,return_folder,filters,with_extension)
 
 static func _getFilesNoCheck(
@@ -511,15 +511,15 @@ static func _getFilesNoCheck(
 	filters: Variant = PackedStringArray(), 
 	with_extension: bool = false
 ) -> PackedStringArray:
-	if !filters and with_extension: return get_dir(folder).get_files()
-	
+	var dir = get_dir(folder)
+	if !dir: return PackedStringArray()
+	if !filters and with_extension: return dir.get_files()
 	var files: Dictionary[String,bool] = {}
-	for file in get_dir(folder).get_files():
+	for file in dir.get_files():
 		if filters:
 			var file_extension = file.get_extension()
 			if not filters.has(file_extension): continue
 			if !with_extension: file = file.left(-file_extension.length()-1)
-		
 		if return_folder: files[folder+'/'+file] = true; continue
 		files[file] = true
 	return files.keys()

@@ -129,7 +129,7 @@ var ratingDisabled: bool = false ##Disable Rating. If [code]true[/code], the rat
 func _init(data: int = 0) -> void:
 	noteData = data
 	_update_note_speed()
-	super._init()
+	super._init(true)
 
 ##Update Note Position
 func updateNote() -> void:

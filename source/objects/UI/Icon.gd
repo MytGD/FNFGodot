@@ -1,5 +1,5 @@
 @icon("res://icons/icon.svg")
-extends Sprite
+extends FunkinSprite
 
 var animated: bool = false
 var hasWinningIcon: bool = false
@@ -16,8 +16,7 @@ var icon_pivot_rotation: float = 0.0
 var isPixel: bool = false
 
 func _init(texture: String = ''):
-	super._init()
-	is_animated = true
+	super._init(true)
 	if texture: changeIcon(texture)
 	name = 'icon'
 	
@@ -62,9 +61,9 @@ func _process(delta: float) -> void:
 
 func set_pixel(is_pixel: bool = false, scale_if_pixel: bool = false):
 	if is_pixel == isPixel: return
-	antialiasing = !is_pixel
+	texture_filter = TEXTURE_FILTER_NEAREST if is_pixel else TEXTURE_FILTER_PARENT_NODE
 	if scale_if_pixel and is_pixel:
-		scale  =Vector2(4.5,4.5)
+		scale = Vector2(4.5,4.5)
 		beat_value = Vector2(0.6,0.6)
 	else:
 		scale = Vector2.ONE

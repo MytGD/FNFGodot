@@ -2,8 +2,8 @@
 ##PlayState Base.
 extends "res://source/states/StrumState.gd"
 
-const GDText = preload("res://source/objects/Display/GDText.gd")
 const CameraCanvas = preload("res://source/objects/Display/Camera/Camera.gd")
+const TimeLabel = preload("res://source/objects/Display/TimeLabel.gd")
 const PauseSubstate = preload("res://source/substates/PauseSubstate.gd")
 const Character = preload("res://source/objects/Sprite/Character.gd")
 const Bar = preload("res://source/objects/UI/Bar.gd")
@@ -73,20 +73,20 @@ var skipCountdown: bool = false
 @export_group("Hud Elements")
 @export var hideHud: bool = ClientPrefs.data.hideHud: set = _set_hide_hud
 
-var hideTimeBar: bool = ClientPrefs.data.timeBarType == "Disabled"
-var timeBarType: StringName = ClientPrefs.data.timeBarType
+var hideTimeBar: bool = ClientPrefs.data.timeBarType == TimeLabel.Styles.DISABLED
+var timeBarType: TimeLabel.Styles = ClientPrefs.data.timeBarType
 
 var _healthBar_State: IconState = IconState.NORMAL
 var healthBar: Bar = Bar.new('healthBar')
 
 var timeBar: Bar
-var timeTxt: GDText
+var timeTxt: TimeLabel
 #region Icons
 const Icon := preload("res://source/objects/UI/Icon.gd")
 var iconP1: Icon = Icon.new()
 var iconP2: Icon = Icon.new()
 var icons: Array[Icon] = [iconP1,iconP2]
-var scoreTxt = GDText.new()
+var scoreTxt: Label
 #endregion
 
 #endregion
@@ -136,6 +136,12 @@ func _ready():
 	
 	#Create hud
 	if !hideHud:
+		healthBar.position.x = ScreenUtils.screenWidth/2.0 - healthBar.bg.width/2.0
+		healthBar.position.y = ScreenUtils.screenHeight - 100 if not ClientPrefs.data.downscroll else 50
+		uiGroup.add(healthBar)
+		
+		healthBar.draw.connect(updateIconsPivot)
+		
 		iconP1.name = 'iconP1'
 		iconP1.scale_lerp = true
 		
@@ -144,40 +150,37 @@ func _ready():
 		
 		iconP1.flipX = true
 		
+		updateIconPos(iconP1)
+		updateIconPos(iconP2)
 		updateIconsPivot()
-		
-		healthBar.x = ScreenUtils.screenWidth/2.0 - healthBar.bg.width/2.0
-		healthBar.y = ScreenUtils.screenHeight - 100 if not ClientPrefs.data.downscroll else 50
 		
 		uiGroup.add(iconP1)
 		uiGroup.add(iconP2)
 		
-		healthBar.draw.connect(updateIconsPivot)
-		
-		uiGroup.insert(iconP1.get_index(),healthBar)
 		healthBar.flip = true
-		
-		
-		scoreTxt = GDText.new('Score: 0 | Misses: 0 | Accurancy: 0%(N/A)',ScreenUtils.screenWidth/2.0,ScreenUtils.screenHeight - 50.0)
+		scoreTxt = FunkinGD.makeText(
+			'', 
+			'Score: 0 | Misses: 0 | Accurancy: 0%(N/A)',
+			ScreenUtils.screenWidth,0,ScreenUtils.screenHeight - 50.0
+		)
 		scoreTxt.name = 'scoreTxt'
 		if isPixelStage: FunkinGD.setTextFont(scoreTxt,'pixel.otf')
 			
 		uiGroup.add(scoreTxt)
 		
 		healthBar.name = 'healthBar'
+		
 		#Time Bar
 		if !hideTimeBar:
 			timeBar = Bar.new('timeBar')
 			timeBar.name = 'timeBar'
-			timeTxt = GDText.new()
+			timeBar.position = Vector2(ScreenUtils.screenCenter.x - timeBar.bg.pivot_offset.x,5)
 			
-			if timeBarType == 'Song Name': timeTxt.text = songName
+			timeTxt = TimeLabel.new()
+			timeTxt.size.x = timeBar.bg.width
+			timeTxt.position = timeBar.position# + Vector2(timeBar.bg.pivot_offset.x,0)
+			if isPixelStage: timeTxt.set("theme_override_fonts/font",Paths.font('pixel.otf'))
 			
-			if isPixelStage: timeTxt.font = 'pixel.otf'
-			timeTxt.name = 'TimeTxt'
-			timeTxt._position = Vector2(timeBar.x+timeBar.bg.pivot_offset.x,timeBar.y)
-			
-			timeBar.position.x = ScreenUtils.screenCenter.x
 			uiGroup.add_child(timeBar)
 			uiGroup.add(timeTxt)
 
@@ -205,10 +208,9 @@ func _process(delta: float) -> void:
 	
 	_check_count_down_pos(delta)
 	FunkinGD.callOnScripts('onUpdate',[delta])
-	updateTimeBar()
 	
 	super._process(delta)
-	
+	updateTimeBar()
 	#Update Icons Positions
 	for icon in icons: updateIconPos(icon)	
 	#Skip Cutscene
@@ -227,27 +229,13 @@ func createMobileGUI():
 
 func get_hud_elements() -> Array[Node]:
 	if hideHud: return []
-	elif timeBarType == 'Disabled': return [scoreTxt,iconP1,iconP2,healthBar]
+	elif hideTimeBar: return [scoreTxt,iconP1,iconP2,healthBar]
 	return [timeTxt,scoreTxt,timeBar,iconP1,iconP2,healthBar]
 
 func updateTimeBar() -> void:
-	if !timeBar: return
-
-	timeBar.progress = _songPos/_songLength
-	var songSeconds
-	
-	if ClientPrefs.data.timeBarType == 'TimeLeft': songSeconds = int((_songLength-_songPos)/1000)
-	else: songSeconds = int(_songPos/1000.0)
-	
-	var songMinutes = songSeconds/60
-	songSeconds %= 60
-	
-	songMinutes = str(songMinutes)
-	songSeconds = str(songSeconds)
-	if songMinutes.length() <= 1: songMinutes = '0'+songMinutes
-	if songSeconds.length() <= 1: songSeconds = '0'+songSeconds
-	
-	timeTxt.text = songMinutes+':'+songSeconds
+	if hideTimeBar: return
+	timeBar.progress = Conductor.songPosition/_songLength
+	timeTxt.update()
 
 #region Icon Methods
 func updateIconsImage(state: IconState):
@@ -271,14 +259,17 @@ func updateIconPos(icon: Icon) -> void:
 	else: icon_pos = healthBar.get_process_position(healthBar.progress)
 	icon._position = icon_pos + healthBar.position - icon.pivot_offset
 
-func updateIconsPivot() -> void: for i in icons: _update_icon_pivot(i,healthBar.rotation)
+func updateIconsPivot() -> void: 
+	for i in icons: _update_icon_pivot(i,healthBar.rotation)
 
 func _update_icon_pivot(icon: Icon,angle: float):
 	var pivot = icon.image.pivot_offset
 	if !angle:
 		icon.pivot_offset = Vector2(0,pivot.y) if icon.flipX else Vector2(pivot.x*2.0,pivot.y)
 		return
-	icon.pivot_offset = Vector2(lerpf(pivot.x*2.0,0,cos(angle)),lerpf(pivot.y,0,sin(angle))) if icon.flipX else Vector2(lerpf(0,pivot.x,cos(angle)),lerpf(0,pivot.y*2.0,sin(angle)))
+	var _cos = cos(angle)
+	var _sin = sin(angle)
+	icon.pivot_offset = Vector2(lerpf(pivot.x,0,_cos),lerpf(pivot.y,0,_sin)) if icon.flipX else Vector2(lerpf(0,pivot.x*2.0,_cos),lerpf(pivot.y,pivot.y*2.0,_sin))
 #endregion
 
 #endregion
@@ -448,7 +439,7 @@ func loadSongObjects() -> void:
 	
 func loadEventsScripts():
 	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i+'.gd')
-	for i in Paths.getFilesAtAbsolute(Paths.exePath+'/assets/custom_events',false,['.gd'],true):
+	for i in Paths.getFilesAtAbsolute(Paths.exePath+'/assets/custom_events',false,['gd'],true):
 		FunkinGD.addScript('custom_events/'+i)
 	
 	for event in eventNotes: 
@@ -515,14 +506,14 @@ func restartSong(absolute: bool = true):
 			onPause = false
 	)
 
-func endSound() -> void:
+func endSound(skip_transition: bool = false) -> void:
 	Conductor.pauseSongs()
 	var results = FunkinGD.callOnScripts('onEndSong',[],true)
 	if FunkinGD.Function_Stop in results or !canExitSong: return
 	exitingSong = true
 	canPause = false
 	if isStoryMode and story_song_notes: loadNextSong()
-	elif back_state: Global.swapTree(back_state.new(),true)
+	elif back_state: Global.swapTree(back_state.new(),!skip_transition)
 #endregion
 
 #endregion

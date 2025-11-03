@@ -67,13 +67,10 @@ func _ready() -> void:
 	#Set the state of the PlayState
 	playState.inModchartEditor = true
 	playState.respawnNotes = true
-
+	pausePlaystate.call_deferred(true)
 #region Dialog
 func show_dialog(show: bool = true, mode: FileDialog.FileMode = FileDialog.FILE_MODE_OPEN_FILE) -> void:
-	if show: 
-		dialog.option_count = 0
-		dialog.clear_filters()
-		dialog.file_mode = mode
+	if show:  dialog.option_count = 0; dialog.clear_filters(); dialog.file_mode = mode
 	dialog_bg.visible = show
 	dialog.visible = show
 
@@ -102,8 +99,7 @@ func _update_song_info():
 
 #region Modchart Area
 func _process(_d) -> void:
-	if playState.process_mode != playState.PROCESS_MODE_DISABLED: 
-		set_song_editor_position(Conductor.songPosition)
+	if playState.process_mode != playState.PROCESS_MODE_DISABLED: set_song_editor_position(Conductor.songPosition)
 
 func save_modchart(path_absolute: String): Paths.saveFile(ModchartState.get_keys_data(),path_absolute)
 #endregion
@@ -140,14 +136,9 @@ func set_song_position(pos: float):
 
 #region Input
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey:
-		if event.pressed:
+	if event is InputEventKey and event.pressed:
 			match event.keycode:
 				KEY_SPACE: pausePlaystate(playState.process_mode != PROCESS_MODE_DISABLED)
-#region Data
-func getObjectProperty(object: Variant, prop: String):
-	return object.get_shader_parameter(prop) if object is ShaderMaterial else object.get(prop)
-#endregion
 
 #region PlayState
 func pausePlaystate(pause: bool) -> void:

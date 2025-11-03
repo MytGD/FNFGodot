@@ -171,6 +171,7 @@ func create_viewport() -> void:
 	_update_transform()
 	
 	clip_children = CanvasItem.CLIP_CHILDREN_DISABLED
+	queue_redraw()
 	
 	_last_viewport_added = viewport
 	
@@ -199,11 +200,10 @@ func remove_viewport() -> void:
 	viewport = null
 	
 	clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	queue_redraw()
 	_update_transform()
-	
 
-func can_remove_viewport() -> bool:
-	return !filtersArray and not (viewport and viewport.world_3d)
+func can_remove_viewport() -> bool: return !filtersArray and not (viewport and viewport.world_3d)
 #endregion
 
 #region Effects Methods
@@ -302,7 +302,9 @@ func _update_scroll_transform():
 	if viewport: viewport.canvas_transform.origin = _real_scroll_position
 	else: scroll_camera.position = _real_scroll_position
 
-func _draw() -> void: draw_rect(Rect2(Vector2.ZERO,Vector2(width,height)),Color.WHITE)
+func _draw() -> void: 
+	if clip_children != CLIP_CHILDREN_DISABLED: 
+		draw_rect(Rect2(Vector2.ZERO,Vector2(width,height)),Color.WHITE)
 #endregion
 
 #region Setters
@@ -368,7 +370,8 @@ class FlashSprite:
 	extends SolidSprite
 	var window: Viewport:
 		set(value):
-			if window: window.size_changed.disconnect(_update_size)
+			if window == value: return
+			elif window: window.size_changed.disconnect(_update_size)
 			window = value
 			if !value: return
 			window.size_changed.connect(_update_size)

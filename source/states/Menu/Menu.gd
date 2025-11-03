@@ -20,9 +20,9 @@ var alphaText: AlphabetText = AlphabetText.new()
 var flash: SolidSprite = SolidSprite.new()
 var flashTween: Tween
 
-var gfBeating: Sprite = Sprite.new('gfDanceTitle',true)
-var logoBomping: Sprite = Sprite.new('logoBumpin',true)
-var pressStart: Sprite = Sprite.new('titleEnter',true)
+var gfBeating: FunkinSprite = FunkinSprite.new(true,'gfDanceTitle')
+var logoBomping: FunkinSprite = FunkinSprite.new(true,'logoBumpin')
+var pressStart: FunkinSprite = FunkinSprite.new(true,'titleEnter')
 
 var bpm: float = 100
 

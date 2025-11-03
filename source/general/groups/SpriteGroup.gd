@@ -100,7 +100,7 @@ func remove(node: Object) -> void:
 	if !node or not node in members:
 		return
 	members.erase(node)
-	if node is Sprite:
+	if node is FunkinSprite:
 		node.groups.erase(self)
 	
 	if node is Node and node.is_inside_tree():
@@ -120,7 +120,7 @@ func queue_free_members():
 	for i in members: i.queue_free()
 	members.clear()
 func _add_member_position(member: Node,_x: float = x, _y: float = y) -> void:
-	if member is Sprite:
+	if member is FunkinSprite:
 		member._position += Vector2(_x,_y)
 	elif member is Node2D or member is Control:
 		member.position += Vector2(_x,_y)

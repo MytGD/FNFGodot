@@ -1,4 +1,5 @@
 extends Node
+const TimeLabel = preload("res://source/objects/Display/TimeLabel.gd")
 const OptionMenu = preload("res://source/substates/Options/OptionMenu.gd")
 var back_to: Variant #Can be a GDScript or a PackedScene
 var cur_visual: Node
@@ -35,7 +36,8 @@ var options: Array[Dictionary] = [
 				DisplayServer.VSYNC_DISABLED: 'Disabled',
 				DisplayServer.VSYNC_ENABLED: 'Enabled'
 			},
-			'object': DisplayServer, 'getter': DisplayServer.window_get_vsync_mode,
+			'setter': set_vsycn_mode,
+			'getter': DisplayServer.window_get_vsync_mode,
 			'description': "Fix some screen tearing when in full screen mode. To reduce input lag, increase fps."
 		},
 		{
@@ -44,10 +46,20 @@ var options: Array[Dictionary] = [
 				DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN: 'FullScreen',
 				DisplayServer.WINDOW_MODE_WINDOWED: 'Windowed'
 			},
-			'object': DisplayServer, 
 			'getter': DisplayServer.window_get_mode,
 			'setter': set_window_mode,
 			'description': "Window Mode."
+		},
+		{
+			'name': "Time Bar Style",
+			'options': {
+				TimeLabel.Styles.DISABLED: "Disabled",
+				TimeLabel.Styles.SONG_NAME: "Song Name",
+				TimeLabel.Styles.TIME_LEFT: "Time Left",
+				TimeLabel.Styles.POSITION: "Song Position",
+			},
+			'object': ClientPrefs.data,
+			'property': 'timeBarType'
 		},
 		{
 			'name': 'FPS',
@@ -130,6 +142,7 @@ func _on_option_selected(menu: OptionMenu):
 	var data = menu.cur_data
 	show_visual(data.get('visual',''))
 	description_text.text = data.get('description','<No Description>')
+
 func show_visual(visual_name: String):
 	if !visual_name and !cur_visual: return
 	if cur_visual: 
@@ -175,9 +188,11 @@ func _input(event: InputEvent) -> void:
 					obj.value += 1
 					_call_setter(obj.key_value)
 
-func _call_setter(value: Variant):
+func _call_setter(value: Variant) -> bool:
 	var setter = cur_menu.cur_data.get('setter')
-	if setter: setter.call(value)
+	if setter: setter.call(value); return true
+	cur_menu.cur_data.object[cur_menu.cur_data.property] = value
+	return false
 	
 func _get_object_selected():
 	var obj = cur_menu.get_node(cur_menu.cur_data.name)
@@ -208,7 +223,6 @@ func set_window_mode(mode: DisplayServer.WindowMode) -> void:
 	var value = int(mode)
 	DisplayServer.window_set_mode(mode)
 	ClientPrefs.data.window_mode = value
-	print(ClientPrefs.data)
 func set_vsycn_mode(mode: DisplayServer.VSyncMode) -> void:
 	DisplayServer.window_set_vsync_mode(mode)
 	ClientPrefs.data.vsycn_mode = mode
@@ -222,6 +236,7 @@ func saveOptions(): Paths.saveFile(ClientPrefs.data,'res://data/options.json')
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST: saveOptions()
+
 static func disableNode(node: Node):
 	if !node: return
 	node.process_mode = Node.PROCESS_MODE_DISABLED

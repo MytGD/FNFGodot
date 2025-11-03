@@ -11,7 +11,7 @@ var object: CanvasItem:
 		if !node: return
 	
 		trailType = 0
-		if object is Sprite:
+		if object is FunkinSprite:
 			_trail_image = node.image
 		if _trail_image is Sprite2D:
 			trailType = 1
@@ -99,14 +99,11 @@ func start_process():
 		await process_frame_signal
 		
 static func getObjectCopy(object) -> Node:
-	if !object:
-		return
-	if !object is Sprite:
-		return object.duplicate()
+	if !object:return
+	if !object is FunkinSprite:return object.duplicate()
 	
-	if !object.image or object.is_animated and !object.animation.curAnim.node_to_animate:
-		return
-	var trail = (object.animation.curAnim.node_to_animate if object.is_animated else object.image).duplicate()
+	if !object.image or !object.animation or !object.animation.curAnim.node_to_animate: return
+	var trail = (object.animation.curAnim.node_to_animate if object.animation else object.image).duplicate()
 	trail._frame_offset += object.position
 	trail.scale += object.scale - Vector2.ONE
 	trail.rotation += object.rotation
@@ -114,8 +111,7 @@ static func getObjectCopy(object) -> Node:
 
 
 func createTrail() -> Node:
-	if !is_instance_valid(object) or not object.visible:
-		return
+	if !is_instance_valid(object) or !object.visible: return
 	var trail = getObjectCopy(object)
 	if !trail:
 		return

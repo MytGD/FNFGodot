@@ -1,4 +1,4 @@
-extends Sprite
+extends FunkinSprite
 
 const Note = preload("res://source/objects/Notes/Note.gd")
 const directions: PackedStringArray = ['left','down','up','right']
@@ -17,8 +17,6 @@ var texture: String: set = setTexture ##Note Texture
 var _real_texture: String = ''
 #endregion
 
-func _init(): 
-	super._init(null,true)
 func reloadNote() -> void: ##Reload the Note animation and his texture.
 	animation.clearLibrary()
 	_animOffsets.clear()
@@ -53,7 +51,7 @@ func setNoteData(_data: int):
 	noteColor = note_colors[noteData]
 
 func setPixelNote(isPixel: bool) -> void:
-	antialiasing = !isPixel
+	texture_filter = TEXTURE_FILTER_NEAREST if isPixel else TEXTURE_FILTER_PARENT_NODE 
 	isPixelNote = isPixel
 
 

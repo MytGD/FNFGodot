@@ -57,11 +57,8 @@ static var node_paths: Dictionary[StringName,NodePath] = {}
 ##In that example, in the first frame, the node will be move to -50 in x position,[br]
 ##and in the second frame will be moved to 50.
 @export var frames: Array
-##The Node to animate, [u][b]essential to make the animation work.[/u/][/b]
-var node_to_animate: Node: set = set_node_animate
 
-##Current Animation Name
-@export var name: StringName = ''
+var node_to_animate: Node: set = set_node_animate ##The Node to animate, [u][b]essential to make the animation work.[/u/][/b]
 
 @export var reverse: bool = false
 
@@ -71,30 +68,14 @@ var node_to_animate: Node: set = set_node_animate
 @export var frameRate: float = 24.: set = set_frame_rate
 @export var maxFrames: int = 0 ##The number of frames in the animation.
 
-@export var curFrame: int = 0: ##The current frame of the animation. Can also be changed outside of the script.
-	set(frame):
-		frame = clampi(frame,0,maxi(0,maxFrames-1))
-		if curFrame == frame: return
-		_float_frame = frame
-		_real_cur_frame = frame
-	get(): return _real_cur_frame
+##The current frame of the animation. Can also be changed outside of the script.
+@export var curFrame: int = 0: set = set_cur_frame, get = get_cur_frame
 
 var curFrameData: Dictionary
 
-@export var _real_cur_frame: int = 0: 
-	set(value):
-		if _real_cur_frame == value: return
-		_real_cur_frame = value
-		set_frame(value)
+@export var _real_cur_frame: int = 0: set = _set_real_cur_frame
 
-@export var finished: bool = false: ##If the animation is finished.
-	set(value):
-		if value == finished: return
-		finished = value
-		if !finished: return
-		playing = false
-		animation_finished.emit(name)
-
+@export var finished: bool = false: set = _set_finished ##If the animation is finished.
 var paused: bool = false: set = pause
 
  ##A multiplier for the speed of the animation.
@@ -113,10 +94,10 @@ var playing: bool: set = start_process
 
 var _animation_speed: float = frameRate
 
-signal animation_finished(anim_name: StringName)
-signal animation_started(anim_name: StringName)
-signal animation_resumed(anim_name: StringName)
-signal animation_stopped(anim_name: StringName)
+signal animation_finished
+signal animation_started
+signal animation_resumed
+signal animation_stopped
 
 ##Process animation
 func process_frame(delta: float) -> void:
@@ -154,14 +135,14 @@ func start_anim():
 	if _real_cur_frame != _float_frame: _real_cur_frame = _float_frame
 	else: set_frame(_float_frame)
 	
-	animation_started.emit(name)
+	animation_started.emit()
 	
 func _can_start_anim() -> bool: return can_process and not paused and not finished
 
 ##Resume progress
 func resume() -> void: 
 	paused = false
-	animation_resumed.emit(name)
+	animation_resumed.emit()
 	start_process()
 
 ##Pause animation
@@ -171,13 +152,42 @@ func stop() -> void: ##Stop the animation, making it not process frames.
 	paused = false
 	playing = false
 	_float_frame = 0
-	animation_stopped.emit(name)
+	animation_stopped.emit()
 	
 func start_process(start: bool = true) -> void:
 	start = start and _can_start_anim()
 	if start == playing: return
 	playing = start
 	if start: AnimationService.anims_to_update[get_instance_id()] = self
+
+
+	
+	
+func set_frame(frame: int = _real_cur_frame) -> void:
+	curFrameData = frames[frame]
+	for i in curFrameData:
+		if i is NodePath: node_to_animate.set_indexed(i,curFrameData[i])
+		else: node_to_animate.set(i,curFrameData[i])
+
+
+#region Setters
+func set_cur_frame(f: int):
+	f = clampi(f,0,maxi(0,maxFrames-1))
+	if curFrame == f: return
+	_float_frame = f
+	_real_cur_frame = f
+
+func _set_real_cur_frame(f: int):
+	if _real_cur_frame == f: return
+	_real_cur_frame = f
+	set_frame(f)
+
+func _set_finished(f: bool):
+	if f == finished: return
+	finished = f
+	if !finished: return
+	playing = false
+	animation_finished.emit()
 
 func set_node_animate(node) -> void:
 	node_to_animate = node
@@ -187,23 +197,20 @@ func set_node_animate(node) -> void:
 		return
 	can_process = false; 
 	stop();
-	
-	
-func set_frame(frame: int = _real_cur_frame) -> void:
-	curFrameData = frames[frame]
-	for i in curFrameData:
-		if i is NodePath: 
-			node_to_animate.set_indexed(i,curFrameData[i])
-		else: node_to_animate.set(i,curFrameData[i])
 
 func set_frame_rate(value: float) -> void:
 	if value == frameRate: return
 	frameRate = value
 	_update_animation_speed()
-	
+
 func set_speed_scale(value: float) -> void:
 	if value == speed_scale: return
 	speed_scale = value
 	_update_animation_speed()
-	
+#endregion
+
+#region Getters
+func get_cur_frame() -> int: return _real_cur_frame
+#endregion
+
 func _update_animation_speed() -> void: _animation_speed = frameRate*speed_scale

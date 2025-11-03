@@ -64,35 +64,33 @@ static var data: Dictionary = {
 	'comboStacking': true,
 	'playAsOpponent': false,
 	'notHitSustainWhenMiss': false,
-	#endregion
 	
-	#region Screen Options
-	'window_mode': DisplayServer.WINDOW_MODE_WINDOWED,
-	'vsync_mode': DisplayServer.VSYNC_ENABLED,
-	'fps': 120,
-	#endregion
-	
-	#region Audio Options
-	'songOffset': 0,
-	#endregion
-	
-	
-	#region Gameplay Options
-	'timeBarType': 'Disabled',
-	'hideHud': false,
-	'botPlay': false,
-
 	'comboOffset': PackedInt64Array([700,-250,-500,-200]),
 	'miraculousRating': false,
 	'miraculousOffset': 25.0,
 	'sickOffset': 45.0,
 	'goodOffset': 130.0,
 	'badOffset': 150.0,
+	#endregion
+	
+	#region Screen Options
+	'window_mode': DisplayServer.WINDOW_MODE_WINDOWED,
+	'vsync_mode': DisplayServer.VSYNC_ENABLED,
+	'fps': 120,
+	
+	'timeBarType': 0, #0 = Disabled, 1 = TIME_LEFT, 2 = SONG_NAME, 3 = POSITION
+	'hideHud': false,
+	'botPlay': false,
 	
 	'splashesEnabled': true,
 	'opponentSplashes': false,
 	'splashAlpha': 0.8,
 	#endregion
+	
+	#region Audio Options
+	'songOffset': 0.0,
+	#endregion
+	
 	
 	#region Visual  Options
 	'lowQuality': false,

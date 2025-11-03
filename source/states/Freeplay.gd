@@ -1,7 +1,6 @@
 extends Node
 const Song = preload("res://source/backend/Song.gd")
 const AlphabetText = preload("res://source/objects/AlphabetText/AlphabetText.gd")
-const SpriteAnimated = preload("res://source/objects/Sprite/SpriteAnimated.gd")
 const BarSize = 70
 const ModInfoScale = Vector2(0.45,0.45)
 const Icon: GDScript = preload('res://source/objects/UI/Icon.gd')
@@ -27,13 +26,13 @@ var difficulty: String = ''
 
 var menuSong: AudioStreamPlayer = AudioStreamPlayer.new()
 
-@onready var difficultySprite: SpriteAnimated = SpriteAnimated.new()
+@onready var difficultySprite: FunkinSprite = FunkinSprite.new(true)
 @onready var difficultyText: AlphabetText = AlphabetText.new()
-@onready var diffiSelectLeft: SpriteAnimated = SpriteAnimated.new()
-@onready var diffiSelectRight: SpriteAnimated = SpriteAnimated.new()
+@onready var diffiSelectLeft: FunkinSprite = FunkinSprite.new(true)
+@onready var diffiSelectRight: FunkinSprite = FunkinSprite.new(true)
 
-@onready var modSelectLeft: SpriteAnimated = SpriteAnimated.new()
-@onready var modSelectRight: SpriteAnimated = SpriteAnimated.new()
+@onready var modSelectLeft: FunkinSprite = FunkinSprite.new(true)
+@onready var modSelectRight: FunkinSprite = FunkinSprite.new(true)
 
 var diffiTween: Tween
 var weeks: Array = []
@@ -128,7 +127,7 @@ func _ready():
 	setModSelected(curMod)
 	setSongSelected(old_selected,false)
 	exiting.connect(func():
-		if cur_week_node: remove_children()
+		if cur_week_node: for i in get_children(): remove_child(i)
 		queue_free()
 	)
 	Global.onSwapTree.connect(func():
@@ -213,8 +212,7 @@ func loadWeekProperties(week_data: Dictionary) -> Dictionary:
 	
 func loadWeeks():
 	loadWeekFrom('assets/weeks')
-	for i in Paths.getModsEnabled():
-		loadWeekFrom('mods/'+i+'/weeks')
+	for i in Paths.getModsEnabled(): loadWeekFrom('mods/'+i+'/weeks')
 	#loadSongs(mod)
 
 func setSongSelected(selected: int = 0, play_sound: bool = true):
@@ -314,8 +312,6 @@ func setDifficulty(id: int = curDifficulty):
 	difficulty = cur_song_difficulties[id]
 	curDifficulty = id
 	
-	difficultySprite.animation.clearLibrary()
-	
 	var path = Paths.imagePath('menudifficulties/'+difficulty.to_lower())
 	if path: 
 		difficultyText.text = ''
@@ -333,13 +329,12 @@ func _set_difficulty_text(text: String):
 	diffiSelectRight.position.x = offset
 func _load_difficulty_image(path_absolute: String):
 	if FileAccess.file_exists(path_absolute.get_basename()+'.xml'):
-		difficultySprite.is_animated = true
 		difficultySprite.image.texture = Paths.imageTexture(path_absolute)
 		difficultySprite.animation.addAnimByPrefix('anim','idle',24,true)
 		difficultySprite.animation.play('anim')
 	else:
-		difficultySprite.is_animated = false
 		difficultySprite.image.texture = Paths.imageTexture(path_absolute)
+		difficultySprite.image.region_rect.size = difficultySprite.imageSize
 	
 	var difWidth = difficultySprite.pivot_offset.x*2*difficultySprite.scale.x
 	difficultySprite.position.x = ScreenUtils.screenWidth - difWidth - 100
@@ -467,6 +462,3 @@ func startSong():
 		songData = Paths.data(songJson,difficulty,songFolder)
 	
 	if songData: load_game(song_name,difficulty,songFolder,songJson,audio_suffix)
-
-func remove_children():
-	for i in get_children(): remove_child(i)

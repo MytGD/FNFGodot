@@ -4,7 +4,6 @@ class_name FunkinGD extends Object
 #const SpriteAnimated = preload("res://source/objects/Sprite/SpriteAnimated.gd")
 const TweenerObject = preload("res://source/general/utils/Tween/TweenerObject.gd")
 const TweenerMethod = preload("res://source/general/utils/Tween/TweenerMethod.gd")
-const GDText = preload("res://source/objects/Display/GDText.gd")
 const Song = preload("res://source/backend/Song.gd")
 const Bar = preload("res://source/objects/UI/Bar.gd")
 const EventNote = preload("res://source/objects/Notes/EventNote.gd")
@@ -100,7 +99,7 @@ static var timersPlaying: Dictionary[String,Array]
 static var scriptsCreated: Dictionary
 
 ##[b]Texts[/b] created using [method makeText] function.
-static var textsCreated: Dictionary[String,GDText]
+static var textsCreated: Dictionary[String,Label]
 
 ##Used to precache the Methods in the script, being more optimized for calling functions in [method callOnScripts]
 static var method_list: Dictionary[String,Array]
@@ -644,22 +643,24 @@ static func getSpritesFromStageJson() -> PackedStringArray:
 
 #region Sprite Methods
 ##Creates a [Sprite].
-static func _insert_sprite(tag: String, object: Node):
+static func _insert_sprite(tag: String, object: Node) -> void:
 	var sprite = spritesCreated.get(tag)
 	if sprite and sprite is Node: sprite.queue_free()
 	spritesCreated[tag] = object
-		
-static func makeSprite(tag: String, path: Variant = null, x: float = 0, y: float = 0) -> Sprite: 
-	var sprite = Sprite.new(path)
+
+static func makeSprite(tag: String, path: Variant = null, x: float = 0, y: float = 0) -> FunkinSprite: 
+	var sprite = FunkinSprite.new(false,path)
 	sprite._position = Vector2(x,y)
-	if tag: sprite.name = tag
+	sprite.name = tag
 	_insert_sprite(tag,sprite)
 	return sprite
 
 ##Creates a animated [Sprite].
-static func makeAnimatedSprite(tag: String, path: Variant = null, x: float = 0, y: float = 0) -> Sprite: 
-	var sprite = makeSprite(tag,path,x,y)
-	sprite.is_animated = true
+static func makeAnimatedSprite(tag: String, path: Variant = null, x: float = 0, y: float = 0) -> FunkinSprite: 
+	var sprite = FunkinSprite.new(true,path)
+	sprite._position = Vector2(x,y)
+	sprite.name = tag
+	_insert_sprite(tag,sprite)
 	return sprite
 
 static func makeSpriteFromSheet(tag: String,path: Variant, sheet_preffix: String,x: float = 0, y: float = 0):
@@ -750,7 +751,7 @@ static func makeGraphic(object: Variant,width: float = 0.0,height: float = 0.0,c
 	elif !object: return
 	
 	color = _get_color(color)
-	if object is Sprite:
+	if object is FunkinSprite:
 		if object.image is Graphic: 
 			object.image._make_solid()
 			object.image.modulate = color
@@ -765,10 +766,10 @@ static func makeGraphic(object: Variant,width: float = 0.0,height: float = 0.0,c
 static func loadGraphic(object: Variant, image: String, width: float = -1, height: float = -1) -> Texture:
 	object = _find_object(object)
 	if !object: return
-	if object is Sprite: object = object.image
+	if object is FunkinSprite: object = object.image
 	var tex = Paths.imageTexture(image)
 	object.texture = tex
-	if not (object is Sprite or object is NinePatchRect): return tex
+	if not (object is FunkinSprite or object is NinePatchRect): return tex
 	if width != -1: object.region_rect.size.x = width
 	if height != -1: object.region_rect.size.y = height
 	return tex
@@ -778,7 +779,7 @@ static func loadGraphic(object: Variant, image: String, width: float = -1, heigh
 ##[b]Note:[/br] Just works if the sprite is not animated.
 static func setGraphicSize(object: Variant, sizeX: float = -1, sizeY: float = -1) -> void:
 	object = _find_object(object)
-	if object is Sprite:
+	if object is FunkinSprite:
 		object.setGraphicSize(
 			sizeX,
 			sizeY
@@ -818,7 +819,7 @@ static func scaleObject(object: Variant,x: float = 1.0,y: float = 1.0, centered:
 	object = _find_object(object)
 	if !object: return
 	object.set('scale',Vector2(x,y))
-	if !centered and object is Sprite: object.offset = object.pivot_offset*(Vector2.ONE - object.scale)
+	if !centered and object is FunkinSprite: object.offset = object.pivot_offset*(Vector2.ONE - object.scale)
 
 ##Set the scroll factor from the sprite.[br]
 ##This makes the object have a depth effect, [u]the lower the value, the greater the depth[/u].
@@ -847,26 +848,26 @@ static func getObjectOrder(object: Variant) -> int:
 static func updateHitbox(object: Variant) -> void:
 	object = _find_object(object)
 	if !object: return
-	if object is Sprite: object.centerOrigin()
+	if object is FunkinSprite: object.centerOrigin()
 	
 static func updateHitboxFromGroup(group: String, index) -> void: updateHitbox(_find_group_members(group,int(index)))
 
 ##Returns if the sprite, created using [method makeSprite] or [method makeAnimatedSprite] or [method setVar], exists.
 static func spriteExists(tag: StringName) -> bool:
-	return spritesCreated.get(tag) is Sprite or modVars.get(tag) is Sprite
+	return spritesCreated.get(tag) is FunkinSprite or modVars.get(tag) is FunkinSprite
 	
 
 ##Returns the midpoint.x of the object. See also [method getMidpointY].
 static func getMidpointX(object: Variant) -> float:
 	object = _find_object(object)
-	if object is Sprite: return object.getMidpoint().x
+	if object is FunkinSprite: return object.getMidpoint().x
 	if (object is CanvasItem) and object.get('texture'): return object.position.x + (object.texture.get_size().x/2.0)
 	return 0.0
 
 ##Returns the midpoint.y of the object. See also [method getMidpointX].
 static func getMidpointY(object: Variant) -> float:
 	object = _find_object(object)
-	if object is Sprite: return object.getMidpoint().y
+	if object is FunkinSprite: return object.getMidpoint().y
 	if (object is CanvasItem) and object.get('texture'): return object.position.y + (object.texture.get_size().y/2.0)
 	return 0.0
 #endregion
@@ -896,33 +897,39 @@ static func addAnimationByIndices(object: Variant, animName: StringName, xmlAnim
 ##Makes the [param object] play a animation, if exists. If [param force] and the current anim as the same name, that anim will be restarted.
 static func playAnim(object: Variant, anim: StringName, force: bool = false, reverse: bool = false) -> void:
 	object = _find_object(object)
-	if not (object is Sprite and object.animation): return
+	if not (object is FunkinSprite and object.animation): return
 	if reverse: object.animation.play_reverse(anim,force)
 	else: object.animation.play(anim,force)
 
 ##Add offset for the animation of the sprite.
 static func addOffset(object: Variant, anim: StringName, offsetX: float, offsetY: float)  -> void:
 	object = _find_object(object)
-	if object is Sprite: object.addAnimOffset(anim,offsetX,offsetY)
+	if object is FunkinSprite: object.addAnimOffset(anim,offsetX,offsetY)
 
 #endregion
 
 
 #region Text Methods
 ##Creates a Text
-static func makeText(tag: String,text: Variant = '', width: float = 500, x: float = 0, y:float = 0) -> GDText:
-	removeText(tag)
-	var newText = GDText.new(str(text),x,y,width)
-	newText.name = tag
-	modVars[tag] = newText
+static func makeText(tag: String,text: Variant = '', width: float = 500, x: float = 0, y:float = 0) -> Label:
+	var newText = Label.new()
+	newText.text = str(text)
+	newText.position = Vector2(x,y)
+	newText.autowrap_mode = TextServer.AUTOWRAP_WORD
+	newText.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	newText.size.x = width
+	newText.set("theme_override_constants/outline_size",7)
+	if tag:
+		removeText(tag)
+		newText.name = tag
+		textsCreated[tag] = newText
 	return newText
 
 
 ##Set the text string
 static func setTextString(reference: Variant, text: Variant = '') -> void:
 	reference = _find_object(reference)
-	if reference is Label:
-		reference.text = str(text)
+	if reference is Label: reference.text = str(text)
 
 ##Set the color from the text
 static func setTextColor(text: Variant, color: Variant) -> void:
@@ -932,7 +939,7 @@ static func setTextColor(text: Variant, color: Variant) -> void:
 ##Set Text Border
 static func setTextBorder(text: Variant, border: float, color: Color = Color.BLACK) -> void:
 	text = _find_object(text)
-	if !text is GDText: return
+	if !text is Label: return
 	text.set("theme_override_colors/font_outline_color",color)
 	text.set("theme_override_constants/outline_size",border)
 
@@ -1130,8 +1137,9 @@ static func doTweenColor(tag: String, object: Variant,color: Variant, time = 1.0
 	return null
 
 ##Creates a Tween for the rotation of a [Node]. See also [method doTweenX] and [method doTweenY].
-static func doTweenAngle(tag: String, object: Variant, to, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	return startTween(tag,object,{'angle': float(to)},time,tweenEase)
+static func doTweenAngle(tag: String, object: Variant, to: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
+	print(to)
+	return startTween(tag,object,{'rotation_degrees': float(to)},time,tweenEase)
 #endregion
 
 
@@ -1351,7 +1359,7 @@ static func setObjectCamera(object: Variant, camera: Variant = 'game'):
 	if !object: return
 	var cam: Node = getCamera(camera)
 	if !cam: return
-	if object is Sprite: object.set('camera',cam)
+	if object is FunkinSprite: object.set('camera',cam)
 	else: cam.add(object)
 
 static func getCenterBetween(object1: Variant, object2: Variant) -> Vector2:
@@ -1360,8 +1368,8 @@ static func getCenterBetween(object1: Variant, object2: Variant) -> Vector2:
 	
 	if !object1 or !object2: return Vector2(-1,-1)
 	
-	var pos_1 = object1._position if object1 is Sprite else object1.position
-	var pos_2 = object2._position if object2 is Sprite else object2.position
+	var pos_1 = object1._position if object1 is FunkinSprite else object1.position
+	var pos_2 = object2._position if object2 is FunkinSprite else object2.position
 	
 	return pos_1 - (pos_2 - pos_1)/2.0
 
@@ -1378,7 +1386,7 @@ static func getCharacterCamPos(char: Variant): ##Returns the camera position fro
 	if char is String: char = getProperty(char)
 	if game: return game.getCameraPos(char)
 	if char is Character: return char.getCameraPosition()
-	if char is Sprite: return char.getMidpoint()
+	if char is FunkinSprite: return char.getMidpoint()
 	
 	return char.position
 

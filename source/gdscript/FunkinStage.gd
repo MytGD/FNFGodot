@@ -41,7 +41,7 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 		var scroll = data.get('scroll',[1,1])
 		
 		
-		var sprite: Sprite
+		var sprite: FunkinSprite
 		if image.begins_with("#"):
 			sprite = FunkinGD.makeSprite(name,null,position[0],position[1])
 			sprite.image.modulate = Color(image)
@@ -79,13 +79,11 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 		else:
 			sprite = FunkinGD.makeSprite(name,image,position[0],position[1])
 		
-		if sprite is Sprite:
+		if sprite is FunkinSprite:
 			sprite.setGraphicScale(Vector2(scale[0],scale[1]))
-			sprite.antialiasing = !data.get('isPixel',false)
 			sprite.scrollFactor = Vector2(scroll[0],scroll[1])
 		else: sprite.scale = Vector2(scale[0],scale[1])
-		#print(sprite.pivot_offset)
-		
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if data.get('isPixel') else CanvasItem.TEXTURE_FILTER_PARENT_NODE
 		sprite.modulate.a = data.get('alpha',1.0)
 		sprites.append([data.get('zIndex',0),sprite])
 	

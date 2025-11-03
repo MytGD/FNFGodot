@@ -624,11 +624,9 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 			)
 			
 			splash.animation.play('splash',true)
-			splash._updatePos()
 			return splash
 		NoteSplash.SplashType.HOLD_COVER_END: _disableHoldSplash(getStrumDirection(strum.data,note.mustPress))
 	
-	splash._updatePos()
 	splash.animation.play_random(true)
 	splash.position = strum._position - splash.offset
 	return splash

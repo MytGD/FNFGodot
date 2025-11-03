@@ -1,5 +1,5 @@
 @icon("res://icons/StrumNote.png")
-extends Sprite ##Strum Note
+extends FunkinSprite ##Strum Note
 const Note = preload("res://source/objects/Notes/Note.gd")
 const default_offset = [0,0]
 ##Strum Direction
@@ -69,12 +69,11 @@ func _init(dir: int = 0):
 	rgbShader.b = ClientPrefs.arrowRGB[dir][2]
 	rgbShader.next_pass = testShader
 	"""
+	super._init(true)
 	data = dir
 	hit_action = Note.getNoteAction()[dir]
 	
 	offset_follow_scale = true
-	super._init(null,true)
-	
 	animation.animation_finished.connect(func(anim):
 		if anim != 'static' and return_to_static_on_finish and not mustPress:
 			animation.play('static')
@@ -84,41 +83,43 @@ func _init(dir: int = 0):
 	)
 const _anim_direction: PackedStringArray = ['left','down','up','right']
 
-func reloadStrumNote(): ##Reload Strum Texture Data
+func reloadStrumNote() -> void: ##Reload Strum Texture Data
 	animation.clearLibrary()
 	_animOffsets.clear()
 	offset = Vector2.ZERO
 	image.texture = Paths.imageTexture(texture)
-	antialiasing = !isPixelNote
+	texture_filter = TEXTURE_FILTER_NEAREST if isPixelNote else TEXTURE_FILTER_PARENT_NODE
 	
-	if not isPixelNote or prefixs:
-		var type = _anim_direction[data]
-		
-		var static_anim = prefixs[type+'Static']
-		var press_anim = prefixs[type+'Press']
-		var confirm_anim = prefixs[type+'Confirm']
-		animation.addAnimByPrefix('static',static_anim.prefix,24,true)
-		animation.addAnimByPrefix('press',press_anim.prefix,24,false)
-		animation.addAnimByPrefix('confirm',confirm_anim.prefix,24,false)
-		
-		var confirm_offset = confirm_anim.get('offsets',default_offset)
-		addAnimOffset('confirm',confirm_offset[0],confirm_offset[1])
-		
-		var press_offset = press_anim.get('offsets',default_offset)
-		addAnimOffset('press',press_offset[0],press_offset[1])
-		
-		var static_offset = static_anim.get('offsets',default_offset)
-		addAnimOffset('static',static_offset[0],static_offset[1])
-	else:
-		var keyCount: int = Conductor.keyCount
-
-		image.region_rect.size = imageSize/Vector2(keyCount,5)
-		animation.addFrameAnim('static',[data])
-		animation.addFrameAnim('confirm',[data + (keyCount*3),data + (keyCount*4),data + keyCount])
-		animation.addFrameAnim('press',[data + (keyCount*3),data + (keyCount*2)])
-		
+	if not isPixelNote or prefixs: _load_anims_from_prefix()
+	else: _load_graphic_anims()
 	setGraphicScale(Vector2(default_scale,default_scale))
+
+func _load_anims_from_prefix() -> void:
+	var type = _anim_direction[data]
 	
+	var static_anim = prefixs[type+'Static']
+	var press_anim = prefixs[type+'Press']
+	var confirm_anim = prefixs[type+'Confirm']
+	animation.addAnimByPrefix('static',static_anim.prefix,24,true)
+	animation.addAnimByPrefix('press',press_anim.prefix,24,false)
+	animation.addAnimByPrefix('confirm',confirm_anim.prefix,24,false)
+	
+	var confirm_offset = confirm_anim.get('offsets',default_offset)
+	addAnimOffset('confirm',confirm_offset[0],confirm_offset[1])
+	
+	var press_offset = press_anim.get('offsets',default_offset)
+	addAnimOffset('press',press_offset[0],press_offset[1])
+	
+	var static_offset = static_anim.get('offsets',default_offset)
+	addAnimOffset('static',static_offset[0],static_offset[1])
+
+func _load_graphic_anims() -> void:
+	var keyCount: int = Conductor.keyCount
+	image.region_rect.size = imageSize/Vector2(keyCount,5)
+	animation.addFrameAnim('static',[data])
+	animation.addFrameAnim('confirm',[data + (keyCount*3),data + (keyCount*4),data + keyCount])
+	animation.addFrameAnim('press',[data + (keyCount*3),data + (keyCount*2)])
+
 func loadFromStyle(noteStyle: String):
 	styleName = noteStyle
 	if !styleData: return
@@ -151,7 +152,7 @@ func strumConfirm(anim: String = 'confirm'):
 func _process(delta: float) -> void:
 	super._process(delta)
 	if mustPress:
-		if animation.curAnim.name == 'static' and Input.is_action_just_pressed(hit_action): animation.play('press',true)
+		if animation.current_animation == 'static' and Input.is_action_just_pressed(hit_action): animation.play('press',true)
 		elif Input.is_action_just_released(hit_action): animation.play('static')
 	else:
 		if hitTime > 0.0:

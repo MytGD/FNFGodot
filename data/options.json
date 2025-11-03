@@ -5,16 +5,16 @@
 	"botPlay": false,
 	"camZooms": true,
 	"comboOffset": [
-		700.0,
-		-250.0,
-		-500.0,
-		-200.0
+		700,
+		-250,
+		-500,
+		-200
 	],
 	"comboStacking": true,
 	"downscroll": false,
 	"fixImageBorders": false,
 	"flashingLights": true,
-	"fps": 240.0,
+	"fps": 120,
 	"goodOffset": 130.0,
 	"hideHud": false,
 	"lowQuality": false,
@@ -22,8 +22,6 @@
 	"miraculousOffset": 25.0,
 	"miraculousRating": false,
 	"modsEnabled": {
-		"Archaios Theos": true,
-		"BFMix": true,
 		"Doki Doki Takeover": true,
 		"Eteled": true,
 		"Fnif3": true,
@@ -54,7 +52,6 @@
 		"Wii Space": true,
 		"YOURSELF": true,
 		"base_mod": true,
-		"custom_scripts": true,
 		"kapi port": true,
 		"soff": true,
 		"vs-omori": true
@@ -65,114 +62,114 @@
 	"note_keys": {
 		"1": [
 			[
-				68.0,
-				4194319.0
+				68,
+				4194319
 			]
 		],
 		"2": [
 			[
-				70.0,
-				4194322.0
+				70,
+				4194322
 			],
 			[
-				74.0,
-				4194320.0
+				74,
+				4194320
 			]
 		],
 		"3": [
 			[
-				68.0,
-				4194319.0
+				68,
+				4194319
 			],
 			[
-				32.0,
-				4194322.0
+				32,
+				4194322
 			],
 			[
-				75.0,
-				4194321.0
+				75,
+				4194321
 			]
 		],
 		"4": [
 			[
-				68.0,
-				4194319.0
+				68,
+				4194319
 			],
 			[
-				70.0,
-				4194322.0
+				70,
+				4194322
 			],
 			[
-				74.0,
-				4194320.0
+				74,
+				4194320
 			],
 			[
-				75.0,
-				4194321.0
+				75,
+				4194321
 			]
 		],
 		"5": [
 			[
-				68.0,
-				4194319.0
+				68,
+				4194319
 			],
 			[
-				70.0,
-				4194322.0
+				70,
+				4194322
 			],
 			[
-				32.0
+				32
 			],
 			[
-				74.0,
-				4194320.0
+				74,
+				4194320
 			],
 			[
-				75.0,
-				4194321.0
+				75,
+				4194321
 			]
 		],
 		"6": [
 			[
-				83.0
+				83
 			],
 			[
-				68.0
+				68
 			],
 			[
-				70.0
+				70
 			],
 			[
-				74.0
+				74
 			],
 			[
-				75.0
+				75
 			],
 			[
-				76.0
+				76
 			]
 		],
 		"7": [
 			[
-				83.0
+				83
 			],
 			[
-				68.0
+				68
 			],
 			[
-				70.0
+				70
 			],
 			[
-				32.0
+				32
 			],
 			[
-				74.0
+				74
 			],
 			[
-				75.0
+				75
 			],
 			[
-				76.0
+				76
 			]
 		]
 	},
@@ -184,7 +181,7 @@
 	"splashAlpha": 0.8,
 	"splashSkin": "noteSplashes/noteSplashes",
 	"splashesEnabled": true,
-	"timeBarType": "Disabled",
-	"vsync_mode": 0.0,
-	"window_mode": 0.0
+	"timeBarType": 2,
+	"vsync_mode": 1,
+	"window_mode": 0
 }

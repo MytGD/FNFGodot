@@ -38,14 +38,15 @@ func loadInterators():
 		var value_type: int = TYPE_NIL
 		var value = null
 		
-		if obj: 
-			if data.has('getter'): 
-				var params = data.get('getter_params')
-				if params: value = data.getter.callv(params)
-				else: value = data.getter.call()
-			else:  value = obj.get(data.property)
-			value_type = typeof(value)
-			data.type = value_type
+	
+		if data.has('getter'): 
+			var params = data.get('getter_params')
+			if params: value = data.getter.callv(params)
+			else: value = data.getter.call()
+		elif obj: value = obj.get(data.property)
+		
+		value_type = typeof(value)
+		data.type = value_type
 			
 		text_n.modulate = Color.DARK_GRAY
 		if value_type:
@@ -59,11 +60,13 @@ func loadInterators():
 		text_n.position = pos
 		index += 1
 	set_option_index(0)
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_UP: optionIndex -= 1
 			KEY_DOWN: optionIndex += 1
+
 static func createOptionInterator(option_data: Dictionary, value: Variant, at: FunkinText = null) -> Node:
 	var object
 	var pos = Vector2.ZERO
@@ -84,6 +87,7 @@ static func createOptionInterator(option_data: Dictionary, value: Variant, at: F
 			if value_options:
 				object = TextRange.new()
 				object.variables = value_options
+				
 			else:
 				object = NumberRange.new()
 				object.int_value = true
@@ -100,7 +104,12 @@ static func createOptionInterator(option_data: Dictionary, value: Variant, at: F
 	if object is TextRange: object.set_index_from_key(value)
 	else: object.value = value
 	
+	
 	object.name = 'value'
 	
-	if at: object.position = Vector2(at.width+pos.x,pos.y); at.add_child(object)
+	if at: 
+		var target = Vector2(at.width+pos.x,pos.y)
+		object.set('_position',target);
+		object.set('position',target);
+		at.add_child(object)
 	return object

@@ -136,7 +136,7 @@ func removeFromGroups() -> void:
 ##When the [code]animName[/code] plays, the offset placed in [code]offsetX,offsetY[/code] will be set.
 func addAnimOffset(animName: StringName, offsetX: float = 0.0, offsetY: float = 0.0, offsetZ: float = 0.0) -> void:
 	_animOffsets[animName] = Vector3(offsetX,offsetY,offsetZ)
-	if animation and animation.curAnim.name == animName: offset = Vector3(offsetX,offsetY,offsetZ)
+	if animation and animation.current_animation == animName: offset = Vector3(offsetX,offsetY,offsetZ)
 
 func _notification(what: int) -> void:
 	match what:

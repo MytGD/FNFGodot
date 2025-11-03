@@ -175,13 +175,11 @@ script/source = "extends Panel
 const EditorMaterial = preload(\"uid://dva6hqf80sxay\")
 
 const StrumNote = preload(\"res://source/objects/Notes/StrumNote.gd\")
-const Sprite = preload(\"res://source/objects/Sprite/Sprite.gd\")
 const Character = preload(\"res://source/objects/Sprite/Character.gd\")
 const CameraCanvas = preload(\"res://source/objects/Display/Camera/Camera.gd\")
 const SpriteGroup = preload(\"res://source/general/groups/SpriteGroup.gd\")
 const PlayState = preload(\"res://source/states/PlayState.gd\")
 const Bar = preload(\"res://source/objects/UI/Bar.gd\")
-const GDText = preload(\"res://source/objects/Display/GDText.gd\")
 
 var screen_size_mult = ScreenUtils.screenSize*2
 
@@ -223,7 +221,7 @@ var values := {
 		'defaultZoom': {'range': [-7,7,0.1]},
 		'angle': {'range': [-360,360,0.1]}
 	},
-	Sprite:{
+	FunkinSprite:{
 		'x': null,
 		'y': null,
 		'offset': null,
@@ -240,12 +238,11 @@ var values := {
 		'scale': null,
 		'rotation': null,
 	},
-		GDText:{
-		'x': null,
-		'y': null
-	},
 	StrumNote:{'direction': {'range': [-360,360]}},
-	
+	'Control':{
+		'position': null,
+		'size': {'range_x': [0.0,ScreenUtils.screenWidth*2.0],'range_y': [0.0,ScreenUtils.screenHeight*2.0]}
+	},
 	'Label':{
 		'text': null,
 		\"visible_ratio\": {'range': [0.0,1.0,0.01]}

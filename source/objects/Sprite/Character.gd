@@ -1,6 +1,6 @@
 @icon("res://icons/icon.png")
 ##A Character 2D Class
-extends Sprite
+extends FunkinSprite
 const Note = preload("res://source/objects/Notes/Note.gd")
 const AnimationService = preload("res://source/general/animation/AnimationService.gd")
 @export var curCharacter: StringName = '': set = loadCharacter ##The name of the character json.
@@ -70,7 +70,7 @@ signal on_load_character(new_character: StringName, old_character: StringName)
 func _init(character:String = '', player: bool = false):
 	name = 'Character'
 	autoDance = not isPlayer
-	super._init('',true)
+	super._init(true)
 	
 	animation.auto_loop = true
 	autoUpdateImage = false
@@ -144,7 +144,7 @@ func loadData():
 	)
 	healthIcon = json.healthIcon.id
 	imageFile = json.assetPath
-	antialiasing = not json.isPixel
+	texture_filter = TEXTURE_FILTER_NEAREST if json.isPixel else TEXTURE_FILTER_PARENT_NODE
 	positionArray = VectorUtils.array_to_vec(json.offsets)
 	cameraPosition = VectorUtils.array_to_vec(json.camera_position)
 	jsonScale = json.scale
@@ -166,7 +166,7 @@ func getCameraPosition() -> Vector2:
 
 func _process(delta) -> void:
 	super._process(delta)
-	if !specialAnim and animation.curAnim.name.begins_with('sing'):
+	if !specialAnim and animation.current_animation.begins_with('sing'):
 		if holdTimer < _real_hold_limit:
 			holdTimer += delta
 		elif returnDance and (autoDance or !InputUtils.is_any_actions_pressed(Note.getNoteAction())):

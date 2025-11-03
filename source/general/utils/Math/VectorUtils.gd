@@ -16,6 +16,7 @@ static func get_vector_size(type: Variant.Type) -> int:
 		TYPE_VECTOR3,TYPE_VECTOR3I: return 3
 		TYPE_VECTOR4,TYPE_VECTOR4I: return 4
 		_: return 0
+
 static func is_vector(variable) -> bool: return typeof(variable) in vectors
 
 static func is_vector_type(type: int):return type in vectors
@@ -48,3 +49,13 @@ static func vector_to_array(vector: Variant) -> PackedFloat64Array:
 		TYPE_VECTOR3,TYPE_VECTOR3I: return [vector.x, vector.y, vector.z]
 		TYPE_VECTOR4,TYPE_VECTOR4I: return [vector.x, vector.y, vector.z, vector.w]
 		_:return [0,0]
+
+static func as_vector2(value: Variant):
+	match typeof(value):
+		TYPE_ARRAY,TYPE_PACKED_FLOAT32_ARRAY,TYPE_PACKED_FLOAT64_ARRAY,\
+		TYPE_PACKED_INT32_ARRAY,TYPE_PACKED_INT64_ARRAY: 
+			var size = value.size()
+			if !size: return Vector2.ZERO
+			return Vector2(value[0],value[1] if size >= 2 else value[0])
+		TYPE_VECTOR2,TYPE_VECTOR2I: return value
+		TYPE_FLOAT: return Vector2(value,value)
