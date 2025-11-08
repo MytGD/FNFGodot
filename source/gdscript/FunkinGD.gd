@@ -627,6 +627,7 @@ static func makeGraphic(object: Variant,width: float = 0.0,height: float = 0.0,c
 	elif !object: return
 	
 	print(object)
+	
 	if object is FunkinSprite:
 		if object.image is Graphic: 
 			object.image._make_solid()
@@ -811,7 +812,7 @@ static func setTextString(reference: Variant, text: Variant = '') -> void:
 ##Set the color from the text
 static func setTextColor(text: Variant, color: Variant) -> void:
 	text = _find_object(text)
-	if text is Label: text.color = _get_color(color)
+	if text is Label: text.set("theme_override_colors/font_color",_get_color(color))
 
 ##Set Text Border
 static func setTextBorder(text: Variant, border: float, color: Color = Color.BLACK) -> void:

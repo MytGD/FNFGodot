@@ -137,7 +137,7 @@ func loadData():
 	)
 	healthIcon = json.healthIcon.id
 	imageFile = json.assetPath
-	texture_filter = TEXTURE_FILTER_NEAREST if json.isPixel else TEXTURE_FILTER_PARENT_NODE
+	antialiasing = !json.isPixel
 	positionArray = VectorUtils.array_to_vec(json.get('offsets',[0,0]))
 	cameraPosition = VectorUtils.array_to_vec(json.get('camera_position',[0,0]))
 	jsonScale = json.get('scale',1.0)

@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 
 func set_pixel(is_pixel: bool = false, scale_if_pixel: bool = false):
 	if is_pixel == isPixel: return
-	texture_filter = TEXTURE_FILTER_NEAREST if is_pixel else TEXTURE_FILTER_PARENT_NODE
+	antialiasing = !is_pixel
 	if scale_if_pixel and is_pixel:
 		scale = Vector2(4.5,4.5)
 		beat_value = Vector2(0.6,0.6)

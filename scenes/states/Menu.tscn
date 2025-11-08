@@ -4,3 +4,7 @@
 
 [node name="Menu" type="Node"]
 script = ExtResource("1_m506c")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 15.0

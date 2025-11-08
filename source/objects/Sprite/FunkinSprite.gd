@@ -7,6 +7,8 @@ const Graphic = preload("res://source/objects/Sprite/Graphic.gd")
 
 var _position: Vector2: set = set_position
 
+
+
 @export var pivot_offset: Vector2: set = set_pivot_offset
 var _real_pivot_offset: Vector2
 
@@ -59,6 +61,8 @@ var _accelerating: bool = false
 var _auto_resize_image: bool = true
 
 @export_category("Image")
+@export var antialiasing: bool: set = set_antialiasing
+
 @export var width: float: set = set_width, get = get_width ##Texture width, only be changed when the sprite it's not being animated. 
 @export var height: float: set = set_height, get = get_height ##Texture height, only be changed when the sprite it's not being animated.
 
@@ -158,7 +162,7 @@ func _check_velocity() -> void: _accelerating = acceleration != Vector2.ZERO or 
 
 func _add_velocity(delta: float) -> void:
 	velocity += acceleration * delta
-	position += velocity.clamp(-maxVelocity,maxVelocity) * delta
+	_position += velocity.clamp(-maxVelocity,maxVelocity) * delta
 #endregion
 
 #region Setters
@@ -206,6 +210,10 @@ func getMidpoint() -> Vector2:return _position + _scroll_offset + pivot_offset #
 #endregion
 
 #region Image Setters
+func set_antialiasing(anti: bool):
+	antialiasing = anti
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if anti else CanvasItem.TEXTURE_FILTER_NEAREST
+
 func set_image_node(node: CanvasItem): image = node; _on_image_changed()
 func flip_h(flip: bool = flipX) -> void: flipX = flip; _update_image_flip()
 func flip_v(flip: bool = flipY) -> void: flipY = flip; _update_image_flip()

@@ -61,7 +61,7 @@ func setStyleName(_name: String) -> void: styleName = _name; styleData = getStyl
 func setNoteData(_data: int) -> void: noteData = _data; noteColor = note_colors[_data]; noteDirection = directions[_data]
 
 func setPixelNote(isPixel: bool) -> void:
-	texture_filter = TEXTURE_FILTER_NEAREST if isPixel else TEXTURE_FILTER_PARENT_NODE 
+	antialiasing = !isPixel 
 	isPixelNote = isPixel
 
 func setTexture(_new_texture: String) -> void:

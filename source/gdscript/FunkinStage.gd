@@ -83,7 +83,7 @@ static func loadSprites(stage_json: Dictionary = json) -> void:
 			sprite.setGraphicScale(Vector2(scale[0],scale[1]))
 			sprite.scrollFactor = Vector2(scroll[0],scroll[1])
 		else: sprite.scale = Vector2(scale[0],scale[1])
-		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if data.get('isPixel') else CanvasItem.TEXTURE_FILTER_PARENT_NODE
+		sprite.antialiasing = !data.get('isPixel')
 		sprite.modulate.a = data.get('alpha',1.0)
 		sprites.append([data.get('zIndex',0),sprite])
 	

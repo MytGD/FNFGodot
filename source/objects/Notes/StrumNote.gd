@@ -70,7 +70,7 @@ func reloadStrumNote() -> void: ##Reload Strum Texture Data
 	_animOffsets.clear()
 	offset = Vector2.ZERO
 	image.texture = Paths.texture(texture)
-	texture_filter = TEXTURE_FILTER_NEAREST if isPixelNote else TEXTURE_FILTER_PARENT_NODE
+	antialiasing = !isPixelNote
 	
 	if prefixs: _load_anims_from_prefix()
 	else: _load_graphic_anims()
