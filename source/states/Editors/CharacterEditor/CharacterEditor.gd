@@ -140,8 +140,8 @@ func _ready():
 		func(i):setAnimationPrefix(prefixListPop.get_item_text(i))
 		)
 	
-	$BG_Image.texture = Paths.imageTexture('editors/character_editor/bg')
-	$BG/Ground.texture =  Paths.imageTexture('editors/character_editor/ground')
+	$BG_Image.texture = Paths.texture('editors/character_editor/bg')
+	$BG/Ground.texture =  Paths.texture('editors/character_editor/ground')
 	camera_y_limit = $BG/Ground.texture.get_size().y*$BG/Ground.scale.y + 300
 	
 
@@ -423,7 +423,7 @@ func _on_loop_indices_text_submitted(new_text: String) -> void:
 	animData.loopIndices = character_node.animation.get_indices_by_str(new_text)
 	if cur_looped: reloadCharacterAnim()
 
-func _on_loop_from_value_changed(value: float) -> void:
+func _on_loop_from_value_changed(value: int) -> void:
 	animData.loop_frame = value
 	character_node.animation.getAnimData(cur_anim).loop_frame = value
 	character_node.animation.curAnim.loop_frame = value

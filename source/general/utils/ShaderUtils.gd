@@ -13,18 +13,11 @@ const replace_frag: Dictionary = {
 static var _blends_created: Dictionary[String,Material] = {}
 
 static func fragToGd(shaderCode: String) -> String:
-	for r in replace_frag:
-		shaderCode = shaderCode.replace(r,replace_frag[r])
-	
-	#if type == 0 and not 'uniform sampler2D screen_texture : hint_screen_texture;' in shaderCode:
-		#shaderCode = 'uniform sampler2D screen_texture : hint_screen_texture;\n'+shaderCode
-		#GDCode = 'uniform sampler2D screen_texture;\n'+GDCode
+	for r in replace_frag: shaderCode = shaderCode.replace(r,replace_frag[r])
 	if not 'shader_type canvas_item;' in shaderCode: shaderCode = 'shader_type canvas_item;\n'+shaderCode
 	
 	shaderCode = shaderCode.replace('openfl_TextureCoordv','UV').replace('bitmap','TEXTURE')
 	shaderCode = shaderCode.replace('texture(TEXTURE,UV)','COLOR').replace('texture(TEXTURE, UV)','COLOR')
-	#shaderCode = shaderCode.replace('iResolution','vec2'+str(ScreenUtils.screenSize))
-	
 	return shaderCode
 	
 #region Blend Methods
@@ -34,19 +27,10 @@ static func get_blend(blend: String) -> Material:
 	
 	var canvas: Material
 	match blend:
-		'add':
-			canvas = CanvasItemMaterial.new()
-			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		'mix':
-			canvas = CanvasItemMaterial.new()
-			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
-		'subtract':
-			canvas = CanvasItemMaterial.new()
-			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_SUB
-			
-		'premult_alpha':
-			canvas = CanvasItemMaterial.new()
-			canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_PREMULT_ALPHA
+		'add': canvas = CanvasItemMaterial.new(); canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		'mix': canvas = CanvasItemMaterial.new(); canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
+		'subtract': canvas = CanvasItemMaterial.new(); canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_SUB
+		'premult_alpha': canvas = CanvasItemMaterial.new(); canvas.blend_mode = CanvasItemMaterial.BLEND_MODE_PREMULT_ALPHA
 		'overlay':
 			canvas = ShaderMaterial.new()
 			canvas.shader = Shader.new()
@@ -62,30 +46,26 @@ static func get_blend(blend: String) -> Material:
 		_: return null
 	_blends_created[blend] = canvas
 	return canvas
+
 static func set_object_blend(object,blendMode: Variant) -> void:
 	if !object: return
 	var material: CanvasItemMaterial
-	if blendMode is CanvasItemMaterial.BlendMode:
-		material = CanvasItemMaterial.new()
-		material.blend_mode = blendMode
-	else:
-		material = get_blend(blendMode)
+	if blendMode is CanvasItemMaterial.BlendMode: material = CanvasItemMaterial.new(); material.blend_mode = blendMode
+	else: material = get_blend(blendMode)
 	
 	object.set('material',material)
 	
-
+"""
 static func set_texture_hue(texture: ImageTexture, hue_shift: float):
-	if !texture:
-		return
+	if !texture: return
 	var image = texture.get_image().duplicate()
-	if !image:
-		return
+	if !image: return
 	for x in image.get_width():
 		for y in image.get_height():
 			var color = image.get_pixel(x, y)
 			color.h = fmod(color.h + hue_shift, 1.0)
-			if color.h < 0:
-				color.h += 1.0
+			if color.h < 0: color.h += 1.0
 			image.set_pixel(x, y, Color.from_hsv(color.h, color.s, color.v, color.a))
 	texture.update(image)
+"""
 #endregion

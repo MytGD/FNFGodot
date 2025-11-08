@@ -73,38 +73,27 @@ static func createOptionInterator(option_data: Dictionary, value: Variant, at: F
 	var value_options = option_data.get('options')
 	var min = option_data.get('min')
 	var max = option_data.get('max')
-	match typeof(value):
+	
+	var type = typeof(value)
+	match type:
 		TYPE_BOOL: object = FunkinCheckBox.new(); pos.y -= 50
-		TYPE_FLOAT: 
-			object = NumberRange.new()
-			if min != null:
-				object.limit_min = true
-				object.value_min = min
-			if max != null:
-				object.limit_max = true
-				object.value_max = max
-		TYPE_INT:
+		TYPE_FLOAT,TYPE_INT: 
 			if value_options:
 				object = TextRange.new()
 				object.variables = value_options
-				
-			else:
+			else: 
 				object = NumberRange.new()
-				object.int_value = true
-				object.step = 1
+				object.int_value = type == TYPE_INT
 				if min != null:
 					object.limit_min = true
 					object.value_min = min
 				if max != null:
 					object.limit_max = true
 					object.value_max = max
-		_: return
 	
 	#Set Current Value
 	if object is TextRange: object.set_index_from_key(value)
 	else: object.value = value
-	
-	
 	object.name = 'value'
 	
 	if at: 

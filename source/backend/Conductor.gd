@@ -21,7 +21,7 @@ var step_float: float = 0.0:
 
 var beat: int = 0: set = set_beat
 
-var beat_float: int = 0:
+var beat_float: float = 0:
 	set(value): beat_float = value; beat = int(value)
 
 var section: int = 0: set = set_section
@@ -40,7 +40,6 @@ var section_offset: float = 0
 var section_beats_offset: float = 0.0
 
 var songs: Array[AudioStreamPlayer] = [] #[Inst,Opponent,Player]
-var keyCount: int = 4
 
 var jsonDir: String = ''
 var songJson: Dictionary = {}
@@ -116,7 +115,7 @@ func loadSongsStreams(folder: String = Song.audioFolder, suffix: String = Song.a
 		if !song: paths_absolute.append('')
 			
 	loadSongsStreamsFromArray(paths_absolute)
-	
+
 
 ##Load Song Streams from Array.
 ##[param paths_absolute] must be in this order: 
@@ -152,17 +151,14 @@ func setSongPosition(pos: float) -> void:
 	for i in songs:
 		if i: i.seek(clampf(songPositionSeconds,0.0,i.stream.get_length()))
 	
-
-func playSongs(at: float = 0) -> void: ##Play songs.[br][b]Note:[/b] [param at] have to be in milliseconds, if set.
-	for song in songs: song.play(at/1000.0)
+##Play songs.[br][b]Note:[/b] [param at] have to be in milliseconds, if set.
+func playSongs(at: float = 0) -> void: for song in songs: song.play(at/1000.0)
 
 func resumeSongs() -> void:
 	if songPositionSeconds < 0: return
-	for song in songs:
-		if songPositionSeconds < song.stream.get_length(): song.play(songPositionSeconds)
+	for song in songs: if songPositionSeconds < song.stream.get_length(): song.play(songPositionSeconds)
 
-func pauseSongs() -> void: ##Pause the streams.
-	for song in songs: song.stop()
+func pauseSongs() -> void: for song in songs: song.stop() ##Pause the streams.
 
 func stopSongs(delete: bool = false) -> void: ##Stop the streams.
 	if delete:

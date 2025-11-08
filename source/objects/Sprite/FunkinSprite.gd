@@ -5,7 +5,7 @@ const Graphic = preload("res://source/objects/Sprite/Graphic.gd")
 @export var x: float: set = set_x,get = get_x
 @export var y: float: set = set_y,get = get_y
 
-var _position: Vector2: set = _set_position
+var _position: Vector2: set = set_position
 
 @export var pivot_offset: Vector2: set = set_pivot_offset
 var _real_pivot_offset: Vector2
@@ -67,8 +67,6 @@ var imageSize: Vector2 ##The texture size of the [member image]
 var imageFile: String: get = get_image_file ##The Path from the current image
 var imagePath: String: get = get_image_path ##The [b]absolute[/b] Path from the current image
 
-var autoUpdateImage: bool = true: set = set_auto_update_image
-
 @export var flipX: bool: set = flip_h ##Flip the sprite horizontally.
 @export var flipY: bool: set = flip_v ##Flip the sprite vertically.
 
@@ -84,20 +82,18 @@ func _init(is_animated: bool = false,texture: Variant = null):
 	_on_image_changed()
 	set_texture(texture)
 	add_child(image)
-	
 
-func _ready() -> void: 
-	set_notify_local_transform(true); 
-	_update_position()
+func _ready() -> void: set_notify_local_transform(true); 
+
+func _enter_tree() -> void: _update_position()
 
 func _process(delta: float) -> void:
 	if _needs_factor_update: _update_scroll_factor()
 	if _accelerating: _add_velocity(delta)
+	if animation: animation.curAnim.process_frame(delta)
 
 func _notification(what: int) -> void:
 	match what:
-		NOTIFICATION_DISABLED, NOTIFICATION_EXIT_TREE: set_anim_process(false)
-		NOTIFICATION_ENABLED, NOTIFICATION_ENTER_TREE: set_anim_process(true)
 		NOTIFICATION_PARENTED: parent = get_parent(); _check_scroll_factor()
 		NOTIFICATION_UNPARENTED: parent = null; _needs_factor_update = false
 		NOTIFICATION_LOCAL_TRANSFORM_CHANGED:
@@ -105,6 +101,7 @@ func _notification(what: int) -> void:
 			_last_rotation = rotation
 			_last_scale = scale
 			_update_pivot()
+			_update_real_offset()
 #endregion
 
 #region Animation Methods
@@ -114,7 +111,7 @@ func _notification(what: int) -> void:
 ##addAnimOffset('static',50,50) #Set using float.
 ##addAnimOffset('static',[50,50]) #Set using Array.
 ##addAnimOffset('static',Vector2(50,50)) #Set using Vector2. ##[/codeblock]
-func addAnimOffset(animName: StringName, offsetX: Variant = 0.0, offsetY: float = 0.0) -> void:
+func addAnimOffset(animName: String, offsetX: Variant = 0.0, offsetY: float = 0.0) -> void:
 	var _offset: Vector2 = Vector2(offsetX,offsetY) \
 	if offsetX is float or offsetX is int else VectorUtils.as_vector2(offsetX)
 	
@@ -143,7 +140,7 @@ func _update_animation_image() -> void:
 func _connect_animation() -> void:
 	animation.animation_started.connect(set_offset_from_anim)
 	animation.animation_renamed.connect(_on_animation_renamed)
-	animation.image_animation_enabled.connect(func(enabled): autoUpdateImage = !enabled)
+	animation.image_animation_enabled.connect(func(enabled): _auto_resize_image = !enabled)
 	animation.image_parent = self
 	_update_animation_image()
 	image.region_rect = Rect2(0,0,0,0)
@@ -154,12 +151,6 @@ func set_offset_from_anim(anim: String) -> void:
 	if !_animOffsets.has(anim): return
 	var off = _animOffsets[anim]
 	if animation and animation.current_animation == anim: offset = off
-
-func set_anim_process(process: bool) -> void:
-	if !animation: return
-	animation.curAnim.can_process = process
-	if process: animation.curAnim.start_process(); return
-	animation.curAnim.playing = false
 #endregion
 
 #region Velocity Methods
@@ -171,18 +162,23 @@ func _add_velocity(delta: float) -> void:
 #endregion
 
 #region Setters
-func _set_position(_pos: Vector2): _position = _pos; _update_position()
+
+func set_position_xy(_x: float, _y:float): _position = Vector2(_x,_y);
+func set_position(_pos: Vector2): _position = _pos; _update_position()
 
 func set_x(_x: float): _position.x = _x 
 func set_y(_y: float): _position.y = _y
 
 func set_velocity(vel: Vector2): velocity = vel; _check_velocity() 
 func set_aceleration(acc: Vector2): acceleration = acc; _check_velocity()
-func set_offset(_off: Vector2): offset = _off; _update_real_offset(); _update_position(); 
+func set_offset(_off: Vector2): 
+	offset = _off; 
+	var _last_off = _real_offset
+	_update_real_offset(); 
+	position -= _real_offset - _last_off
+
 func set_scroll_factor(factor: Vector2):scrollFactor = factor; _real_scroll_factor = Vector2.ONE - factor; _check_scroll_factor()
-func set_pivot_offset(value: Vector2) -> void: 
-	pivot_offset = value; _graphic_offset = _graphic_scale*image.pivot_offset;
-	_update_pivot()
+func set_pivot_offset(value: Vector2) -> void: pivot_offset = value; _update_pivot()
 
 func set_camera(_cam: Node):
 	if camera == _cam: return
@@ -203,6 +199,7 @@ func set_camera(_cam: Node):
 #region Getters
 func get_x() -> float: return _position.x
 func get_y() -> float: return _position.y
+func get_position() -> Vector2: return _position
 func get_offset() -> Vector2: return offset
 func _get_real_position() -> Vector2: return _position - _real_offset - _real_pivot_offset + _scroll_offset - _graphic_offset
 func getMidpoint() -> Vector2:return _position + _scroll_offset + pivot_offset ##Get the [u]center[/u] position of the sprite in the scene.
@@ -215,17 +212,11 @@ func flip_v(flip: bool = flipY) -> void: flipY = flip; _update_image_flip()
 func set_alpha(_alpha: float): modulate.a = _alpha
 func set_width(_width: float): image.region_rect.size.x = _width
 func set_height(_height: float): image.region_rect.size.y = _height
-func set_graphic_offset(off: Vector2): _graphic_offset = off; 
-func set_graphic_scale(_scale: Vector2): _graphic_scale = _scale;_graphic_offset = image.pivot_offset*_scale
+func set_graphic_offset(off: Vector2): _graphic_offset = off; _update_position()
+func set_graphic_scale(_scale: Vector2): _graphic_scale = _scale; _update_graphic_offset()
 func set_texture(tex: Variant):
 	if !tex: image.texture = null; return;
-	image.texture = tex if tex is Texture2D else Paths.imageTexture(tex)
-func set_auto_update_image(update: bool):
-	if autoUpdateImage == update: return
-	autoUpdateImage = update
-	if !image: return
-	if update: image.texture_changed.connect(_update_texture)
-	else: image.texture_changed.disconnect(_update_texture)
+	image.texture = tex if tex is Texture2D else Paths.texture(tex)
 #endregion
 
 #region Image Getters
@@ -250,6 +241,8 @@ func _update_scroll_factor() -> void:
 
 func _update_position() -> void: position = _get_real_position()
 
+func _update_graphic_offset() -> void: _graphic_offset = image.pivot_offset*_graphic_scale
+
 func _update_pivot():
 	_real_pivot_offset = pivot_offset*scale
 	if rotation: _real_pivot_offset = _real_pivot_offset.rotated(rotation)
@@ -262,25 +255,23 @@ func _update_real_offset() -> void:
 	if offset_follow_flip: _real_offset *= image.scale
 	if offset_follow_rotation: _real_offset = _real_offset.rotated(rotation)
 
-func _update_texture() -> void:
-	imageSize = image.texture.get_size()
-	if animation: animation.clearLibrary();
+func _on_texture_changed() -> void:
 	if !image.texture: 
-		imageSize = Vector2.ZERO
+		imageSize = Vector2.ZERO;
 		pivot_offset = imageSize; 
-		image.pivot_offset = imageSize; 
+		image.pivot_offset = imageSize;
 		return
-	
+	imageSize = image.texture.get_size()
 	if _auto_resize_image: 
 		image.region_rect = Rect2(Vector2.ZERO,imageSize); 
 		pivot_offset = imageSize/2.0
 		image.pivot_offset = pivot_offset
 
-func _on_image_changed():
-	if autoUpdateImage: image.texture_changed.connect(_update_texture)
+func _on_image_changed() -> void:
+	image.texture_changed.connect(_on_texture_changed)
 	_update_image_flip()
 	_update_animation_image()
-
+	
 func _update_image_flip() -> void:
 	image.scale = Vector2(-1 if flipX else 1, -1 if flipY else 1)
 	if image is Graphic: image._update_offset()

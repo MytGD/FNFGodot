@@ -38,31 +38,31 @@ var frameName: StringName: get = get_frame_name
 ##with "-loop" at the end, that animation will be played.[br][br]
 ##Example:[codeblock]
 ##var animation = Anim.new()
-##animation.addAnimByPrefix('idle','prefix1',24,false)
+##animation.addAnimByPrefix(&'idle',&'prefix1',24,false)
 ###When the "idle" animation ends, "idle-loop" will be played automatically
-##animation.addAnimByPrefix('idle-loop','prefix2',24,true,[5,6,7])
+##animation.addAnimByPrefix(&'idle-loop',&'prefix2',24,true,[5,6,7])
 ##[/codeblock]
 @export var auto_loop: bool = false: set = _set_auto_loop
 signal animation_added(anim_name) ##Emiited when a animation is added to [member animations_array] using [method insertAnim]
 #region Animation Player Vars
 
 ##Returns the current animation name.
-var current_animation: String
+var current_animation: StringName
 
 ##A multiplier for the frame rate.
 @export_range(0,20,0.1) var speed_scale: float = 1: set = set_speed_scale
 
-signal animation_finished(anim_name)
-signal animation_started(anim_name) ##Emitted when a animation starts.
-signal animation_changed(old_anim,new_anim) ##Emitted when the animation changes.
-signal animation_renamed(old_name,new_name) ##Emitted when a animation is renamed.
+signal animation_finished(anim_name: StringName)
+signal animation_started(anim_name: StringName) ##Emitted when a animation starts.
+signal animation_changed(old_anim: StringName,new_anim: StringName) ##Emitted when the animation changes.
+signal animation_renamed(old_name: StringName,new_name: StringName) ##Emitted when a animation is renamed.
 signal image_animation_enabled(enabled: bool) ##Emitted when image animation is enabled.
 #endregion
 
 
 func _init() -> void: curAnim.animation_finished.connect(func(): animation_finished.emit(current_animation))
 #region Player Methods
-func can_play(anim: String, force: bool = false) -> bool:
+func can_play(anim: StringName, force: bool = false) -> bool:
 	return anim in animationsArray and (force or !curAnim.playing or current_animation != anim)
 
 ##Play animation.[br][br]
@@ -89,13 +89,11 @@ func play_reverse(anim: StringName, force: bool = false) -> void: ##Plays the an
 	
 func stop() -> void: curAnim.stop() ##Stops the current animation.
 
-func seek(seconds: float) -> void:  curAnim.curFrame = 1.0/curAnim.frameRate * seconds ##Jump the animation to [param seconds].
-
 func _verify_loop(anim): if !play(anim+'-loop',true): play(anim+'-hold',true);
 #endregion
 
 ##Returns a [Dictionary] with the data of the animation created. If don't exists, return a empty [Dictionary].
-func getAnimData(animName: String) -> Dictionary: return animationsArray.get(animName,{})
+func getAnimData(animName: StringName) -> Dictionary: return animationsArray.get(animName,{})
 
 
 ##Set a property from the anim data set in [param animationsArray].[br]
@@ -126,24 +124,24 @@ func update_anim(anim: String = current_animation):
 ##animation.addAnimByPrefix('indices_array','prefix',24.0,false,[0,1,2,5,6]) #Using Array
 ##animation.addAnimByPrefix('indices_string','prefix',24,false,"0,1,2,3,4,5") #Using String
 ##[/codeblock]
-func addAnimByPrefix(animName: String, prefix: String, fps: float = 24.0, loop: bool = false, indices: Variant = []) -> Dictionary:
+func addAnimByPrefix(animName: StringName, prefix: StringName, fps: float = 24.0, loop: bool = false, indices: Variant = []) -> Dictionary:
 	var anim_frames = getFramesFromPrefix(prefix,indices)
 	if !anim_frames: return {}
-	var anim_data: Dictionary = {
-		'looped': loop,
-		'fps': fps,
-		'prefix': prefix,
-		'frames': anim_frames
+	var anim_data: Dictionary[StringName, Variant] = {
+		&'looped': loop,
+		&'fps': fps,
+		&'prefix': prefix,
+		&'frames': anim_frames
 	}
 	insertAnim(animName,anim_data)
 	return anim_data
 
-func getFramesFromPrefix(prefix: String, indices: Variant = PackedInt32Array(), animation_file: String = _animFile) -> Array:
+func getFramesFromPrefix(prefix: StringName, indices: Variant = PackedInt32Array(), animation_file: String = _animFile) -> Array:
 	if indices is String: indices = get_indices_by_str(indices)
 	if !indices: return AnimationService.getAnimFrames(prefix,animation_file)
 	return AnimationService.getAnimFramesIndices(prefix,animation_file,indices)
 	
-func addAnimation(animName: String, frames: Array, fps: float = 24.0, loop: bool = false) -> Dictionary:
+func addAnimation(animName: StringName, frames: Array, fps: float = 24.0, loop: bool = false) -> Dictionary:
 	if !frames: return {}
 	return insertAnim(
 		animName,
@@ -158,7 +156,7 @@ func addAnimation(animName: String, frames: Array, fps: float = 24.0, loop: bool
 ##and you want to cut it in 3 horizontal parts, 
 ##then set [param region_rect] from [param image] to [code]20x60[/code](or [code]60x20[/code]
 ##if you want to cut vertically).
-func addFrameAnim(animName: String, indices: PackedInt32Array = [], fps: float = 24.0, loop: bool = false) -> Dictionary:
+func addFrameAnim(animName: StringName, indices: PackedInt32Array = [], fps: float = 24.0, loop: bool = false) -> Dictionary:
 	if !indices or !image or !image.texture: return {}
 	var animData = {
 		'frames': Array([],TYPE_DICTIONARY,'',null),
@@ -181,7 +179,7 @@ func addFrameAnim(animName: String, indices: PackedInt32Array = [], fps: float =
 ##Insert [Animation] to [member animations_array]. 
 ##If was no animation playing, the animation inserted will be played automatically.[br][br]
 ##See also [method addAnimation] and [method addFrameAnim].
-func insertAnim(animName: String, animData: Dictionary = {}) -> Dictionary:
+func insertAnim(animName: StringName, animData: Dictionary = {}) -> Dictionary:
 	if !animData: return {}
 	if !animData.get('frames'): return animData
 	animData.merge(getAnimBaseData(),false)
@@ -201,12 +199,12 @@ func insertAnim(animName: String, animData: Dictionary = {}) -> Dictionary:
 
 ##Sets the frame of the [param animName] that will return when the animation ends.[br][br]
 ##[b]OBS:[/b] The animation [u]must be looping[/u] to works.
-func setLoopFrame(animName: String, frame: int) -> void:
+func setLoopFrame(animName: StringName, frame: int) -> void:
 	var anim_data = animationsArray.get(animName)
 	if !anim_data: return
 	anim_data.loop_frame = frame
 	
-func removeAnimation(anim_name: String) -> void: animationsArray.erase(anim_name)
+func removeAnimation(anim_name: StringName) -> void: animationsArray.erase(anim_name)
 
 func _set_midpoint(size: Vector2):
 	if _midpoint_set or size == Vector2.ZERO: return
@@ -216,8 +214,8 @@ func _set_midpoint(size: Vector2):
 	_midpoint_set = true
 
 #region Library Methods
-func has_animation(anim: String) -> bool: return animationsArray.has(anim) ##Returns [code]true[/code] if the [param anim] exists, else, returns false.
-func has_any_animations(anims: PackedStringArray) -> bool: ##Returns [code]true[/code] if the animator have any animations from [param anims].
+func has_animation(anim: StringName) -> bool: return animationsArray.has(anim) ##Returns [code]true[/code] if the [param anim] exists.
+func has_any_animations(anims: Array) -> bool: ##Returns [code]true[/code] if the animator have any animations from [param anims].
 	for i in anims: if animationsArray.has(i): return true
 	return false
 
@@ -225,13 +223,13 @@ func has_any_animations(anims: PackedStringArray) -> bool: ##Returns [code]true[
 func clearLibrary() -> void: stop(); animationsArray.clear(); _midpoint_set = false
 #endregion
 
-func update_midpoint_from_frame(frame: Dictionary):
+func update_midpoint_from_frame(frame: Dictionary) -> void:
 	var size = frame.get('frameSize')
 	if !size: size = frame.get('size')
 	if size: _set_midpoint(size)
 	else: return
 
-func setup_animation_textures():
+func setup_animation_textures() -> void:
 	if animations_use_textures: return
 	animations_use_textures = true
 	for i in animationsArray.values(): if !i.get('asset'): i.asset = image.texture
@@ -240,7 +238,7 @@ func setup_animation_textures():
 
 ##Set the texture of a specific animation.
 ##When the [param anim_name] is played, the [member image] will change his texture to [param _texture].
-func setImageAnimation(anim_name: String, _texture: Texture2D):
+func setImageAnimation(anim_name: String, _texture: Texture2D) -> void:
 	var anim_data = animationsArray.get(anim_name)
 	if !anim_data: return
 	if _texture and image and image.texture and image.texture.resource_name == _texture.resource_name: return
@@ -282,14 +280,14 @@ func get_frame_name() -> String:
 #endregion
 
 #region Static Methods
-static func getAnimBaseData() -> Dictionary[String,Variant]:
+static func getAnimBaseData() -> Dictionary[StringName,Variant]:
 	return {
-		'prefix': '',
-		'fps': 24.0,
-		'looped': false,
-		'loop_frame': 0,
-		'speed_scale': 1.0,
-		'frames': Array([],TYPE_DICTIONARY,"",null)
+		&'prefix': '',
+		&'fps': 24.0,
+		&'looped': false,
+		&'loop_frame': 0,
+		&'speed_scale': 1.0,
+		&'frames': Array([],TYPE_DICTIONARY,"",null)
 	}
 
 static func get_indices_by_str(indices: String) -> PackedInt32Array:

@@ -2,23 +2,25 @@ class_name FunkinGD extends Object
 
 #const SolidSprite = preload("res://source/objects/Sprite/SolidSprite.gd")
 #const SpriteAnimated = preload("res://source/objects/Sprite/SpriteAnimated.gd")
-const TweenerObject = preload("res://source/general/utils/Tween/TweenerObject.gd")
-const TweenerMethod = preload("res://source/general/utils/Tween/TweenerMethod.gd")
-const Song = preload("res://source/backend/Song.gd")
-const Bar = preload("res://source/objects/UI/Bar.gd")
-const EventNote = preload("res://source/objects/Notes/EventNote.gd")
-const Note = preload("res://source/objects/Notes/Note.gd")
-const NoteSustain = preload("res://source/objects/Notes/NoteSustain.gd")
-const NoteHit = preload("res://source/objects/Notes/NoteHit.gd")
-const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
+const TweenerObject = preload("uid://b3wombi1g7mtv")
+const TweenerMethod = preload("uid://buyyxjslew1n1")
+const Song = preload("uid://cerxbopol4l1g")
+const Bar = preload("uid://cesg7bsxvgdcm")
+
+const EventNote = preload("uid://dqymf0mowy0dt")
+const Note = preload("uid://deen57blmmd13")
+const NoteHit = preload("uid://dx85xmyb5icvh")
+const StrumNote = preload("uid://coipwnceltckt")
 
 const Stage = preload("res://source/gdscript/FunkinStage.gd")
 
-const PlayStateBase = preload("res://source/states/PlayStateBase.gd")
-const Character = preload("res://source/objects/Sprite/Character.gd")
+const PlayStateBase = preload("uid://dgnunksqrmpbr")
+
+const Character = preload("uid://gou2lt74gx0i")
 const Icon = preload("res://source/objects/UI/Icon.gd")
 
-const Graphic = preload("res://source/objects/Sprite/Graphic.gd")
+const Graphic = preload("uid://bgqwitowtypkw")
+
 const source_dirs: PackedStringArray = [
 	'res://source/',
 	'res://source/backend',
@@ -26,15 +28,8 @@ const source_dirs: PackedStringArray = [
 	'res://source/substates'
 ]
 
-const methods_parameters: Dictionary = {
-	'onEvent': [TYPE_STRING,TYPE_DICTIONARY],
-	'onUpdate': [TYPE_FLOAT],
-	'onUpdatePost': [TYPE_FLOAT],
-	'onTweenCompleted': [TYPE_STRING_NAME],
-	'onTimerCompleted': [TYPE_STRING_NAME],
-	'onLoadCharacter': [TYPE_OBJECT,TYPE_STRING],
-	'onMoveCamera': [TYPE_STRING]
-}
+
+
 
 static var debugMode: bool = false
 #region Public Vars
@@ -102,7 +97,7 @@ static var scriptsCreated: Dictionary
 static var textsCreated: Dictionary[String,Label]
 
 ##Used to precache the Methods in the script, being more optimized for calling functions in [method callOnScripts]
-static var method_list: Dictionary[String,Array]
+static var method_list: Dictionary[StringName,Array]
 
 @export_group('Game Data')
 static var playAsOpponent:
@@ -159,7 +154,7 @@ static var curBeat: int
 static var curStep: int
 
 static var curSection: int
-static var keyCount: int
+static var keyCount: int = Song.keyCount
 #endregion
 
 @export_category("Client Prefs")
@@ -187,12 +182,9 @@ static var framerate: float = 60.0
 static var arguments: Dictionary[int,Dictionary] = {}
 #endregion
 
-func _init() -> void:
-	if scriptMod in Paths.commomFolders: scriptMod = ''
-
 static var Conductor_Signals: Dictionary[String,Callable] = {
 	'section_hit': _section_hit,
-	'section_hit_once': callOnScripts.bind('onSectionHitOnce'),
+	'section_hit_once': callOnScripts.bind(&'onSectionHitOnce'),
 	'beat_hit': _beat_hit,
 	'step_hit': _step_hit,
 	'bpm_changes': _bpm_changes
@@ -206,86 +198,46 @@ static func init_gd():
 	debugMode = OS.is_debug_build()
 	_bpm_changes()
 
-static func _bpm_changes():
+static func _bpm_changes() -> void:
 	bpm = Conductor.bpm
 	stepCrochet = Conductor.stepCrochet
 	crochet = Conductor.crochet
 	
-static func _beat_hit():
-	curBeat = Conductor.beat
-	callOnScripts('onBeatHit')
-static func _step_hit():
-	curStep = Conductor.step
-	callOnScripts('onStepHit')
-	
-static func _section_hit():
-	curSection = Conductor.section
-	callOnScripts('onSectionHit')
+static func _beat_hit() -> void: curBeat = Conductor.beat; callOnScripts(&'onBeatHit')
+static func _step_hit() -> void: curStep = Conductor.step; callOnScripts(&'onStepHit')
+static func _section_hit() -> void: curSection = Conductor.section;callOnScripts(&'onSectionHit')
 #endregion
-static func get_arguments(script: Object) -> Dictionary[String,Variant]:
-	var functions: Dictionary[String,Variant] = {}
+
+static func get_arguments(script: Object) -> Dictionary[StringName,Variant]:
+	var functions: Dictionary[StringName,Variant] = {}
 	for function in script.get_script().get_script_method_list():
-		if function.flags == 33: continue #if the function is static, ignores
-		var index: int = 0
+		if function.flags == 33: continue
+		
 		var funcArgs = function.args
 		if !funcArgs: functions[function.name] = null; continue
 		
-		var func_name = function.name
+		var index: int
+		index = funcArgs.size()-1
+		for i in function.default_args: funcArgs[index].default = i; index -= 1
 		
-		var default_args = methods_parameters.get(func_name)
-		
-		
-		if default_args:
-			for i in funcArgs:
-				i.type = ArrayUtils.get_array_index(default_args,index,TYPE_NIL)
-				i.default = type_convert(null,i.type)
-				index += 1
-		else:
-			funcArgs.reverse()
-			function.default_args.reverse()
-			default_args = function.default_args
-			for i in funcArgs:
-				i.default = ArrayUtils.get_array_index(
-					default_args,
-					index,
-					MathUtils.get_new_value(i.type)
-				)
-			funcArgs.reverse()
-			
-		functions[func_name] = funcArgs
+		functions[function.name] = funcArgs
 	return functions
 	
 #region File Methods
-static func checkFileExists(path: String) -> bool: ##Similar to [method Paths.file_exists].
-	return Paths.file_exists(path)
-
-static func characterExists(char_name: String) -> bool:
-	return Paths.file_exists('characters/'+char_name+'.json')
+ ##Similar to [method Paths.file_exists].
+static func checkFileExists(path: String) -> bool: return Paths.file_exists(path)
+static func precacheImage(path: String) -> Image: return Paths.image(path) ##Precache a image, similar to [method Paths.image]
+static func precacheMusic(path: String) -> AudioStreamOggVorbis: return Paths.music(path) ##Precache a music, similar to [method Paths.music]
+static func precacheSound(path: String) -> AudioStreamOggVorbis: return Paths.sound(path) ##Precache a sound, similiar to [method Paths.sound]
+static func precacheVideo(path: String) -> VideoStreamTheora: return Paths.video(path) ##Precache a video file.
 	
-static func precacheImage(path: String) -> Image: ##Precache a image, similar to [method Paths.image]
-	return Paths.image(path)
-	
-static func precacheMusic(path: String) -> AudioStreamOggVorbis: ##Precache a music, similar to [method Paths.music]
-	return Paths.music(path)
-	
-static func precacheSound(path: String) -> AudioStreamOggVorbis: ##Precache a sound, similiar to [method Paths.sound]
-	return Paths.sound(path)
-
-static func precacheVideo(path: String) -> VideoStreamTheora:
-	return Paths.video(path)
-	
-static func addCharacterToList(character: String, type = 'bf') -> void: ##Precache character.
-	if  not (Paths.character(character) and game):
-		return
-	if type is int:
-		match type:
-			1: type = 'dad'
-			2:type = 'gf'
-			_:type = 'bf'
-	
-	if type == 'bf':game.addCharacterToList(0,character)
-	elif type == 'dad':game.addCharacterToList(1,character)
-	elif type == 'gf':game.addCharacterToList(2,character)
+static func addCharacterToList(character: String, type: Variant = 'bf') -> void: ##Precache character.
+	if not (Paths.character(character) and game): return
+	if type is int: game.addCharacterToList(type,character); return
+	match type:
+		'bf','boyfriend': game.addCharacterToList(0,character)
+		'dad':game.addCharacterToList(1,character)
+		'gf':game.addCharacterToList(2,character)
 
 static func _clear_scripts(absolute: bool = false):
 	if absolute:
@@ -316,9 +268,7 @@ static func _clear_scripts(absolute: bool = false):
 
 #region Property methods
 const alternative_variables: Dictionary = {
-	'alpha': 'modulate:a',
 	'angle': 'rotation_degrees',
-	'shader': 'material',
 	'color': 'modulate',
 	'origin': 'pivot_offset'
 }
@@ -351,52 +301,31 @@ static func setProperty(property: String, value: Variant, target: Variant = null
 	
 	if !split: return 
 	var value_to_set: String = split[split.size()-1]
-	
 	var _property: String
-	var prev_obj
+	var _prev_target: Variant
+	var i: int = 0
 	
-	var index: int = 0
-	
-	while index < split.size()-1:
-		_property = split[index]
+	while i < split.size()-1:
+		_property = split[i]
 		if MathUtils.value_exists(target,_property):
-			prev_obj = target
+			_prev_target = target
 			target = target[_property]
-			index += 1
+			i += 1
 			continue
-		var alt_prop = alternative_variables.get(_property)
-		if alt_prop:
-			setProperty(alt_prop,value,target)
-			return
 		push_error('Error on setting property: '+str(_property)+" not founded in "+str(target))
 		return
-	
-	#Set Value
-	match typeof(target):
-		TYPE_OBJECT,TYPE_DICTIONARY: target.set(value_to_set,value)
-		
-		TYPE_VECTOR2,TYPE_VECTOR2I,TYPE_VECTOR3,TYPE_VECTOR3I,TYPE_VECTOR4,TYPE_VECTOR4I:
-			match value_to_set:
-				'x','r': target.x = value
-				'y','g': target.y = value
-				'z','b': target.z = value
-				'w','a': target.w = value
-			
-			prev_obj[_property] = target
-		TYPE_COLOR:
-			match value_to_set:
-				'r','x': target.r = value
-				'g','y': target.g = value
-				'b','z': target.b = value
-				'a','w': target.a = value
-			prev_obj[_property] = target
-		
+	var type = typeof(target)
+	if ArrayUtils.is_array_type(type): target[int(value_to_set)] = value; return
+	match type:
+		TYPE_OBJECT: target.set(value_to_set,value)
+		TYPE_DICTIONARY: target[value_to_set] = value
+		TYPE_COLOR: if _prev_target: _prev_target[_property][value_to_set] = value
 		_: target[value_to_set] = value
 
-static func setVar(variable: String, value: Variant = null) -> void: modVars[variable] = value
+static func setVar(variable: StringName, value: Variant = null) -> void: modVars[variable] = value
 
 ##Get a variable from the [member modVars].
-static func getVar(variable: String) -> Variant: return modVars.get(variable)
+static func getVar(variable: StringName) -> Variant: return modVars.get(variable)
 
 static func getProperty(property: String, from: Variant = null) -> Variant: ##Get a Property from the game.
 	var split: PackedStringArray
@@ -406,7 +335,6 @@ static func getProperty(property: String, from: Variant = null) -> Variant: ##Ge
 		split = from[1]
 		from = from[0]
 	else:
-		#varSplit = get_as_property(property).split('.')
 		split = property.split('.')
 	
 	for i in split:
@@ -491,19 +419,16 @@ static func _find_class(object: String) -> Object:
 	for i in source_dirs:
 		var path = i+object
 		if FileAccess.file_exists(path): return load(path)
-		
 	return null
 	
 static func getPropertyFromClass(_class: String, variable: String):
 	var class_obj = _find_class(_class)
-	if !class_obj:
-		return
+	if !class_obj:return
 	return getProperty(variable,class_obj)
 	
 static func setPropertyFromClass(_class: String,variable: String,value: Variant) -> void:##Set the variable of the [code]_class[/code]
 	var class_obj = _find_class(_class)
-	if !class_obj:
-		return
+	if !class_obj:return
 	setProperty(variable,value,class_obj)
 #endregion
 
@@ -511,52 +436,33 @@ static func setPropertyFromClass(_class: String,variable: String,value: Variant)
 #region Group Methods
 static func _find_group_members(_group_name: String, member_index: int) -> Object:
 	var group = getProperty(_group_name)
-	if !group:
-		return null
-	
-	if group is SpriteGroup:
-		group = group.members
-	
-	if !group is Array:
-		return null
-	
+	if !group: return null
+	if group is SpriteGroup: group = group.members
+	if !group is Array: return null
 	return ArrayUtils.get_array_index(group,member_index)
 	
 ##Add [Sprite] to a [code]group[/code] [SpriteGroup] or [Array].[br][br]
 ##If [code]at = -1[/code], the sprite will be inserted at the last position.
 static func addSpriteToGroup(object: Variant, group: Variant, at: int = -1) -> void:
 	object = _find_object(object)
-	if !object:
-		return
+	if !object: return
 	
-	if group is String:
-		group = _find_object(group)
-		
-	if !group:
-		return
+	if group is String: group = _find_object(group)
+	if !group: return
 	
 	if group is SpriteGroup:
-		if at != -1:
-			group.insert(at,object)
-		else:
-			group.add(object)
+		if at != -1: group.insert(at,object)
+		else: group.add(object)
 		return
 	
 	if group is Array:
-		if at != -1:
-			group.insert(at,object)
-		else:
-			group.append(object)
+		if at != -1: group.insert(at,object)
+		else: group.append(object)
 	
 static func removeFromGroup(group: Variant, index: int):
-	if group is String:
-		group = getProperty(group)
-	
-	if !group:
-		return
-	
-	if group is SpriteGroup or group is Array:
-		group.remove_at(index)
+	if group is String: group = getProperty(group)
+	if !group: return
+	if group is SpriteGroup or group is Array: group.remove_at(index)
 
 ##Get a Property from a [SpriteGroup] or [Array]
 static func getPropertyFromGroup(group: String, index: Variant = 0, variable: String = "") -> Variant: 
@@ -578,7 +484,7 @@ static func runTimer(tag: String, time: float, loops: int = 1) -> Timer:
 	if !time: 
 		while loops >= 1:
 			loops -= 1
-			callOnScripts('onTimerCompleted',[tag,loops])
+			callOnScripts(&'onTimerCompleted',[tag,loops])
 		return
 	
 	var timer: Timer
@@ -599,7 +505,7 @@ static func runTimer(tag: String, time: float, loops: int = 1) -> Timer:
 			else:
 				timersPlaying.erase(tag)
 				timer.queue_free()
-			callOnScripts('onTimerCompleted',[tag,data[1]])
+			callOnScripts(&'onTimerCompleted',[tag,data[1]])
 		)
 		
 		timersPlaying[tag] = data
@@ -650,17 +556,19 @@ static func _insert_sprite(tag: String, object: Node) -> void:
 
 static func makeSprite(tag: String, path: Variant = null, x: float = 0, y: float = 0) -> FunkinSprite: 
 	var sprite = FunkinSprite.new(false,path)
-	sprite._position = Vector2(x,y)
-	sprite.name = tag
-	_insert_sprite(tag,sprite)
+	sprite.set_position_xy(x,y)
+	if tag: 
+		sprite.name = tag
+		_insert_sprite(tag,sprite)
 	return sprite
 
 ##Creates a animated [Sprite].
 static func makeAnimatedSprite(tag: String, path: Variant = null, x: float = 0, y: float = 0) -> FunkinSprite: 
 	var sprite = FunkinSprite.new(true,path)
-	sprite._position = Vector2(x,y)
-	sprite.name = tag
-	_insert_sprite(tag,sprite)
+	sprite.set_position_xy(x,y)
+	if tag: 
+		sprite.name = tag
+		_insert_sprite(tag,sprite)
 	return sprite
 
 static func makeSpriteFromSheet(tag: String,path: Variant, sheet_preffix: String,x: float = 0, y: float = 0):
@@ -669,53 +577,23 @@ static func makeSpriteFromSheet(tag: String,path: Variant, sheet_preffix: String
 
 
 static func addSprite(object: Variant, front: bool = false) -> void: ##Add [Sprite] to game.
-	object = _find_object(object)
-	if !object is Node: return
-	var cam: Node = object.get('camera')
-	if !cam: cam = getProperty('camGame')
-	if !cam:
-		push_error("Failed in addSprite: Camera of ",object,"don't found.")
-		return
-	
-	if cam is CameraCanvas:
-		cam.add(object,front)
-		return
-	
-	if cam is Node: cam.add_child(object)
+	object = _find_object(object) as Node
+	if !object: return
+	var cam: CameraCanvas = object.get('camera'); if !cam: cam = game.get('camGame')
+	if !cam: return
+	cam.add(object,front)
 
-##Add a [Sprite] in a determined order.
-static func addSpriteAt(object: Variant, order: int = -1) -> void:
-	if order == -1: addSprite(object,false); return;
-	
-	var cam: Node = object.get('camera')
-	if !cam: cam = getProperty('camGame')
-	if !cam:
-		push_error("Failed in addSpriteAt: Camera of ",object,"don't found.")
-		return
-	
-	if cam is CameraCanvas:
-		cam.insert(order,object)
-		return
-	
-	if cam is Node:
-		cam.add_child(object)
-		cam.move_child(object,order)
-
-##Add a [Sprite] to a [param camera].
-static func addSpriteToCamera(object: Variant, camera: Variant, front: bool = false) -> void:
+static func addSpriteToCamera(object: Variant, camera: Variant, front: bool = false) -> void: ##Add a [Sprite] to a [param camera].
 	object = _find_object(object)
 	if !object: return
-	
 	camera = getCamera(camera)
-	
-	if !camera: return
-	
-	if camera is CameraCanvas:
-		camera.add(object,front)
-		return
-	
-	if camera is Node:
-		camera.add_child(object)
+	if camera: camera.add(object,front)
+
+static func insertSpriteToCamera(object: Variant, camera: Variant, at: int): ##Insert a [Sprite] to a [param camera] in a specific position.
+	object = _find_object(object)
+	if !object: return
+	camera = getCamera(camera)
+	if camera: camera.insert(at, object)
 
 ##Remove [Sprite] of the game. When [code]delete[/code] is true, the sprite will be remove completely.
 static func removeSprite(object: Variant, delete: bool = false) -> void:
@@ -767,7 +645,7 @@ static func loadGraphic(object: Variant, image: String, width: float = -1, heigh
 	object = _find_object(object)
 	if !object: return
 	if object is FunkinSprite: object = object.image
-	var tex = Paths.imageTexture(image)
+	var tex = Paths.texture(image)
 	object.texture = tex
 	if not (object is FunkinSprite or object is NinePatchRect): return tex
 	if width != -1: object.region_rect.size.x = width
@@ -810,7 +688,7 @@ static func screenCenter(object: Variant, type: String = 'xy') -> void:
 	var pos = viewport.size/2.0 - size/2.0
 	match type:
 		'x': object.position.x = pos.x
-		'y': object.position.y = pos.x
+		'y': object.position.y = pos.y
 		_: object.position = pos
 
 ##Scale object.
@@ -1014,54 +892,54 @@ static func textsExits(tag: String) -> bool: return textsCreated.has(tag)
 
 
 #region Tween Methods
-##Start Tween. See [method TweenService.createTween] to see how its works.
+##Start Tween. Similar to [method createTween].
 static func startTween(tag: String, object: Variant, what: Dictionary[String,Variant],time = 1.0, easing: String = '') -> TweenerObject:
-	if object is String:
+	if !object is Object:
 		var split = _find_object(object,true)
 		object = split[0]
 		if !object: return
-		if split[1]:
-			var split_join = String(":").join(split[1])
-			for i in what.keys(): DictionaryUtils.rename_key(what,i,split_join+':'+i)
-	
+		if split[1]: var split_join = ":".join(split[1]); for i in what.keys(): DictionaryUtils.rename_key(what,i,split_join+':'+i)
 	if !object: return
-	
-	var keys = what.keys()
-	
-	for property in keys:
+	for property in what: #Checks if properties set in "what" exists in object.
 		if property in object: continue
 		elif property.contains(':') and object.get_indexed(property) != null: continue
-		var alt_prop = alternative_variables.get(property)
-		if alt_prop: 
-			keys.append(alt_prop)
-			what[alt_prop] = what[property]
+		
+		var alt = alternative_variables.get(property); if alt: what[alt] = what[property]
 		what.erase(property)
-	if !what: return
-	
-	return startTweenNoCheck(tag,object,what,time,easing)
+	return startTweenNoCheck(tag,object,what,float(time),easing)
 
-static func startTweenNoCheck(tag: String,object: Object, what: Dictionary[String,Variant],time = 1.0, easing: String = '') -> TweenerObject:
-	var bind_node = game if game else Global
-	var tween = TweenService.createTween(object,what,time,easing)
-	
-	tween.bind_node = bind_node
+static func startTweenNoCheck(tag: String,object: Object, what: Dictionary,time: float = 1.0, easing: String = '') -> TweenerObject:
+	var tween = createTween(object,what,time,easing)
 	tween.finished.connect(_tween_completed.bind(tag),CONNECT_ONE_SHOT)
 	if !tag: return tween
 	cancelTween(tag)
 	tweensCreated[tag] = tween
 	return tween
-	
-##Similar to [method Tween.tween_method].
-static func startTweenMethod(tag: String, from: Variant, to: Variant, time, ease: String, method: Callable) -> TweenerMethod:
+
+##Createa a Tween Method, similar to [Tween.tween_method]
+static func createTweenMethod(from: Variant, to: Variant, time, ease: String, method: Callable):
 	var tween = TweenService.createTweenMethod(method,from,to,time,ease)
 	tween.bind_node = game
+	return tween
+
+##Create a Tween Interpolation, see more about in [method TweenService.createTween]
+static func createTween(object: Object, what: Dictionary,time: Variant, easing: String = ''):
+	var tween = TweenService.createTween(object,what,time,easing)
+	if object is Node: tween.bind_node = object
+	return tween
+
+##Similar to [method Tween.tween_method].
+static func startTweenMethod(tag: String, from: Variant, to: Variant, time, ease: String, method: Callable) -> TweenerMethod:
+	var tween = createTweenMethod(from,to,time,ease,method)
 	if !tag: return tween
 	cancelTween(tag)
 	tweensCreated[tag] = tween
 	return tween
 
+
+
 static func _tween_completed(tag: String):
-	callOnScripts('onTweenCompleted',[tag])
+	callOnScripts(&'onTweenCompleted',[tag])
 	tweensCreated.erase(tag)
 
 ##Do Tween for a [ShaderMaterial].[br][br]
@@ -1125,21 +1003,18 @@ static func doTweenY(tag: String,object: Variant, to: Variant, time = 1.0, tween
 
 ##Creates a Tween for the alpha of a [Node]. See also [method doTweenColor].
 static func doTweenAlpha(tag: String, object: Variant, to: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	return startTween(tag,object,{'alpha': float(to)},float(time),tweenEase)
+	return startTween(tag,object,{'modulate:a': float(to)},float(time),tweenEase)
 	
 ##Creates a Tween for the color of a [Node]. See also [method doTweenAlpha].
-static func doTweenColor(tag: String, object: Variant,color: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	object = _find_object(object)
-	color = _get_color(color)
-	if object:
-		color.a = object.modulate.a
-		return startTween(tag,object,{'modulate': color},float(time),tweenEase)
-	return null
-
+static func doTweenColor(tag: String, object: Variant,color: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerMethod:
+	object = _find_object(object) as CanvasItem
+	if !object: return null
+	return startTweenMethod(tag,object.modulate,_get_color(color),float(time),tweenEase,func(col):
+		object.modulate = Color(col.r,col.b,col.g,object.modulate.a)
+	)
 ##Creates a Tween for the rotation of a [Node]. See also [method doTweenX] and [method doTweenY].
 static func doTweenAngle(tag: String, object: Variant, to: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	print(to)
-	return startTween(tag,object,{'rotation_degrees': float(to)},time,tweenEase)
+	return startTween(tag,object,{'angle': float(to)},time,tweenEase)
 #endregion
 
 
@@ -1154,7 +1029,7 @@ static func noteTweenY(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: Str
 
 ##Creates a Tween for the rotation of a Note. See also [method noteTweenColor].
 static func noteTweenAlpha(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
-	return startNoteTween(tag,noteID,{'alpha': float(target)},float(time),tweenEase)
+	return startNoteTween(tag,noteID,{'modulate:a': float(target)},float(time),tweenEase)
 
 ##Creates a Tween for the rotation of a Note. See also [method noteTweenY] and [method noteTweenAngle].
 static func noteTweenAngle(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
@@ -1180,9 +1055,9 @@ static func startNoteTween(tag: String, noteID, values: Dictionary[String,Varian
 
 #region Note Methods
 ##Returns a new Strum Note. If you want to add the Strum to a group, see also [method addSpriteToGroup].
-static func createStrumNote(image_path: String, note_data: int = 0, tag: String = ''):
+static func createStrumNote(note_data: int, style: String = 'funkin', tag: String = ''):
 	var strum: StrumNote = StrumNote.new(note_data)
-	strum.texture = image_path
+	strum.loadFromStyle(style)
 	
 	if tag: _insert_sprite(tag,strum)
 	return strum
@@ -1206,7 +1081,7 @@ static func initShader(shader: String, tag: String = '', obrigatory: bool = fals
 	if !shader_material: return
 	shader_material.resource_name = tag
 	shadersCreated[tag] = shader_material
-	callOnScripts('onLoadShader',[shader,shader_material,tag])
+	callOnScripts(&'onLoadShader',[shader,shader_material,tag])
 	
 	shadersCameras[tag] = Array([],TYPE_OBJECT,'CanvasItem',null)
 	return shader_material
@@ -1366,10 +1241,12 @@ static func getCenterBetween(object1: Variant, object2: Variant) -> Vector2:
 	object1 = _find_object(object1)
 	object2 = _find_object(object2)
 	
-	if !object1 or !object2: return Vector2(-1,-1)
+	if !(object1 or object2): return Vector2.ZERO
 	
-	var pos_1 = object1._position if object1 is FunkinSprite else object1.position
-	var pos_2 = object2._position if object2 is FunkinSprite else object2.position
+	var pos_1 = object1.get_position() if object1.has_method('get_position') else null
+	var pos_2 = object2.get_position() if object2.has_method('get_position') else null
+	if !((pos_1 is Vector2 or pos_1 is Vector2i) and (pos_2 is Vector2 or pos_2 is Vector2i)): 
+			return Vector2.ZERO
 	
 	return pos_1 - (pos_2 - pos_1)/2.0
 
@@ -1403,7 +1280,7 @@ static func getCamera(camera: Variant) -> CameraCanvas:
 static func startCountdown() -> void: game.startCountdown()
 
 ##Ends the game song.
-static func endSong(skip_transition: bool = false) -> void: game.endSound()
+static func endSong(skip_transition: bool = false) -> void: game.endSound(skip_transition)
 
 ##Sets the player health.
 static func setHealth(value: float) -> void: game.health = value
@@ -1501,15 +1378,12 @@ static func keyboardJustReleased(key: String) -> bool:
 static func keyboardPressed(key: String) -> bool:
 	return InputUtils.isKeyPressed(OS.find_keycode_from_string(key))
 
-static func addKey(key: String, action: String):
-	pass
 #endregion
 
 
 #region Script Methods
 ##Detect if a script[u],created using [method addScript],[/u] is running.
-static func scriptIsRunning(path: String) -> bool:
-	return scriptsCreated.has(path if path.ends_with('.gd') else path+'.gd')
+static func scriptIsRunning(path: String) -> bool: return getScriptPath(path) in scriptsCreated
 
 
 static func callMethod(object: Variant, function: String, variables: Array = []) -> Variant:
@@ -1521,25 +1395,27 @@ static func insertScript(script: Object, path: String = '') -> bool:
 	if !script: return false
 	init_gd()
 	var args = get_arguments(script)
+	
 	scriptsCreated[path] = script
 	arguments[script.get_instance_id()] = args
 	
 	for func_name in args:
-		if !method_list.has(func_name): method_list[func_name] = [script]
+		if !func_name in method_list: method_list[func_name] = [script]
 		else: method_list[func_name].append(script)
 	
-	if args.has('onCreate'):  script.onCreate()
-	if args.has('onCreatePost') and game and game.get('stateLoaded'): script.onCreatePost()
+	if args.has(&'onCreate'): script.onCreate()
+	if args.has(&'onCreatePost') and game and game.get(&'stateLoaded'): script.onCreatePost()
 	
 	return true
 
 ##Get a script created from the [method addScript].
 static func getScript(path: String) -> Object:
 	if !path: return
-	if not path.ends_with('.gd'): path += '.gd'
+	path = getScriptPath(path)
 	var script = scriptsCreated.get(path)
 	return script if script else _load_script(path)
 
+static func getScriptPath(path: String): return path if path.ends_with('.gd') else path+'.gd'
 ##Returning a new [Object] with the script created, useful if you want to call a function without using [method callScript] or want to change a variable of the script.
 ##Example of code:[codeblock]
 ##var script = addScript('ghosting_trail')
@@ -1547,15 +1423,13 @@ static func getScript(path: String) -> Object:
 ##script.createTrail()
 ##[/codeblock]
 static func addScript(path: String) -> Object:
-	path = Paths.getPath(path,false)
-	if !path.ends_with('.gd'): path += '.gd'
+	path = getScriptPath(path)
 	
 	var script = scriptsCreated.get(path)
 	if script: return script
 	
 	script = _load_script(path)
 	if !script: return
-	
 	
 	var resource = script.new()
 	resource.set('scriptPath',path)
@@ -1569,44 +1443,39 @@ static func removeScript(path: Variant):
 	var script: Object
 	if path is Object: 
 		script = path
-		for i in scriptsCreated:
-			if scriptsCreated[i].get_instance_id() == script.get_instance_id():
-				path = i
-				break
+		path = _find_script_path(script)
+		if !path: return
 	else:
-		if path is String:
-			path = Paths.getPath(path,false)
-			if !path.ends_with('.gd'): path += '.gd'
+		if path is String: path = getScriptPath(Paths.getPath(path,false))
 		script = scriptsCreated.get(path)
+		if !script: return
 	
-	if !script: return
-	callOnScripts('onScriptRemoved',[script,path])
-	
-	var args = arguments.get(script.get_instance_id())
-	if args:
-		for i in args:
-			if method_list[i].size() == 1: method_list.erase(i)
-			else:  method_list[i].erase(script)
-
 	scriptsCreated.erase(path)
+	for i in arguments.get(script.get_instance_id()):
+		if method_list[i].size() == 1: method_list.erase(i)
+		else:  method_list[i].erase(script)
+	callOnScripts(&'onScriptRemoved',[script,path])
+
+static func _find_script_path(script: Object) -> String:
+	var id = script.get_instance_id()
+	for i in scriptsCreated: if scriptsCreated[i].get_instance_id() == id: return i
+	return ''
 
 ##Disables callbacks, useful if you no longer need to use them. Example:
 ##[codeblock]
 ##disableCallback(self,'onUpdate') #This disable the game to call "onUpdate" in this script
 ##[/codeblock]
-static func disableCallback(script: Variant, function: String):
+static func disableCallback(script: Variant, function: StringName):
 	var func_scripts = method_list.get(function)
 	if !func_scripts: return
-	script = _get_script(script)
 	if !script: return
-	func_scripts.erase(script)
+	func_scripts.erase(_get_script(script))
 
 
 static func _load_script(path: String) -> Object:
 	var absolutePath: String = Paths.detectFileFolder(path)
 	if not absolutePath: return;
 	
-	print('Adding: ',absolutePath,' script')
 	var GScript: GDScript = GDScript.new()
 	GScript.source_code = FileAccess.get_file_as_string(absolutePath)
 	GScript.reload()
@@ -1614,60 +1483,70 @@ static func _load_script(path: String) -> Object:
 
 
 ##Calls a function in the script, returning a [Variant] that the function returns.
-static func callScript(script: Variant,function: String = '', parameters: Array = []) -> Variant:
+static func callScript(script: Variant,function: StringName = '', parameters: Variant = null) -> Variant:
 	script = _get_script(script)
 	if !script: return
 	return callScriptNoCheck(script,function,parameters)
 
-##Calls a function for every script created, 
-##returns a [Array] with the values returned from then if [code]return_values[/code] is true.
-static func callOnScripts(function: String, parameters: Array = [], return_values: bool = false) -> Variant:
-	if return_values: return _call_scripts_returns(function,parameters)
+##Calls a function for every script created.
+static func callOnScripts(function: StringName, parameters: Variant = null) -> Variant:
 	var func_args = method_list.get(function)
 	if !func_args: return
 	for i in func_args: callScriptNoCheck(i,function,parameters)
 	return
-	
-static func _call_scripts_returns(function: String, parameters: Array = []):
+
+
+##Calls a function for every script created.[br]
+##returns a [Array] with the values returned from each call.
+static func callOnScriptsWithReturn(function: StringName, parameters: Variant = null) -> Array:
 	var func_args = method_list.get(function)
 	if !func_args: return []
 	var returns: Array = []
 	for i in func_args: returns.append(callScriptNoCheck(i,function,parameters))
 	return returns
 	
-static func callScriptNoCheck(script: Object, function: String, parameters = []):
+static func callScriptNoCheck(script: Object, function: StringName, parameters: Variant):
 	var script_id = script.get_instance_id()
+	
 	var args = arguments.get(script_id)
+	if function == &'onCreatePost': prints(_find_script_path(script),function,args)
 	if !args or !args.has(function): return
+	
+	
 	args = args[function]
+	
 	if !args: return script.call(function)
 	
+	if args.size() == 1: 
+		return script.call(function,parameters[0] if ArrayUtils.is_array(parameters) else parameters)
 	return script.callv(function,_sign_parameters(args,parameters)) 
 
-static func _sign_parameters(args: Array,parameters) -> Array:
+static func _sign_parameters(args: Array,parameters: Variant) -> Array:
 	if !args: return args
 	var index: int = -1
 	
 	var new_parameters: Array[Variant] = []
 	var args_length: int = args.size()-1
-	if parameters is Array:
+	if ArrayUtils.is_array(parameters):
 		var param_size = parameters.size()
 		while index < args_length:
 			index +=1
-			if index >= param_size: new_parameters.append(args[index].default); continue
-			var variable = parameters[index]
-			var i = args[index]
-			if i.type != TYPE_NIL and typeof(variable) != i.type: 
-				new_parameters.append(type_convert(variable,i.type))
-			else: new_parameters.append(variable)
+			var parameter = args[index]
+			if index >= param_size: 
+				if parameter.has('default'): break
+				new_parameters.append(MathUtils.get_new_value(parameter.type))
+			new_parameters.append(_sign_value(parameters[index],parameter.type))
 	else:
-		if args[0].type == TYPE_NIL or typeof(parameters) == args[0].type:
-			new_parameters[0] = parameters
-			index = 0
-		while index < args_length: index += 1; new_parameters.append(args[index].default); 
-		
+		new_parameters[0] = _sign_value(parameters[0],args[0].type)
+		index = 1
+		while index < args_length: new_parameters.append(args[index].default); index += 1;
+	 
 	return new_parameters
 
+static func _sign_value(value: Variant, type_to_convert: Variant.Type):
+	if type_to_convert == TYPE_NIL or typeof(value) == type_to_convert: return value
+	return type_convert(value,type_to_convert)
+	
 static func _detect_class(tag: StringName) -> String:
 	for folder in ['backend','gdscript','global','objects','states','substates']:
 		var file = 'res://source/'+folder+'/'+tag+'.gd'
@@ -1679,6 +1558,15 @@ static func _get_script(script: Variant) -> Object:
 	if script is String: return scriptsCreated.get(script if script.ends_with('.gd') else script+'.gd')
 	return script
 
+
+static var class_dirs: PackedStringArray = [
+	'',
+	'res://',
+	'res://source/',
+	'res://source/general/',
+	'res://source/objects/',
+	Paths.exePath+'/assets/'
+]
 ##Get a Class, this can catch every class used in the game, check the file paths here: 
 ##[url]https://github.com/zlMyt/FNFGodot[/url]
 ##[br]Example of code:[codeblock]
@@ -1691,21 +1579,11 @@ static func getClass(class_path: String) -> Variant:
 	if class_path.ends_with('.tscn'):
 		var classInstance: Resource = load(class_path)
 		return (classInstance.instantiate() if classInstance else null)
-
-	if !class_path.ends_with('.gd'): class_path += '.gd'
-	
-	var search: Array[StringName] = [
-		'',
-		'res://',
-		'res://source/',
-		'res://source/general/',
-		'res://source/objects/',
-		Paths.exePath+'/assets/'
-	]
+	if !class_path.get_extension(): class_path += '.gd'
 	
 	
 	var path: String = ''
-	for dir in search:
+	for dir in class_dirs:
 		var file = dir+class_path
 		if FileAccess.file_exists(file):
 			path = file
@@ -1726,8 +1604,8 @@ func close() -> void: removeScript(self)
 ###Can set multiply variables, useful for complex events
 ##triggerEvent('eventName',{'x': 0.0,'y': 0.0,'angle': 0.0})
 ##[/codeblock]
-static func triggerEvent(event: String,variables: Variant = '', value2: Variant = ''):
-	if !variables is String: game.triggerEvent(event,variables)
+static func triggerEvent(event: StringName,variables: Variant = '', value2: Variant = ''):
+	if !variables is StringName: game.triggerEvent(event,variables)
 	
 	var default: Dictionary = EventNote.get_event_variables(event)
 	var event_keys = default.keys()

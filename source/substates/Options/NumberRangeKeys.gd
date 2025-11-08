@@ -19,8 +19,8 @@ func set_index(i: int) -> void:
 	index_changed.emit(i)
 	index_changed_key.emit(keys[i])
 	
-func set_index_from_key(key: Variant):
-	value = variables.keys().find(key)
+func set_index_from_key(key: Variant): value = variables.keys().find(key)
+
 func set_key_index(value: Variant):
 	key_value = value
 	var key_text = variables[value]

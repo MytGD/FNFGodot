@@ -26,7 +26,7 @@ func changeIcon(icon: String = "icon-face"):
 	if imageFile == icon: return
 	animation.clearLibrary()
 	
-	var texture = Paths.imageTexture(icon)
+	var texture = Paths.texture(icon)
 	image.texture = texture
 	hasWinningIcon = Paths.getPath(icon,false).begins_with("images/winning_icons/")
 	
@@ -35,19 +35,18 @@ func changeIcon(icon: String = "icon-face"):
 	animated = FileAccess.file_exists(icon+'.xml')
 	
 	if animated:
-		animation.addAnimByPrefix('normal','Default',24,true)
-		animation.addAnimByPrefix('losing','Losing',24,true)
-		animation.addAnimByPrefix("winning",'Winning',24,true)
+		animation.addAnimByPrefix(&'normal',&'Default',24,true)
+		animation.addAnimByPrefix(&'losing',&'Losing',24,true)
+		animation.addAnimByPrefix(&"winning",&'Winning',24,true)
 	elif hasWinningIcon:
 		setGraphicSize(imageSize.x/3.0,imageSize.y)
-		animation.addFrameAnim('normal',[0])
-		animation.addFrameAnim('losing',[1])
-		animation.addFrameAnim('winning',[2])
+		animation.addFrameAnim(&'normal',[0])
+		animation.addFrameAnim(&'losing',[1])
+		animation.addFrameAnim(&'winning',[2])
 	else:
 		setGraphicSize(imageSize.x/2.0,imageSize.y)
-		animation.addFrameAnim('normal',[0])
-		animation.addFrameAnim('losing',[1])
-	#animation.play('normal')
+		animation.addFrameAnim(&'normal',[0])
+		animation.addFrameAnim(&'losing',[1])
 
 func reloadIconFromCharacterJson(json: Dictionary):
 	var data = json.get('healthIcon',{})

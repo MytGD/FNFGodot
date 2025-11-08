@@ -115,11 +115,13 @@ static func detectFileFolder(path: String, case_sensive: bool = false) -> String
 		return path
 	
 	for d in dirsToSearch:
-		var curPath: String = d+path
-		if FileAccess.file_exists(curPath):
-			_files_directories_cache[path] = curPath
-			return curPath
+		var curPath: String = _get_file_path(d+path)
+		if !curPath: continue
+		_files_directories_cache[path] = curPath
+		return curPath
 	return ''
+
+static func _get_file_path(path: String) -> String: return path if FileAccess.file_exists(path) else ''
 
 static func _detect_file_folder_case_sensive(path: String) -> String:
 	var file = path.get_file()
@@ -146,23 +148,23 @@ static func font(path: String) -> Font:
 	return font_file
 
 static func image(path: String,imagesDirectory: bool = true) -> Image:
-	path = imagePath(path,imagesDirectory)
-	if imagesCreated.has(path): return imagesCreated[path]
-	
-	if !path: return null
-	
-	var imageFile: Image = Image.load_from_file(path)
-	imageFile.resource_name = path.left(-4)
-	imagesCreated[path] = imageFile
-	
-	return imageFile
+	return _image_no_path_check(imagePath(path,imagesDirectory))
 
-static func imageTexture(path: String, imagesDirectory: bool = true) -> ImageTexture:
+static func _image_no_path_check(path_absolute: String) -> Image:
+	if !path_absolute: return null
+	if imagesCreated.has(path_absolute): return imagesCreated[path_absolute]
+	
+	var imageFile: Image = Image.load_from_file(path_absolute)
+	imageFile.resource_name = path_absolute.left(-4)
+	imagesCreated[path_absolute] = imageFile
+	return imageFile
+	
+static func texture(path: String, imagesDirectory: bool = true) -> ImageTexture:
+	path = imagePath(path,imagesDirectory)
+	if !path: return
 	if imagesTextures.has(path): return imagesTextures[path]
 	
-	var image = image(path,imagesDirectory)
-	if !image: return null
-	
+	var image = _image_no_path_check(path)
 	var texture = ImageTexture.create_from_image(image)
 	texture.resource_name = image.resource_name
 	imagesTextures[path] = texture
@@ -225,7 +227,7 @@ static func sound(path: String) -> AudioStreamOggVorbis:
 	if !audio: return
 	audio.resource_name = path
 	soundsCreated[path] = audio
-	return audio.duplicate()
+	return audio
 
 static func music(path: String) -> AudioStreamOggVorbis:
 	if not path in musicCreated:
@@ -454,19 +456,22 @@ static func updateDirectories(): ##Update the folders that the [method detectFil
 	dirsToSearch.clear()
 	
 	var new_dirs: PackedStringArray
+	
+	var exe_dir = exePath+'/'
 	if enableMods:
 		var searchIn = modsFounded
 		if !searchAllMods: searchIn = getRunningMods()
 		
-		for i in searchIn: new_dirs.append(exePath+'/mods/'+i+'/')
-		new_dirs.append(exePath+'/mods/')
+		for i in searchIn: new_dirs.append(exe_dir+'mods/'+i+'/')
+		new_dirs.append(exe_dir+'mods/')
 	
-	new_dirs.append(exePath+'/assets/')
+	new_dirs.append(exe_dir+'assets/')
+	new_dirs.append(exe_dir)
 	new_dirs.append('res://assets/')
 	
-	for i in new_dirs: 
-		if extraDirectory: dirsToSearch.append(i+extraDirectory+'/')
-		dirsToSearch.append(i)
+	if extraDirectory:
+		for i in new_dirs: dirsToSearch.append(i+extraDirectory+'/'); dirsToSearch.append(i)
+	else: dirsToSearch.append_array(new_dirs)
 	clearLocalFiles()
 static func dir_exists(dir: String): return !!get_dir(dir)
 
@@ -585,13 +590,11 @@ static func getModsEnabled(location: bool = false) -> PackedStringArray:
 ##Returns the json file from [param path].[br]
 ##Obs: If [param duplicate], this will returns a duplicated json, 
 ##making it possible to modify without damaging the original json
-static func loadJson(path: String, duplicate: bool = true) -> Dictionary:
+static func loadJson(path: String,) -> Dictionary:
 	if not path.ends_with('.json'): path += '.json'
 	var json = jsonsLoaded.get(path)
-	if json == null: 
-		json = loadJsonNoCache(path)
-		jsonsLoaded[path] = json
-	return json.duplicate(true) if duplicate else json
+	if json == null: json = loadJsonNoCache(path); jsonsLoaded[path] = json
+	return json
 
 static func loadJsonNoCache(path: String) -> Dictionary:
 	var absolute_path = detectFileFolder(path)

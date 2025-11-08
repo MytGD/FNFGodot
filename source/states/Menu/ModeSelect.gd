@@ -58,7 +58,7 @@ func stop_blink() -> void:
 	if cur_tab.option_node: cur_tab.option_node.visible = true
 
 func _ready():
-	bg.texture = Paths.imageTexture('menuBG')
+	bg.texture = Paths.texture('menuBG')
 	bg.scale = ScreenUtils.screenSize/ScreenUtils.defaultSize
 	bg.centered = false
 	add_child(bg)
@@ -113,8 +113,8 @@ func loadModeSelectOptions():
 		menu_option_nodes['menu_'+menus] = menu
 	
 	option_parent.scrolled.connect(func(i,_prev_i):
-		option_parent.options[_prev_i].animation.play('static')
-		option_parent.options[i].animation.play('selected')
+		option_parent.options[_prev_i].animation.play(&'static')
+		option_parent.options[i].animation.play(&'selected')
 	)
 	add_child(option_parent)
 
@@ -123,7 +123,7 @@ func loadModsOptions():
 	for i in mods_options:
 		var text = AlphabetText.new(i)
 		
-		var icon_texture = Paths.imageTexture('editors/icons/'+i.to_lower().replace(' ','_'))
+		var icon_texture = Paths.texture('editors/icons/'+i.to_lower().replace(' ','_'))
 		if icon_texture:
 			var icon = Sprite2D.new()
 			icon.texture = icon_texture
@@ -142,7 +142,7 @@ func loadModsOptions():
 
 func _process(_d) -> void:
 	if _is_blinking:
-		var time = int(Time.get_ticks_usec()/40000)
+		var time: int = int(Time.get_ticks_usec())/40000
 		cur_tab.option_node.visible = bool(time%3)
 		bg.modulate = Color.WHITE if not bool(time%6) else Color.MEDIUM_PURPLE
 

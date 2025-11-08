@@ -1,33 +1,21 @@
 @icon("res://icons/StrumNote.png")
 extends FunkinSprite ##Strum Note
-const Note = preload("res://source/objects/Notes/Note.gd")
-const default_offset = [0,0]
+const Song = preload("uid://cerxbopol4l1g")
+const NoteHit = preload("uid://dx85xmyb5icvh")
+const default_offset: PackedFloat32Array = [0,0]
 ##Strum Direction
 ##[br][param 0: left, 1: down, 2: up, 3: right]
 @export var data: int = 0;
 
-var prefixs: Dictionary = {
-	"leftStatic": {"prefix": "staticLeft"},
-	"downStatic": {"prefix": "staticDown"},
-	"upStatic": {"prefix": "staticUp"},
-	"rightStatic": {"prefix": "staticRight"},
-	"leftConfirm": {"prefix": "confirmLeft"},
-	"downConfirm": {"prefix": "confirmDown"},
-	"upConfirm": {"prefix": "confirmUp"},
-	"rightConfirm": {"prefix": "confirmRight"},
-	"leftPress": {"prefix": "pressLeft"},
-	"downPress": {"prefix": "pressDown"},
-	"upPress": {"prefix": "pressUp"},
-	"rightPress": {"prefix": "pressRight"}
-}
+var prefixs: Dictionary
 ##Direction of the note in radius. [br]
 ##Example: [code]deg_to_rad(90)[/code] makes the notes come from the left,
 ##while [code]deg_to_rag(180)[/code] makes come from the top.[br]
 ##[b]Obs:[/b] If [param downscroll] is [code]true[/code], the direction is inverted.
 var direction: float = 0.0:
-	set(value): direction = value; _direction_degress = deg_to_rad(value)
-var _direction_degress: float = 0.0:
-	set(value): _direction_degress = value; _direction_lerp = Vector2(cos(_direction_degress),sin(_direction_degress))
+	set(value): direction = value; _direction_radius = deg_to_rad(value)
+var _direction_radius: float = 0.0:
+	set(value): _direction_radius = value; _direction_lerp = Vector2(cos(value),sin(value))
 var _direction_lerp: Vector2 = Vector2(0,1)
 var mustPress: bool = false ##Player Strum
 var hit_action: String = '' ##Hit Key
@@ -43,13 +31,12 @@ var default_scale: float = 0.7
 var styleName: String: set = setStrumStyleName
 var styleData: Dictionary
 ##Strum Texture
-var _auto_reload_when_change_texture: bool = true
 var texture: String: set = setTexture
 	
 ##If [code]true[/code], make the strum don't make to Static anim when finish's animation
-var specialAnim: bool = false
+var specialAnim: bool
 
-var downscroll: bool = false ##Invert the note direction.
+var downscroll: bool ##Invert the note direction.
 
 var multSpeed: float = 1.0 ##The note speed multiplier.
 
@@ -57,7 +44,6 @@ var multSpeed: float = 1.0 ##The note speed multiplier.
 ## When this reaches 0, the 'static' animation is played.
 var hitTime: float = 0.0
 
-var is_static: bool = false #Used in PlayState to disable hold splashes
 #var rgbShader: ShaderMaterial = RGBPalette.new()
 #var useRGBShader: bool = true
 signal texture_changed(old_tex, new_tex)
@@ -71,26 +57,22 @@ func _init(dir: int = 0):
 	"""
 	super._init(true)
 	data = dir
-	hit_action = Note.getNoteAction()[dir]
+	hit_action = NoteHit.getInputActions()[dir]
 	
 	offset_follow_scale = true
 	animation.animation_finished.connect(func(anim):
-		if anim != 'static' and return_to_static_on_finish and not mustPress:
-			animation.play('static')
-	)
-	animation.animation_started.connect(func(anim):
-		is_static = anim == 'static'
+		if anim != &'static' and return_to_static_on_finish and not mustPress: 
+			animation.play(&'static')
 	)
 const _anim_direction: PackedStringArray = ['left','down','up','right']
 
 func reloadStrumNote() -> void: ##Reload Strum Texture Data
-	animation.clearLibrary()
 	_animOffsets.clear()
 	offset = Vector2.ZERO
-	image.texture = Paths.imageTexture(texture)
+	image.texture = Paths.texture(texture)
 	texture_filter = TEXTURE_FILTER_NEAREST if isPixelNote else TEXTURE_FILTER_PARENT_NODE
 	
-	if not isPixelNote or prefixs: _load_anims_from_prefix()
+	if prefixs: _load_anims_from_prefix()
 	else: _load_graphic_anims()
 	setGraphicScale(Vector2(default_scale,default_scale))
 
@@ -114,7 +96,7 @@ func _load_anims_from_prefix() -> void:
 	addAnimOffset('static',static_offset[0],static_offset[1])
 
 func _load_graphic_anims() -> void:
-	var keyCount: int = Conductor.keyCount
+	var keyCount: int = Song.keyCount
 	image.region_rect.size = imageSize/Vector2(keyCount,5)
 	animation.addFrameAnim('static',[data])
 	animation.addFrameAnim('confirm',[data + (keyCount*3),data + (keyCount*4),data + keyCount])
@@ -123,22 +105,16 @@ func _load_graphic_anims() -> void:
 func loadFromStyle(noteStyle: String):
 	styleName = noteStyle
 	if !styleData: return
+	
 	isPixelNote = styleData.get('isPixel',false)
 	prefixs = styleData.data
 	default_scale = styleData.get('scale',0.7)
 	texture = styleData.assetPath
 
+func _on_texture_changed() -> void: super._on_texture_changed(); animation.clearLibrary()
+
 #region Setters
-func setTexture(_texture: String) -> void:
-	if !_texture: _texture = 'noteSkins/NOTE_assets'
-	else: _texture = Paths.getPath(_texture)
-	if isPixelNote and !_texture.begins_with('pixelUI/'): _texture = 'pixelUI/'+_texture
-	if _texture == 'images/'+imageFile: return
-	var old_tex = texture
-	texture = _texture
-	if _auto_reload_when_change_texture:
-		reloadStrumNote()
-		texture_changed.emit(old_tex,_texture)
+func setTexture(_texture: String) -> void: texture = _texture;reloadStrumNote()
 
 func setStrumStyleName(_name: String):
 	styleName = _name
@@ -152,25 +128,26 @@ func strumConfirm(anim: String = 'confirm'):
 func _process(delta: float) -> void:
 	super._process(delta)
 	if mustPress:
-		if animation.current_animation == 'static' and Input.is_action_just_pressed(hit_action): animation.play('press',true)
-		elif Input.is_action_just_released(hit_action): animation.play('static')
+		if animation.current_animation == 'static' and Input.is_action_just_pressed(hit_action): 
+			animation.play(&'press',true)
+		elif Input.is_action_just_released(hit_action): animation.play(&'static')
 	else:
 		if hitTime > 0.0:
 			hitTime -= delta
 			if hitTime <= 0.0:
 				hitTime = 0.0
-				animation.play('static')
+				animation.play(&'static')
 
 func _property_can_revert(property: StringName) -> bool:
 	match property:
-		'data','styleData': return false
+		&'data',&'styleData': return false
 	return true
 func _property_get_revert(property: StringName) -> Variant:
 	match property:
-		'direction': return 0.0
-		'multSpeed': return 1.0
-		'mustPress': return false
-		'scale': return Vector2(default_scale,default_scale)
+		&'direction': return 0.0
+		&'multSpeed': return 1.0
+		&'mustPress': return false
+		&'scale': return Vector2(default_scale,default_scale)
 	return null
 
 static func getStrumStyleData(style: String) -> Dictionary:

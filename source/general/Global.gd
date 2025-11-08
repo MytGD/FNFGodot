@@ -6,6 +6,8 @@ static var scene: Node
 
 var scripts_running = FunkinGD.scriptsCreated
 var sprites_created = FunkinGD.spritesCreated
+var arguments = FunkinGD.arguments
+var method_list = FunkinGD.method_list
 var is_transiting: bool = false
 
 var current_transition: TRANSITION

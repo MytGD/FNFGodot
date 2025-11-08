@@ -27,7 +27,7 @@ static var audioSuffix: String = ''
 static var audioFolder: String = ''
 static var folder: String = ''
 static var difficulty: String = ''
-
+static var keyCount: int = 4: set = set_key_count
 
 static func loadJson(json_name: String, _difficulty: String = '') -> Dictionary:
 	var json: Dictionary
@@ -80,6 +80,7 @@ static func _loadData(json_path: String, difficulty: String = '') -> Dictionary:
 		sort_song_notes(data.notes)
 		_insertSectionTimes(data)
 	return data
+
 static func _insertSectionTimes(json: Dictionary):
 	var section_time: float = 0.0
 	var cur_bpm: float = json.bpm
@@ -230,3 +231,6 @@ static func _clear():
 	songs_dir.clear()
 	audioSuffix = ''
 	folder = ''
+
+#region Setters
+static func set_key_count(count: int) -> void: keyCount = count; FunkinGD.keyCount = count

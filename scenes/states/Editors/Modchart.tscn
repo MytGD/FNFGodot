@@ -1578,19 +1578,20 @@ oversampling_override = 1.0
 title = "ShortCuts"
 position = Vector2i(400, 100)
 size = Vector2i(328, 300)
+visible = true
 wrap_controls = false
 borderless = false
 
 [node name="ScrollContainer" type="ScrollContainer" parent="HelpOptions/ShortCuts"]
 offset_left = 4.0
 offset_top = 4.0
-offset_right = 324.0
+offset_right = 333.0
 offset_bottom = 296.0
 horizontal_scroll_mode = 0
 
 [node name="Label" type="Label" parent="HelpOptions/ShortCuts/ScrollContainer"]
 layout_mode = 2
-text = "============Keys ShortCuts=============
+text = "=============Keys ShortCuts=============
 KEY_LEFT = Move Keys One Step Back
 KEY_RIGHT = Move Keys One Step Front
 

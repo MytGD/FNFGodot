@@ -6,6 +6,7 @@ const Map = preload("res://source/general/animation/Map.gd")
 const AnimationController = preload("res://source/general/animation/AnimationController.gd")
 const spriteSheet = preload("res://source/general/animation/spriteSheet.gd")
 const formats: PackedStringArray = ['xml','json','txt']
+
 ##Will store the created animations, containing the name and an array with its frames
 static var animations_loaded: Dictionary[StringName,Array] = {}
 static var _anims_created: Dictionary = {}
@@ -13,9 +14,7 @@ static var _anims_file_founded: Dictionary[String,String] = {}
 
 const animation_formats: PackedStringArray = ['.xml','.txt','.json']
 
-var anims_to_update: Dictionary[int,AnimationController] = {}
-
-static func getPrefixList(file: String) -> Dictionary[String,Array]:
+static func getPrefixList(file: String) -> Dictionary[StringName,Array]:
 	match file.get_extension():
 		'xml': return Sparrow.loadSparrow(file)
 		'txt': return Atlas.loadAtlas(file)
@@ -24,19 +23,21 @@ static func getPrefixList(file: String) -> Dictionary[String,Array]:
 
 ##Get the Animation data using the prefix. [br][br]
 ##It will return the data and the [Animation] in [[Array][[Rect2]],[Animation]]
-static func getAnimFrames(prefix: String,file: String = '') -> Array[Dictionary]:
+static func getAnimFrames(prefix: StringName,file: String = '') -> Array[Dictionary]:
 	if !file or !prefix: return []
 	
 	var data = _anims_created.get_or_add(file,{}).get(prefix)
 	if data: return data
 	
 	data = Array([],TYPE_DICTIONARY,'',null)
-	var fileFounded: Dictionary[String,Array] = getPrefixList(file)
+	var fileFounded: Dictionary[StringName,Array] = getPrefixList(file)
 	if !fileFounded: return []
 	
 	if fileFounded.has(prefix): return fileFounded[prefix]
 	
-	for anims in fileFounded: if (anims+'0000').begins_with(prefix): data.append_array(fileFounded[anims])
+	var prefix_str = String(prefix)
+	for anims in fileFounded: 
+		if (anims+'0000').begins_with(prefix_str): data.append_array(fileFounded[anims])
 	_anims_created[file][prefix] = data
 	return data
 
@@ -69,9 +70,3 @@ static func _clearAnims() -> void:
 	Map.maps_created.clear()
 	_anims_file_founded.clear()
 	_anims_created.clear()
-	
-func _physics_process(delta: float):
-	if !anims_to_update: return
-	for i in anims_to_update.values():
-		if !i.playing: anims_to_update.erase(i.get_instance_id()); continue
-		i.process_frame(delta)

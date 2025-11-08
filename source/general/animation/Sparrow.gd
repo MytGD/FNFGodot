@@ -17,17 +17,17 @@ const deg_90 = deg_to_rad(-90)
 ##loadSparrow("C:/Users/[Your Username]/Images/images/Image.xml") #Correct
 ##loadSparrow(Paths.detectFileFolder("images/Image.xml")) #Also works if the file are found.
 ##[/codeblock]
-static func loadSparrow(file: String) -> Dictionary[String,Array]:
+static func loadSparrow(file: String) -> Dictionary[StringName,Array]:
 	if !file.ends_with('.xml'): file += '.xml'
 	if sparrows_loaded.has(file): return sparrows_loaded[file]
 	if !FileAccess.file_exists(file):return {}
 	
-	var sparrow: Dictionary[String,Array] = {}
+	var sparrow: Dictionary[StringName,Array] = {}
 	_xml_parser.open(file)
 	
 	while _xml_parser.read() == OK:
 		if _xml_parser.get_node_type() != XMLParser.NODE_ELEMENT: continue
-		var xmlName = _xml_parser.get_named_attribute_value_safe('name')
+		var xmlName: StringName = _xml_parser.get_named_attribute_value_safe('name')
 		if !xmlName: continue;
 
 		var frame: int = xmlName.right(4).to_int()
@@ -78,9 +78,7 @@ static func loadSparrow(file: String) -> Dictionary[String,Array]:
 		
 		
 		var frames = animationFrames.size()
-		if frames == frame: 
-			animationFrames.append(frameData);
-			continue
+		if frames == frame:  animationFrames.append(frameData); continue
 		
 		while frames <= frame: animationFrames.append({}); frames += 1
 		animationFrames[frame] = frameData

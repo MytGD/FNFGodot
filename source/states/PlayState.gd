@@ -134,8 +134,8 @@ func addCharacterToList(type: int = 0,charFile: StringName = 'bf') -> Character:
 	Paths.image(newCharacter.healthIcon)
 	
 	FunkinGD.addScript('characters/'+charFile+'.gd')
-	FunkinGD.callScript('characters/'+charFile+'.gd','onLoadThisCharacter',[newCharacter,charType])
-	FunkinGD.callOnScripts('onLoadCharacter',[newCharacter,charType])
+	FunkinGD.callScript('characters/'+charFile+'.gd',&'onLoadThisCharacter',[newCharacter,charType])
+	FunkinGD.callOnScripts(&'onLoadCharacter',[newCharacter,charType])
 	insertCharacterInGroup(newCharacter,group)
 	newCharacter.visible = false
 	newCharacter.process_mode = Node.PROCESS_MODE_DISABLED
@@ -219,7 +219,7 @@ func changeCharacter(type: int = 0, character: StringName = 'bf') -> Object:
 			iconP2.reloadIconFromCharacterJson(newCharacter.json)
 	
 	updateIconsImage(_healthBar_State)
-	FunkinGD.callOnScripts('onChangeCharacter',[type,newCharacter,character_obj])
+	FunkinGD.callOnScripts(&'onChangeCharacter',[type,newCharacter,character_obj])
 	updateIconsPivot()
 	if !isCameraOnForcedPos and detectSection() == char_name: moveCamera(char_name)
 	

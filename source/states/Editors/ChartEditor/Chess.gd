@@ -10,7 +10,6 @@ func loadChess(steps_length: int = steps, lines: int = line_length):
 	line_length = lines
 
 func _draw() -> void:
-	print(steps,line_length)
 	for y in range(steps): for x in range(line_length): 
 		draw_rect(Rect2(Vector2(x,y)*line_size,line_size),chess_colors[(x+y)%2])
 	size = Vector2(line_length,steps)*line_size

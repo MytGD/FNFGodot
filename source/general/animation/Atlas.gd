@@ -1,9 +1,9 @@
 static var atlas_loaded: Dictionary[String,Dictionary]
-static func loadAtlas(file: String) -> Dictionary[String, Array]:
+static func loadAtlas(file: String) -> Dictionary[StringName, Array]:
 	if !file.ends_with('.txt'): file += '.txt'
 	
 	if atlas_loaded.get(file): return atlas_loaded[file]
-	var data: Dictionary[String, Array] = {}
+	var data: Dictionary[StringName, Array] = {}
 	
 	for i in FileAccess.get_file_as_string(file).split('\n'):
 		if not i: continue
@@ -28,14 +28,14 @@ static func loadAtlas(file: String) -> Dictionary[String, Array]:
 		
 		var anim_data = i.right(-find_equals-1).split(' ',false)
 		var rect = Rect2(
-				float(anim_data[0]),
-				float(anim_data[1]),
-				float(anim_data[2]),
-				float(anim_data[3])
+			float(anim_data[0]),
+			float(anim_data[1]),
+			float(anim_data[2]),
+			float(anim_data[3])
 		)
 		if anim_frames.size() < frame+1: anim_frames.resize(frame+1)
 		
-		var anim_dict: Dictionary[StringName,Variant] = {'region_rect': rect, 'size': rect.size}
+		var anim_dict: Dictionary[StringName,Variant] = {&'region_rect': rect}
 		anim_frames[frame] = anim_dict
 		
 	atlas_loaded[file] = data

@@ -138,19 +138,11 @@ static func _have_index(variable: Variant) -> bool:
 	
 static func value_exists(obj: Variant, value: Variant) -> bool:
 	match typeof(obj):
-		TYPE_OBJECT:
-			return obj.get(value) != null
-		TYPE_DICTIONARY:
-			return obj.has(value)
-		TYPE_ARRAY:
-			return ArrayUtils.array_has_index(obj,int(value))
-		TYPE_VECTOR2,TYPE_VECTOR2I:
-			return value in ['x','y']
-		TYPE_VECTOR3,TYPE_VECTOR3I:
-			return value in ['x','y','z']
-		TYPE_VECTOR4,TYPE_VECTOR4I:
-			return value in ['x','y','z','w']
-		TYPE_COLOR:
-			return value in ['r','g','b','a']
+		TYPE_OBJECT,TYPE_DICTIONARY: return value in obj
+		TYPE_ARRAY: return ArrayUtils.array_has_index(obj,int(value))
+		TYPE_VECTOR2,TYPE_VECTOR2I: return value in ['x','y']
+		TYPE_VECTOR3,TYPE_VECTOR3I: return value in ['x','y','z']
+		TYPE_VECTOR4,TYPE_VECTOR4I: return value in VectorUtils.vectors_index
+		TYPE_COLOR: return value in ['r','g','b','a']
 		_:
 			return false

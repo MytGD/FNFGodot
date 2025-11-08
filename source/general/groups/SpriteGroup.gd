@@ -97,30 +97,22 @@ func replace_at(at: int, node: Node):
 
 ##Remove [Node] from the group.
 func remove(node: Object) -> void:
-	if !node or not node in members:
-		return
+	if !node or not node in members: return
 	members.erase(node)
-	if node is FunkinSprite:
-		node.groups.erase(self)
-	
-	if node is Node and node.is_inside_tree():
-		node.reparent(get_parent(),false)
+	if node is FunkinSprite: node.groups.erase(self)
+	if node is Node and node.is_inside_tree(): node.reparent(get_parent(),false)
 
 ##Remove a [Node] using his [code]index[/code] in the group.
 func remove_at(index: int) -> void:
 	var node = members.get(index)
 	members.remove_at(index)
-	if !node:
-		return
-	if node is Node and node.is_inside_tree():
-		node.reparent(get_parent(),false)
+	if !node: return
+	if node is Node and node.is_inside_tree(): node.reparent(get_parent(),false)
 
 ##Queues all members of this group. See also [method Node.queue_free].
 func queue_free_members():
 	for i in members: i.queue_free()
 	members.clear()
 func _add_member_position(member: Node,_x: float = x, _y: float = y) -> void:
-	if member is FunkinSprite:
-		member._position += Vector2(_x,_y)
-	elif member is Node2D or member is Control:
-		member.position += Vector2(_x,_y)
+	if member is FunkinSprite: member._position += Vector2(_x,_y)
+	elif member is Node2D or member is Control: member.position += Vector2(_x,_y)

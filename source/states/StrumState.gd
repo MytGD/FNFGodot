@@ -30,17 +30,17 @@ const ChartEditor = preload("res://source/states/Editors/ChartEditor/ChartEditor
 @export var song_json_file: String = ''
 @export var difficulty: String = ''
 
-var autoStartSong: bool = false ##Start the Song when the Song json is loaded. Used in PlayState
+var autoStartSong: bool  ##Start the Song when the Song json is loaded. Used in PlayState
 
 ##If this is [code]false[/code], will disable the notes, 
 ##making them stretched and not being created
 var generateMusic: bool = true
-var exitingSong: bool = false
+var exitingSong: bool
 var clear_song_after_exiting: bool = true
 
 var songSpeed: float: set = set_song_speed 
 var _songLength: float = 0.0
-var _isSongStarted: bool = false
+var _isSongStarted: bool
 
 static var SONG: Dictionary:
 	set(dir): Conductor.songJson = dir
@@ -55,13 +55,13 @@ var keyCount: int = 4: ##The amount of notes that will be used, default is [b]4[
 		defaultStrumAlpha.resize(length)
 		grpNoteHoldSplashes.resize(length)
 		
-var mustHitSection: bool = false ##When the focus is on the opponent.
-var gfSection: bool = false ##When the focus is on the girlfriend.
+var mustHitSection: bool ##When the focus is on the opponent.
+var gfSection: bool ##When the focus is on the girlfriend.
 
 
 var _songPos: float
 @export_group("Notes")
-var strumLineNotes := SpriteGroup.new()#Strum's Group.
+var strumLineNotes: SpriteGroup = SpriteGroup.new()#Strum's Group.
 var opponentStrums: SpriteGroup = SpriteGroup.new() ##Strum's Oponnent Group.
 var playerStrums: SpriteGroup = SpriteGroup.new() ##Strum's Player Group.
 var extraStrums: Array[StrumNote] = []
@@ -72,11 +72,11 @@ var current_player_strum: Array = playerStrums.members
 
 var uiGroup: SpriteGroup = SpriteGroup.new() ##Hud Group.
 
-var unspawnNotes: Array[Note] = [] ##Unspawn notes, the array is reversed for more performace.
-var _unspawnNotesLength: int = 0
-var _unspawnIndex: int = 0
-var _respawnIndex: int = 0
-var respawnNotes: bool = false
+static var unspawnNotes: Array[Note] = [] ##Unspawn notes, the array is reversed for more performace.
+var _unspawnNotesLength: int
+var _unspawnIndex: int
+var _respawnIndex: int
+var respawnNotes: bool
 var notes: SpriteGroup = SpriteGroup.new()
 
 
@@ -84,43 +84,41 @@ const NOTE_SPAWN_TIME: float = 1000
 
 var noteSpawnTime: float = NOTE_SPAWN_TIME
 
-var hitNotes: Array[Note] = []
+var hitNotes: Array[Note]
 var canHitNotes: bool = true
-
-static var _notes_preload: Array[Note]
 
 var _splashes_loaded: Dictionary = {}
 
 var splashesEnabled: bool = ClientPrefs.data.splashesEnabled and ClientPrefs.data.splashAlpha > 0
 var opponentSplashes: bool = splashesEnabled and ClientPrefs.data.opponentSplashes
 var grpNoteSplashes: SpriteGroup = SpriteGroup.new() ##Note Splashes Group.
-var grpNoteHoldSplashes: Array[NoteSplash] = [] ##Note Hold Splashes Group.
+var grpNoteHoldSplashes: Array[NoteSplash] ##Note Hold Splashes Group.
 
-static var isPixelStage: bool = false
+static var isPixelStage: bool
 @export var arrowStyle: String = 'funkin'
 @export var splashStyle: String = 'NoteSplashes'
 @export var splashHoldStyle: String = 'HoldNoteSplashes'
 
 #region Rating Data
-var songScore: int = 0 ##Score
-var combo: int = 0 ##Combo
-var sicks: int = 0 ##Sick's count
-var goods: int = 0 ##Good's count
-var bads: int = 0 ##Bad's count
-var shits: int = 0 ##Shit's count
-var songMisses: int = 0 ##Misses count
+var songScore: int ##Score
+var combo: int ##Combo
+var sicks: int ##Sick's count
+var goods: int ##Good's count
+var bads: int ##Bad's count
+var shits: int ##Shit's count
+var songMisses: int ##Misses count
 
-var defaultStrumPos: PackedVector2Array = []
-var defaultStrumAlpha: PackedFloat32Array = []
+var defaultStrumPos: PackedVector2Array
+var defaultStrumAlpha: PackedFloat32Array
 
 ##Rating String, 
 ##can be "SFC" (just [b]SICK[/b] hits), "GFC"(Just hitting "Sick" and Good "combos") and "FC"(Sick,Good and Bad)
-var ratingFC: String = '' 
+var ratingFC: String 
 
-var ratingPercent: float = 0.0##Percent of the Rating.
+var ratingPercent: float ##Percent of the Rating.
 
-var noteHits: int = 0 ##Total Note hits.
-var totalNotes: int = 0 ##Total Notes.
+var noteHits: int ##Total Note hits.
+var totalNotes: int ##Total Notes.
 var noteScore: int = 350 ##Hit's Score.
 #endregion
 
@@ -141,21 +139,19 @@ var noteScore: int = 350 ##Hit's Score.
 @export var showRating: bool = true ##If false, the Combo Sprites(Sick,Good,Bad,Shit) will not be showed when the player hits the note.
 @export var showComboNum: bool = true##If false, the combo will not be showed.
 
-var _comboPreloads: Dictionary = {}
+var _comboPreloads: Dictionary
 
 ##Android System
 var touch_state
 
 var Inst: AudioStreamPlayer:
-	get():
-		return ArrayUtils.get_array_index(Conductor.songs,0)
+	get(): return ArrayUtils.get_array_index(Conductor.songs,0)
 
 var vocals: AudioStreamPlayer:
-	get():
-		return ArrayUtils.get_array_index(Conductor.songs,1)
+	get(): return ArrayUtils.get_array_index(Conductor.songs,1)
 
 signal hit_note
-func _init(json_file: StringName = '', song_difficulty: StringName = ''):
+func _init(json_file: StringName = &'', song_difficulty: StringName = &''):
 	add_child(uiGroup)
 	uiGroup.name = 'uiGroup'
 	
@@ -195,7 +191,7 @@ func precache_images():
 
 func _precache_combo():
 	for i in ComboStrings:
-		var comboTex: Texture2D = Paths.imageTexture(i)
+		var comboTex: Texture2D = Paths.texture(i)
 		if !comboTex: continue
 		var combo = Combo.new()
 		combo.texture = comboTex
@@ -204,7 +200,7 @@ func _precache_combo():
 		_comboPreloads[i] = combo
 
 	for i in ComboNumbers:
-		var number_tex = Paths.imageTexture('num'+i)
+		var number_tex = Paths.texture('num'+i)
 		if !number_tex: continue
 		var number = Combo.new()
 		number.scale = COMBO_SCALE
@@ -213,7 +209,7 @@ func _precache_combo():
 	
 	#Pixel Combos
 	for i in ComboStrings:
-		var pixel_tex = Paths.imageTexture('pixelUI/'+i+'-pixel')
+		var pixel_tex = Paths.texture('pixelUI/'+i+'-pixel')
 		if !pixel_tex: continue
 		var combo_pixel = Combo.new()
 		combo_pixel.texture = pixel_tex
@@ -224,7 +220,7 @@ func _precache_combo():
 		
 	#Pixel Numbers
 	for i in ComboNumbers:
-		var pixel_tex = Paths.imageTexture('pixelUI/num'+i+'-pixel')
+		var pixel_tex = Paths.texture('pixelUI/num'+i+'-pixel')
 		if !pixel_tex: continue
 		
 		var number_pixel = Combo.new()
@@ -267,8 +263,7 @@ func loadSongObjects():
 	loadNotes()
 
 func loadNotes():
-	if !_notes_preload:  _notes_preload = getNotesFromData(SONG)
-	unspawnNotes = _notes_preload.duplicate()
+	if !unspawnNotes:  unspawnNotes = getNotesFromData(SONG)
 	_unspawnNotesLength = unspawnNotes.size()
 	reloadNotes()
 	
@@ -495,6 +490,7 @@ func updateNote(note: Note):
 	if not (note.isSustainNote and note.isBeingDestroyed) and note.strumTime - _songPos <= note.missOffset:
 		if not note.missed and playerNote and not note.ignoreNote: noteMiss(note) 
 		return true
+	
 	if !note.canBeHit: return true
 	if !canHitNotes: return true
 	
@@ -515,7 +511,7 @@ func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase]
 	if !note: return
 	var mustPress: bool = note.mustPress
 	var playerNote: bool = mustPress != playAsOpponent
-	var strumAnim = 'confirm'
+	var strumAnim = &'confirm'
 	
 	note.wasHit = true
 	note.judgementTime = _songPos
@@ -527,7 +523,7 @@ func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase]
 		else: 
 			sicks += 1; 
 			songScore += 10
-			if note.isEndSustain: strumAnim = 'press'
+			if note.isEndSustain: strumAnim = &'press'
 	else:  
 		if note.isEndSustain: _disableHoldSplash(getStrumDirection(strum.data,mustPress))
 	
@@ -538,7 +534,7 @@ func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase]
 		else:
 			strum.strumConfirm(strumAnim)
 			strum.return_to_static_on_finish = true
-		
+	
 	if splashAllowed(note): createSplash(note)
 	note.killNote()
 
@@ -598,19 +594,17 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 		splash = _createNewSplash(style,type,prefix,splash_type)
 		if !splash: return
 		
-		if splashGroup:
-			grpNoteSplashes.members.append(splash)
-			splashGroup.add_child(splash)
+		if splashGroup: grpNoteSplashes.members.append(splash); splashGroup.add_child(splash)
 		else: grpNoteSplashes.add(splash)
 	else: 
 		splash.visible = true
 		if splashGroup: splash.reparent(splashGroup,false)
 		elif splash._is_custom_parent: splash.reparent(grpNoteSplashes,false)
-		
+	
 	splash._is_custom_parent = !!splashGroup
 	splash.strum = strum
 	splash.isPixelSplash = isPixelStage
-	 
+	splash._position = strum._position
 	match splash_type:
 		NoteSplash.SplashType.HOLD_COVER:
 			var direction = getStrumDirection(strum.data,note.mustPress)
@@ -623,12 +617,12 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 				minf(100.0/Conductor.stepCrochet,1.5)
 			)
 			
-			splash.animation.play('splash',true)
+			splash.animation.play(&'splash',true)
 			return splash
 		NoteSplash.SplashType.HOLD_COVER_END: _disableHoldSplash(getStrumDirection(strum.data,note.mustPress))
 	
 	splash.animation.play_random(true)
-	splash.position = strum._position - splash.offset
+	
 	return splash
 
 func getStrumDirection(direction: int, mustPress: bool = false) -> int:
@@ -919,6 +913,7 @@ func clear() -> void:
 	grpNoteSplashes.members.clear()
 	
 	_splashes_loaded.clear()
+	unspawnNotes.clear()
 	inModchartEditor = false
 	isPixelStage = false
-	_notes_preload.clear()
+	

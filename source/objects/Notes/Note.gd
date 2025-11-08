@@ -7,25 +7,17 @@ extends "res://source/objects/Notes/NoteBase.gd"
 const NoteSplash = preload("res://source/objects/Notes/NoteSplash.gd")
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 
-
 const _rating_string: PackedStringArray = ['marvellous','sick','good','bad','shit']
 
 const _ratings_length: int = 4 #The same as _rating_string.size()
 
-const key_actions: Array[PackedStringArray] = [
-	[""],
-	["note_left"],
-	["note_left","note_right"],
-	["note_left","note_center","note_right"],
-	["note_left","note_down","note_up","note_right"],
-	["note_left","note_down","note_center","note_up","note_right"],
-]
+
 #endregion
 
 #region Static Vars
 static var _rating_offset: Array[float] = [-1.0,45.0,130.0,150.0]
-static var noteStylesLoaded: Dictionary = {}
-static var miraculousRating: bool = false
+static var noteStylesLoaded: Dictionary
+static var miraculousRating: bool
 
 
 #endregion
@@ -39,9 +31,9 @@ var copyAlpha: bool = true ##If [code]true[/code], the note will follow the alph
 var _is_processing: bool = true
 
 #region Sustain Vars
-var isSustainNote: bool = false ##If the note is a Sustain. See also ["source/objects/NoteSustain.gd"]
-var isEndSustain: bool = false
-var sustainLength: float = 0.0 ##The Sustain time
+var isSustainNote: bool ##If the note is a Sustain. See also ["source/objects/NoteSustain.gd"]
+var isEndSustain: bool: set = setEndSustain
+var sustainLength: float  ##The Sustain time
 #endregion
 
 #region Health Vars
@@ -51,7 +43,7 @@ var missHealth: float = 0.0475##the amount of life will lose by missing the note
 
 #region Strum Vars
 var strumConfirm: bool = true ##If [code]true[/code], the strum will play animation when hit the note
-var strumTime: float = 0.0 ##Position of the note in the song
+var strumTime: float ##Position of the note in the song
 var strumNote: StrumNote ##Strum Parent that note will follow
 #endregion
 
@@ -60,21 +52,21 @@ var strumNote: StrumNote ##Strum Parent that note will follow
 var noteSpeed: float = 1.0: set = setNoteSpeed ##Note Speed
 var _real_note_speed: float = 1.0
 
-var animSuffix: StringName = ''
+var animSuffix: StringName
 #endregion
 
 #region Note Type Variables
-var gfNote: bool = false ##Is GF Note
-var ignoreNote: bool = false ##if is opponent note or a bot playing, they will ignore this note
-var noteType: StringName = "" ##Note Type
+var gfNote: bool ##Is GF Note
+var ignoreNote: bool ##if is opponent note or a bot playing, they will ignore this note
+var noteType: StringName ##Note Type
 
-var autoHit: bool = false ##If [code]true[/code], the note will be hit automatically, independent if is a player note.
-var noAnimation: bool = false ##When hit the note and this variable is [code]true[/code], the character will dont play animation
-var mustPress: bool = false ##player note
+var autoHit: bool ##If [code]true[/code], the note will be hit automatically, independent if is a player note.
+var noAnimation: bool ##When hit the note and this variable is [code]true[/code], the character will dont play animation
+var mustPress: bool ##player note
 
-var blockHit: bool = false ##Unable to hit the note
+var blockHit: bool ##Unable to hit the note
 
-var lowPriority: bool = false ##if two notes are close to the strum and this variable is true, the game will prioritize the another one
+var lowPriority: bool ##if two notes are close to the strum and this variable is true, the game will prioritize the another one
 #endregion
 
 #region Mult Variables
@@ -91,15 +83,15 @@ var noteGroup: Node
 
 var missOffset: float = -150.0 ##The time distance to miss the note
 
-var missed: bool = false ##Detect if the note is missed
+var missed: bool ##Detect if the note is missed
 
-var offsetX: float = 0 ##Distance on x axis
-var offsetY: float = 0 ##Distance on y axis
+var offsetX: float ##Distance on x axis
+var offsetY: float ##Distance on y axis
 
-var distance: float = 0.0  ##The distance between the note and the strum
-var canBeHit: bool = false  ##If the note can be hit
+var distance: float  ##The distance between the note and the strum
+var canBeHit: bool  ##If the note can be hit
 
-var wasHit: bool = false
+var wasHit: bool
 var judgementTime: float = INF ##Used in ModchartEditor
 
 
@@ -112,7 +104,7 @@ var judgementTime: float = INF ##Used in ModchartEditor
 ##[code]style[/code]: Splash Style Json(default: "NoteSplashes")[br]
 ##[code]parent[/code]: Splash parents, can be used to change splash camera(default: null)[br][br]
 ##}
-var noteSplashData: Dictionary[String,Variant] = { 
+var noteSplashData: Dictionary[StringName,Variant] = { 
 	'disabled': false,
 	'type': 'noteSplash',
 	'style': 'NoteSplashes',
@@ -121,9 +113,9 @@ var noteSplashData: Dictionary[String,Variant] = {
 #endregion
 
 #region Rating Variables
-var ratingMod: int = 0 ## The Rating of the note in [int]. [param 0 = nothing, 1 = sick, 2 = good, 3 = bad, 4 = shit]
-var rating: StringName = '' ## The Rating ot the note in [String]. [param sick, good, bad, shit]
-var ratingDisabled: bool = false ##Disable Rating. If [code]true[/code], the rating will always be "sick".
+var ratingMod: int ## The Rating of the note in [int]. [param 0 = nothing, 1 = sick, 2 = good, 3 = bad, 4 = shit]
+var rating: StringName ## The Rating ot the note in [String]. [param sick, good, bad, shit]
+var ratingDisabled: bool ##Disable Rating. If [code]true[/code], the rating will always be "sick".
 #endregion
 
 func _init(data: int = 0) -> void:
@@ -131,13 +123,15 @@ func _init(data: int = 0) -> void:
 	_update_note_speed()
 	super._init(true)
 
-##Update Note Position
 func updateNote() -> void:
 	distance = (strumTime - Conductor.songPositionDelayed) * _real_note_speed
+	_check_hit()
+	followStrum()
+
+func _check_hit() -> void:
 	var limit = _rating_offset[3]
 	canBeHit = not blockHit and distance >= -limit and distance <= limit
-	followStrum()
-	
+
 func followStrum(strum: StrumNote = strumNote) -> void:
 	if !strum: return
 	
@@ -147,11 +141,11 @@ func followStrum(strum: StrumNote = strumNote) -> void:
 	var posX: float = strumNote.x + offsetX
 	var posY: float = strumNote.y + offsetY
 	
-	if strumNote._direction_degress:
+	if strumNote._direction_radius:
 		posX += dist*strumNote._direction_lerp.y
 		posY += dist*strumNote._direction_lerp.x
-	else:
-		posY += dist
+	else: posY += dist
+	
 	if copyX: x = posX
 	if copyY: y = posY
 	if copyAlpha: modulate.a = strumNote.modulate.a * multAlpha
@@ -178,18 +172,19 @@ func _update_splash_data() -> void: noteSplashData.prefix = directions[noteData]
 func loadFromStyle(noteStyle: String) -> void:
 	super.loadFromStyle(noteStyle)
 	var offsets = styleData.get('offsets')
-	if offsets:
-		offsetX = offsets[0]
-		offsetY = offsets[1]
+	if offsets: offsetX = offsets[0]; offsetY = offsets[1]
 	
 func setNoteData(_data: int) -> void:
 	super.setNoteData(_data)
 	_update_splash_data()
+
 func setNoteSpeed(_speed: float) -> void:
 	if noteSpeed == _speed: return
 	noteSpeed = _speed
 	_update_note_speed()
-	
+
+func setEndSustain(is_end: bool) -> void: isEndSustain = is_end
+
 func setMultSpeed(_speed: float):
 	if multSpeed == _speed: return
 	multSpeed = _speed
@@ -197,9 +192,6 @@ func setMultSpeed(_speed: float):
 #endregion
 
 #region Static Funcs
-##Returns the keys to hit the note, depending of the [param keyCount].
-static func getNoteAction(keyCount: int = Conductor.keyCount) -> Array: return key_actions[keyCount]
-
 ##Return the closer note from his [member Note.strumNote]
 static func detectCloseNote(array: Array):
 	if !array:return null
@@ -210,4 +202,7 @@ static func detectCloseNote(array: Array):
 		if absf(i.distance) < absf(closeNote.distance): closeNote = i 
 	return closeNote
 
+static func getNoteAnimName(note) -> String:
+	if note.isSustainNote: return 'holdEnd' if note.isEndSustain else 'hold'
+	return 'static'
 #endregion

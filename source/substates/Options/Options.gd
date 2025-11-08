@@ -88,7 +88,7 @@ func _ready() -> void:
 	add_child(bg)
 	move_child(bg,0)
 	bg.centered = false
-	bg.texture = Paths.imageTexture('menuDesat')
+	bg.texture = Paths.texture('menuDesat')
 	
 	#Load Options
 	cur_menu = createMenuOptions(options,'default')
@@ -109,13 +109,13 @@ func _get_visuals() -> Dictionary:
 	var dir = "res://source/substates/Options/Visuals/"
 	var found: Dictionary = {}
 	for i in DirAccess.get_files_at(dir):
-		if i.ends_with('.tscn'): 
-			var obj_name = i.get_basename()
-			var scene = load(dir+i).instantiate()
-			found[obj_name] = scene
-			add_child(scene)
-			scene.name = obj_name
-			disableNode(scene)
+		if !i.ends_with('.tscn'): continue
+		var obj_name = i.get_basename()
+		var scene = load(dir+i).instantiate()
+		found[obj_name] = scene
+		add_child(scene)
+		scene.name = obj_name
+		disableNode(scene)
 	return found
 
 func createMenuOptions(option_data: Array, tag: String):
@@ -130,12 +130,9 @@ func createMenuOptions(option_data: Array, tag: String):
 
 func backMenu():
 	if !prev_menus:
-		if back_to: 
-			Global.swapTree(back_to)
-			saveOptions()
+		if back_to:  Global.swapTree(back_to); saveOptions()
 		return
-	var prev_menu = prev_menus.pop_back()
-	cur_menu = prev_menu
+	cur_menu = prev_menus.pop_back()
 
 #region Options Visual
 func _on_option_selected(menu: OptionMenu):
@@ -148,7 +145,7 @@ func show_visual(visual_name: String):
 	if cur_visual: 
 		if visual_name == cur_visual.name: return
 		disableNode(cur_visual)
-	cur_visual = get_node(visual_name)
+	if visual_name: cur_visual = get_node(visual_name)
 	if !cur_visual: return
 	enableNode(cur_visual)
 
@@ -191,6 +188,7 @@ func _input(event: InputEvent) -> void:
 func _call_setter(value: Variant) -> bool:
 	var setter = cur_menu.cur_data.get('setter')
 	if setter: setter.call(value); return true
+	print(value)
 	cur_menu.cur_data.object[cur_menu.cur_data.property] = value
 	return false
 	

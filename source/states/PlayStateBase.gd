@@ -32,7 +32,7 @@ var altSection: bool = false
 
 var health: float: set = set_health
 
-@export var singAnimations: PackedStringArray = ["singLEFT","singDOWN","singUP","singRIGHT"]
+@export var singAnimations: Array = [&"singLEFT",&"singDOWN",&"singUP",&"singRIGHT"]
 
 ##The amount of beats for the camera to give a "beat" effect.
 @export var bumpStrumBeat: float = 4.0
@@ -57,8 +57,9 @@ var stageJson: Dictionary = Stage.getStageBase()
 @export_subgroup('Events')
 @export var loadEvents: bool = true
 @export var generateEvents: bool = true
-static var _events_preload: Array[Dictionary]
-var eventNotes: Array[Dictionary] = []
+static var eventNotes: Array[Dictionary] = []
+var eventIndex: int = 0
+
 static var _is_first_event_load: bool = true
 #endregion
 
@@ -198,7 +199,7 @@ func _ready():
 	Conductor.beat_hit.connect(onBeatHit)
 	Conductor.section_hit.connect(onSectionHit)
 	Conductor.section_hit_once.connect(onSectionHitOnce)
-	FunkinGD.callOnScripts('onCreatePost')
+	FunkinGD.callOnScripts(&'onCreatePost')
 	startCountdown()
 	stateLoaded = true
 
@@ -207,7 +208,7 @@ func _process(delta: float) -> void:
 	if camZooming: camHUD.zoom = lerpf(camHUD.zoom,camHUD.defaultZoom,delta*3*zoomSpeed)
 	
 	_check_count_down_pos(delta)
-	FunkinGD.callOnScripts('onUpdate',[delta])
+	FunkinGD.callOnScripts(&'onUpdate',[delta])
 	
 	super._process(delta)
 	updateTimeBar()
@@ -215,13 +216,13 @@ func _process(delta: float) -> void:
 	for icon in icons: updateIconPos(icon)	
 	#Skip Cutscene
 	if inCutscene and videoPlayer and skipCutscene and Input.is_action_just_pressed('ui_accept'): skipVideo()
-	FunkinGD.callOnScripts('onUpdatePost',[delta])
+	FunkinGD.callOnScripts(&'onUpdatePost',[delta])
 
 #region Gui
 func createMobileGUI():
 	super.createMobileGUI()
 	var button = TextureButton.new()
-	button.texture_normal = Paths.imageTexture('mobile/pause_menu')
+	button.texture_normal = Paths.texture('mobile/pause_menu')
 	button.scale = Vector2(1.2,1.2)
 	button.position.x = ScreenUtils.screenCenter.x
 	button.pressed.connect(pauseSong)
@@ -241,16 +242,16 @@ func updateTimeBar() -> void:
 func updateIconsImage(state: IconState):
 	match state:
 		IconState.NORMAL:
-			iconP1.animation.play('normal')
-			iconP2.animation.play('normal')
+			iconP1.animation.play(&'normal')
+			iconP2.animation.play(&'normal')
 		IconState.LOSING:
-			if iconP2.hasWinningIcon: iconP2.animation.play('winning')
-			else: iconP2.animation.play('normal')
-			iconP1.animation.play('losing')
+			if iconP2.hasWinningIcon: iconP2.animation.play(&'winning')
+			else: iconP2.animation.play(&'normal')
+			iconP1.animation.play(&'losing')
 		IconState.WINNING:
-			if iconP1.hasWinningIcon: iconP1.animation.play('winning')
-			else: iconP1.animation.play('normal')
-			iconP2.animation.play('losing')
+			if iconP1.hasWinningIcon: iconP1.animation.play(&'winning')
+			else: iconP1.animation.play(&'normal')
+			iconP2.animation.play(&'losing')
 
 
 func updateIconPos(icon: Icon) -> void:
@@ -292,32 +293,31 @@ func onBeatHit(beat: int = Conductor.beat) -> void:
 #region Note Methods
 func createSplash(note) -> NoteSplash:
 	var splash = super.createSplash(note)
-	FunkinGD.callOnScripts('onSplashCreate',[splash])
+	FunkinGD.callOnScripts(&'onSplashCreate',[splash])
 	return splash
 
 func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
 	var strum = super.createStrum(i,opponent_strum,pos)
-	FunkinGD.callOnScripts('onLoadStrum',[strum,opponent_strum])
+	FunkinGD.callOnScripts(&'onLoadStrum',[strum,opponent_strum])
 	return strum
 
 	
 func spawnNote(note):
 	super.spawnNote(note)
-	FunkinGD.callOnScripts('onSpawnNote',[note])
+	FunkinGD.callOnScripts(&'onSpawnNote',[note])
 
 func reloadNotes():
 	var types = SONG.get('noteTypes')
-	if types: for i in types: FunkinGD.addScript('custom_notetypes/'+i)
+	if types: for i in types: FunkinGD.addScript('assets/custom_notetypes/'+i); FunkinGD.addScript('custom_notetypes/'+i)
 	super.reloadNotes()
 
 func loadNotes():
 	super.loadNotes()
 	
-	if !loadEvents: eventNotes = []; return
+	if !loadEvents: eventNotes.clear(); return
 	
-	if _events_preload: 
+	if eventNotes: 
 		_is_first_event_load = false
-		eventNotes = _events_preload.duplicate()
 		return
 	
 	var events_to_load = SONG.get('events',[])
@@ -326,34 +326,48 @@ func loadNotes():
 	if events_json:
 		if events_json.get('song') is Dictionary: events_json = events_json.song
 		events_to_load.append_array(events_json.get('events',[]))
-	_events_preload = EventNote.loadEvents(events_to_load)
-	eventNotes = _events_preload.duplicate()
+	eventNotes = EventNote.loadEvents(events_to_load)
 	_is_first_event_load = true
 	
 func reloadNote(note: Note):
 	super.reloadNote(note)
-	FunkinGD.callOnScripts('onLoadNote',[note])
-	if !note.noteType: return
-	FunkinGD.callScript(
-		'custom_notetypes/'+note.noteType+'.gd',
-		'onLoadThisNote',
-		[note]
-	)
+	if note.noteType: 
+		var path = 'custom_notetypes/'+note.noteType+'.gd'
+		FunkinGD.callScript(
+			'assets/'+path,
+			&'onLoadThisNote',
+			[note]
+		)
+		FunkinGD.callScript(
+			path,
+			&'onLoadThisNote',
+			[note]
+		)
+	FunkinGD.callOnScripts(&'onLoadNote',[note])
 
 func updateNote(note):
 	var _return = super.updateNote(note)
-	FunkinGD.callOnScripts('onUpdateNote',[note])
+	FunkinGD.callOnScripts(&'onUpdateNote',[note])
 	return _return
 
 func updateNotes() -> void: #Function from StrumState
 	super.updateNotes()
 	if !generateEvents: return
-	while eventNotes and eventNotes[0].strumTime <= _songPos:
-		var event = eventNotes.pop_front()
+	while eventIndex < eventNotes.size():
+		var event = eventNotes[eventIndex]
+		if event.strumTime > _songPos: break
 		triggerEvent(event.event,event.variables)
-
+		eventIndex += 1
 func hitNote(note: Note, character: Variant = null) -> void:
 	if not note: return
+	if note.noteType:
+		FunkinGD.callScript(
+			'custom_notetypes/'+note.noteType+'.gd',
+			&'onPreHitThisNote',
+			[note,character]
+		)
+	FunkinGD.callOnScripts(&'goodNoteHitPre' if note.mustPress else &'opponentNoteHitPre',[note])
+	FunkinGD.callOnScripts(&'onHitNote',[note,character])
 	super.hitNote(note)
 	
 	#Add Health if the note is from the player
@@ -364,12 +378,18 @@ func hitNote(note: Note, character: Variant = null) -> void:
 	if !audio: audio = Conductor.get_node_or_null("Voice")
 	if audio: audio.volume_db = 0
 	
-	FunkinGD.callOnScripts('goodNoteHit' if note.mustPress else 'opponentNoteHit',[note])
-	FunkinGD.callOnScripts('hitNote',[note,character])
+	if note.noteType:
+		FunkinGD.callScript(
+			'custom_notetypes/'+note.noteType+'.gd',
+			&'onHitThisNote',
+			[note,character]
+		)
+	FunkinGD.callOnScripts(&'goodNoteHit' if note.mustPress else &'opponentNoteHit',[note])
+	FunkinGD.callOnScripts(&'onHitNote',[note,character])
 
 func noteMiss(note, character: Variant = null) -> void:
 	health -= note.missHealth
-	FunkinGD.callOnScripts('onNoteMiss',[note, character])
+	FunkinGD.callOnScripts(&'onNoteMiss',[note, character])
 	
 	var audio: AudioStreamPlayer = Conductor.get_node_or_null("Voice" if note.mustPress else "OpponentVoice")
 	if audio: audio.volume_db = -80
@@ -394,8 +414,8 @@ func _load_song_scripts():
 
 func triggerEvent(event: StringName,variables: Variant) -> void:
 	if !variables is Dictionary: return
-	FunkinGD.callOnScripts('onEvent',[event,variables])
-	FunkinGD.callScript('custom_events/'+event,'onLocalEvent',[variables])
+	FunkinGD.callOnScripts(&'onEvent',[event,variables])
+	FunkinGD.callScript('custom_events/'+event,&'onLocalEvent',[variables])
 #endregion
 
 #region Song Methods
@@ -404,7 +424,7 @@ func startCountdown():
 	_countdown_started = true
 	
 	Conductor.songPosition = -Conductor.stepCrochet*24.0
-	var results = FunkinGD.callOnScripts("onStartCountdown",[],true)
+	var results = FunkinGD.callOnScriptsWithReturn("onStartCountdown")
 	if FunkinGD.Function_Stop in results: return
 	
 	if skipCountdown: startSong()
@@ -443,16 +463,16 @@ func loadEventsScripts():
 		FunkinGD.addScript('custom_events/'+i)
 	
 	for event in eventNotes: 
-		FunkinGD.callOnScripts('onLoadEvent',[event.event,event.variables,event.strumTime])
-		FunkinGD.callScript('custom_events/'+event.event,'onLoadThisEvent',[event.variables,event.strumTime])
+		FunkinGD.callOnScripts(&'onLoadEvent',[event.event,event.variables,event.strumTime])
+		FunkinGD.callScript('custom_events/'+event.event,&'onLoadThisEvent',[event.variables,event.strumTime])
 		if _is_first_event_load:
-			FunkinGD.callOnScripts('onInitEvent',[event.event,event.variables,event.strumTime])
-			FunkinGD.callScript('custom_events/'+event.event,'onInitLocalEvent',[event.variables,event.strumTime])
+			FunkinGD.callOnScripts(&'onInitEvent',[event.event,event.variables,event.strumTime])
+			FunkinGD.callScript('custom_events/'+event.event,&'onInitLocalEvent',[event.variables,event.strumTime])
 	
 func startSong():
 	super.startSong()
 	if Conductor.songs: Conductor.songs[0].finished.connect(endSound)
-	FunkinGD.callOnScripts('onSongStart')
+	FunkinGD.callOnScripts(&'onSongStart')
 
 func loadNextSong():
 	var newSong = story_songs[0]
@@ -472,11 +492,14 @@ func resumeSong() -> void:
 
 func pauseSong(menu: bool = createPauseMenu) -> void:
 	if !canPause: return
+	if menu:
+		if pauseState: return 
+		create_pause_menu()
 	generateMusic = false
 	if _isSongStarted: Conductor.pauseSongs()
 	process_mode = Node.PROCESS_MODE_DISABLED
 	onPause = true
-	if menu: create_pause_menu()
+	
 
 func create_pause_menu() -> PauseSubstate:
 	if pauseState: return pauseState
@@ -500,15 +523,13 @@ func restartSong(absolute: bool = true):
 			for note in notes.members: note.kill()
 			notes.members.clear()
 			generateMusic = true
-			unspawnNotes = _notes_preload.duplicate()
-			eventNotes = _events_preload.duplicate()
 			_resetScore()
 			onPause = false
 	)
 
 func endSound(skip_transition: bool = false) -> void:
 	Conductor.pauseSongs()
-	var results = FunkinGD.callOnScripts('onEndSong',[],true)
+	var results = FunkinGD.callOnScriptsWithReturn('onEndSong')
 	if FunkinGD.Function_Stop in results or !canExitSong: return
 	exitingSong = true
 	canPause = false
@@ -529,7 +550,7 @@ func countDownTick(beat: int) -> void:
 	
 	var folder: String = 'gameplay/countdown/'+('pixel/' if isPixelStage else 'funkin/')
 	FunkinGD.playSound(folder+countSounds[tick]+introSoundsSuffix)
-	FunkinGD.callOnScripts('onCountdownTick',[tick])
+	FunkinGD.callOnScripts(&'onCountdownTick',[tick])
 	
 	if !countDownEnabled or !countDownImages[tick]: return
 	
@@ -546,11 +567,11 @@ func _check_count_down_pos(delta: float) -> void:
 func _create_countdown_sprite(sprite_name: String, is_pixel: bool = isPixelStage) -> Sprite2D:
 	var sprite = Sprite2D.new()
 	if is_pixel:
-		sprite.texture = Paths.imageTexture('ui/countdown/pixel/'+sprite_name)
+		sprite.texture = Paths.texture('ui/countdown/pixel/'+sprite_name)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.scale = Vector2(6,6)
 	else:
-		sprite.texture = Paths.imageTexture('ui/countdown/funkin/'+sprite_name)
+		sprite.texture = Paths.texture('ui/countdown/funkin/'+sprite_name)
 		sprite.scale = Vector2(0.7,0.7)
 	
 	sprite.position = ScreenUtils.screenSize/2.0
@@ -620,7 +641,7 @@ func startVideo(path: Variant, isCutscene: bool = true) -> VideoStreamPlayer:
 
 func skipVideo() -> void:
 	if !videoPlayer: return
-	FunkinGD.callOnScripts('onSkipCutscene',[videoPlayer.stream.resource_name])
+	FunkinGD.callOnScripts(&'onSkipCutscene',[videoPlayer.stream.resource_name])
 	videoPlayer.finished.emit()
 
 func _on_cutscene_ends() -> void:
@@ -628,7 +649,7 @@ func _on_cutscene_ends() -> void:
 	inCutscene = false
 	canPause = true
 	seenCutscene = true
-	FunkinGD.callOnScripts('onEndCutscene',[videoPlayer.stream.resource_name])
+	FunkinGD.callOnScripts(&'onEndCutscene',[videoPlayer.stream.resource_name])
 	videoPlayer.queue_free()
 #endregion
 
@@ -646,7 +667,7 @@ func _resetScore():
 func updateScore():
 	super.updateScore()
 	scoreTxt.text = 'Score: '+str(songScore)+' | Misses: '+str(songMisses)+ ' | Accurancy: '+str(int(ratingPercent*10)/10.0)+'%'+ratingFC
-	FunkinGD.callOnScripts('onUpdateScore')
+	FunkinGD.callOnScripts(&'onUpdateScore')
 #endregion
 
 #region Section Methods
@@ -701,7 +722,7 @@ func loadStage(stage: StringName, loadScript: bool = loadStageScript):
 #region Combo Methods
 func createCombo(rating: String) -> Combo:
 	var combo = super.createCombo(rating)
-	if combo: FunkinGD.callOnScripts('onComboCreated',[combo,rating])
+	if combo: FunkinGD.callOnScripts(&'onComboCreated',[combo,rating])
 	return combo
 #endregion
 
@@ -710,13 +731,14 @@ func gameOver() -> void: FunkinGD.inGameOver = true; inGameOver = true; pauseSon
 
 func isGameOverEnabled() -> bool:
 	return canGameOver and health < 0.0 and not inGameOver and\
-		not FunkinGD.Function_Stop in FunkinGD.callOnScripts('onGameOver',[],true)
+		not FunkinGD.Function_Stop in FunkinGD.callOnScriptsWithReturn('onGameOver')
 
 func clear() -> void: 
 	super.clear(); 
 	_isSongStarted = false; camZooming = false;
-	_events_preload.clear()
+	
 	_is_first_event_load = true
+	eventNotes.clear()
 	EventNote.eventsFounded.clear()
 	EventNote.event_variables.clear()
 	
@@ -763,13 +785,13 @@ func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
 #endregion
 
 #region Camera methods
-func moveCamera(target: StringName = 'boyfriend') -> void: FunkinGD.callOnScripts('onMoveCamera',[target])
+func moveCamera(target: StringName = 'boyfriend') -> void: FunkinGD.callOnScripts(&'onMoveCamera',[target])
 #endregion
 
 
 func _unhandled_input(event: InputEvent):
 	if event is InputEventKey:
-		FunkinGD.callOnScripts('onKeyEvent',[event])
+		FunkinGD.callOnScripts(&'onKeyEvent',[event])
 		if !event.pressed or event.echo: return
 		match event.keycode:
 			KEY_ENTER: if canPause and not onPause: pauseSong.call_deferred()
@@ -777,12 +799,11 @@ func _unhandled_input(event: InputEvent):
 			KEY_8: if isModding: characterEditor()
 
 func destroy(absolute: bool = true):
-	FunkinGD.callOnScripts('onDestroy',[absolute])
+	FunkinGD.callOnScripts(&'onDestroy',[absolute])
 	FunkinGD._clear_scripts()
 	FunkinGD.game = null
 	stageJson.clear()
 	
-	if absolute: _events_preload.clear()
 	if exitingSong: ChartEditor.reset_values()
 	
 	Paths.extraDirectory = ''

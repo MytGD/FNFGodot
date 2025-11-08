@@ -39,8 +39,8 @@ func _ready():
 			sound.stream = Paths.music(loopSoundName)
 			sound.stream.loop = true
 			sound.play()
-			FunkinGD.callOnScripts('onGameOverStart')
-			character.animation.play('deathLoop')
+			FunkinGD.callOnScripts(&'onGameOverStart')
+			character.animation.play(&'deathLoop')
 			
 	)
 	
@@ -51,14 +51,14 @@ func _ready():
 		4)
 	)
 	add_child(character)
-	character.animation.play('firstDeath')
+	character.animation.play(&'firstDeath')
 	sound = FunkinGD.playSound(deathSoundName)
 	sound.reparent(self)
 
 
 func confirm() -> void:
 	if state >= 3: return
-	character.animation.play('deathConfirm')
+	character.animation.play(&'deathConfirm')
 	sound.stream = Paths.music(endSoundName)
 	sound.play()
 	state = 3

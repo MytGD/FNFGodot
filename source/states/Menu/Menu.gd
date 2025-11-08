@@ -10,10 +10,8 @@ var introText: PackedStringArray = [
 	'Special Thanks for \nShadow Mario'
 ]
 
-var curIntroText: int = 0
-
-var introTime: float = 0.0
-
+var curIntroText: int
+var introTime: float
 
 var alphaText: AlphabetText = AlphabetText.new()
 
@@ -24,12 +22,9 @@ var gfBeating: FunkinSprite = FunkinSprite.new(true,'gfDanceTitle')
 var logoBomping: FunkinSprite = FunkinSprite.new(true,'logoBumpin')
 var pressStart: FunkinSprite = FunkinSprite.new(true,'titleEnter')
 
-var bpm: float = 100
-
-var beat: int = 0.0: set = set_beat
-
-var menuState: int = 0
-
+var bpm: float
+var beat: int: set = set_beat
+var menuState: int
 var playIntroText: bool = true
 
 func _ready():
@@ -57,7 +52,7 @@ func _ready():
 	logoBomping._position = Vector2(bpm_data.get('titlex',-150),bpm_data.get('titley',-100))
 	logoBomping.name = 'logoBomping'
 	
-	gfBeating.image.texture = Paths.imageTexture('gfDanceTitle')
+	gfBeating.image.texture = Paths.texture('gfDanceTitle')
 	gfBeating.animation.addAnimByPrefix('danceLeft','gfDance',24,false,range(15))
 	gfBeating.animation.addAnimByPrefix('danceRight','gfDance',24,false,range(15,30))
 	gfBeating.visible = false
@@ -66,7 +61,7 @@ func _ready():
 	gfBeating.name = 'GfBeating'
 	bpm = bpm_data.get('bpm',102)
 	
-	pressStart.image.texture = Paths.imageTexture('titleEnter')
+	pressStart.image.texture = Paths.texture('titleEnter')
 	pressStart.animation.addAnimByPrefix('idle','ENTER IDLE',24,true)
 	pressStart.animation.addAnimByPrefix('pressed','ENTER PRESSED',24,true)
 	pressStart.visible = false
@@ -88,9 +83,8 @@ func changeState(state: int = 0):
 func set_beat(newBeat: int):
 	if beat == newBeat: return
 	beat = newBeat
-	if newBeat % 2 == 1:gfBeating.animation.play('danceRight')
-	else: gfBeating.animation.play('danceLeft')
-	logoBomping.animation.play('logo',true)
+	gfBeating.animation.play(&'danceRight' if newBeat % 2 == 1 else &'danceLeft')
+	logoBomping.animation.play(&'logo',true)
 	
 func _process(delta: float) -> void:
 	var audio = FunkinGD.soundsPlaying.get('freakyMenu')
@@ -113,10 +107,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton and event.button_index == 1 or event is InputEventKey and event.keycode == KEY_ENTER)\
 	 and event.pressed:
 		match menuState:
-			0:
-				changeState(1)
+			0: changeState(1)
 			1:
-				pressStart.animation.play('pressed')
+				pressStart.animation.play(&'pressed')
 				doFlash()
 				FunkinGD.playSound(Paths.sound('confirmMenu'))
 				get_tree().create_timer(1.5).timeout.connect(Global.swapTree.bind(ModeSelect.new()))

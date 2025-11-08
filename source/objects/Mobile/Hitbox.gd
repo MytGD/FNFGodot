@@ -1,6 +1,7 @@
 extends Node2D
 
-const Note = preload("res://source/objects/Notes/Note.gd")
+const NoteHit = preload("uid://dx85xmyb5icvh")
+const Song = preload("uid://cerxbopol4l1g")
 
 var count: int = 4
 var hitboxs: Array = []
@@ -24,22 +25,16 @@ class HitBox extends Sprite2D:
 			if pressed: Input.action_press(action)
 			else: Input.action_release(action)
 	
-	func _init(): texture = Paths.imageTexture('mobile/hitbox')
+	func _init(): texture = Paths.texture('mobile/hitbox')
 	
 	
 func _init(hitbox_count: int = 4):
 	count = hitbox_count
 	process_priority = 2
-	
-func _ready():
 	name = 'HitBox'
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	
+func _ready():
 	hitbox_offset = Vector2(ScreenUtils.screenWidth/count,ScreenUtils.screenHeight)
-	
-	var scale = hitbox_offset/(ScreenUtils.screenWidth/count)
-	
-	var keys = Note.getNoteAction(count)
+	var keys = NoteHit.getInputActions()
 	for i in range(count):
 		var sprite = HitBox.new()
 		hitboxs.append(sprite)
@@ -64,15 +59,12 @@ func _get_touched_hitboxes() -> Array[HitBox]:
 	
 func _update_hitboxs():
 	var touches = _get_touched_hitboxes()
-	for i: HitBox in hitboxs:
-		i.pressed = i in touches
-	
+	for i: HitBox in hitboxs: i.pressed = i in touches
+
 func _input(event):
 	if event is InputEventScreenTouch:
-		if event.pressed:
-			touches_positions[event.index] = event.position
-		else:
-			touches_positions.erase(event.index)
+		if event.pressed:touches_positions[event.index] = event.position
+		else: touches_positions.erase(event.index)
 		_update_hitboxs()
 	elif event is InputEventScreenDrag:
 		touches_positions[event.index] = event.position

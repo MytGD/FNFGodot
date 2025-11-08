@@ -35,7 +35,7 @@ func _ready():
 	add_child(weeks_bg)
 	
 	var tracks = Sprite2D.new()
-	tracks.texture = Paths.imageTexture('storymenu/ui/tracks')
+	tracks.texture = Paths.texture('storymenu/ui/tracks')
 	tracks.position = Vector2(50,500)
 	tracks.centered = false
 	add_child(tracks)
@@ -77,7 +77,7 @@ func createWeeks():
 		if Paths.file_exists(title):
 			var sprite = Sprite2D.new()
 			sprite.position = Vector2(ScreenUtils.screenCenter.x,offset)
-			sprite.texture = Paths.imageTexture(title)
+			sprite.texture = Paths.texture(title)
 			weeks_node.add_child(sprite)
 		offset += 150
 
@@ -120,7 +120,7 @@ func createProp(data, prop_index:int =0):
 		sprite.animation.clearLibrary()
 	else:
 		sprite = FunkinSprite.new()
-		sprite.image.texture = Paths.imageTexture(tex_path)
+		sprite.image.texture = Paths.texture(tex_path)
 		characters[tex_path] = sprite
 		add_child(sprite)
 		if !sprite.image.texture: return
@@ -134,7 +134,7 @@ func createProp(data, prop_index:int =0):
 	if animations:
 		for i in data.animations: 
 			sprite.animation.addAnimByPrefix(i.name,i.prefix,i.get('frameRate',24.0),true)
-		sprite.animation.play('idle')
+		sprite.animation.play(&'idle')
 	
 	sprite.position = VectorUtils.array_to_vec(data.get('offsets',[0,0]))
 	sprite.position += Vector2(

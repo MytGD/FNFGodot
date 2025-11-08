@@ -4,7 +4,7 @@ const Anim = preload("res://source/general/animation/Anim.gd")
 
 var imageFile: StringName:
 	set(path):
-		texture = Paths.imageTexture(path)
+		texture = Paths.texture(path)
 
 		imageFile = path
 
@@ -36,11 +36,5 @@ func set_letter(_letter: StringName):
 	letter = _letter
 	animation.addAnimByPrefix('anim',prefix,24,true)
 
-func _notification(what: int) -> void:
-	match what:
-		NOTIFICATION_DISABLED, NOTIFICATION_EXIT_TREE:
-			animation.curAnim.can_process = false
-			animation.curAnim.playing = false
-		NOTIFICATION_ENABLED, NOTIFICATION_ENTER_TREE:
-			animation.curAnim.can_process = true
-			animation.curAnim.start_process()
+func _process(delta: float) -> void:
+	animation.curAnim.process_frame(delta)

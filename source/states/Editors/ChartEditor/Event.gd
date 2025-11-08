@@ -38,7 +38,7 @@ var event_selected_name: String
 var event_index: int = -1
 
 func _init():
-	texture = Paths.imageTexture('eventArrow')
+	texture = Paths.texture('eventArrow')
 	centered = false
 	scale = Vector2(0.4,0.4)
 

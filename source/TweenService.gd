@@ -70,9 +70,11 @@ static func set_tween_ease(tween,easing: StringName):
 
 func _process(delta: float) -> void:
 	if !tweens_to_update: return
-	var index = 0
-	while index < tweens_to_update.size():
+	var index = tweens_to_update.size()
+	while index:
+		index -= 1
 		var tween = tweens_to_update[index]
 		if !tween.is_playing: tweens_to_update.remove_at(index); continue
 		tween._process(delta)
-		index += 1
+		
+		

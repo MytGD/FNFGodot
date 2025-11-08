@@ -38,7 +38,7 @@ class ButtonMobile extends Sprite2D:
 			pressed = value
 		
 	func _init(button_key: int = 0):
-		texture = Paths.imageTexture('button')
+		texture = Paths.texture('button')
 		
 		add_child(text)
 		if texture:

@@ -25,7 +25,7 @@ func _init(bgImage: String = ''):
 	name = 'bar'
 	bg.image.texture_changed.connect(func():defaultSize = Vector2(bg.width,bg.height))
 	
-	bg.image.texture = Paths.imageTexture(bgImage)
+	bg.image.texture = Paths.texture(bgImage)
 	bg.name = 'bg'
 	add_child(rightBar)
 	rightBar.modulate = Color(0.4,0.4,0.4,1)
@@ -57,16 +57,16 @@ func flip_colors():
 
 ##Set Bar Images, if dont want to change, leave blank.
 func set_bar_image(base: Variant = null,left: Variant = null,right: Variant = null) -> void:
-	if base: bg.image.texture = Paths.imageTexture(base) if base is String else base
+	if base: bg.image.texture = Paths.texture(base) if base is String else base
 	
 	if left:
 		_left_bar_is_color = false
-		leftBar.texture = Paths.imageTexture(left)  if left is String else left
+		leftBar.texture = Paths.texture(left)  if left is String else left
 		leftBar.region_rect.size = leftBar.texture.get_size()
 		
 	if right:
 		_right_bar_is_color = false
-		rightBar.texture = Paths.imageTexture(right) if right is String else right
+		rightBar.texture = Paths.texture(right) if right is String else right
 		rightBar.region_rect.size = rightBar.texture.get_size()
 	_update_bar()
 	

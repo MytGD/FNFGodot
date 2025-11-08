@@ -22,21 +22,17 @@ func _init(
 func _update() -> void:
 	if !object: stop(); return
 	var index: int = 0
-	var prop_length = _prop_keys.size()
-	while index < prop_length:
+	while index < _prop_keys.size():
 		var i = _prop_keys[index]
 		var prop = properties[i]
-		var final_val: Variant
-		if step < duration:
-			final_val = Tween.interpolate_value(
-				prop[0],
-				prop[1] - prop[0],
-				step,
-				duration,
-				transition,
-				ease,
-			)
-		else: final_val = prop[1]
+		var final_val: Variant = prop[1] if step >= duration else Tween.interpolate_value(
+			prop[0],
+			prop[1] - prop[0],
+			step,
+			duration,
+			transition,
+			ease,
+		)
 		
 		if object is ShaderMaterial: object.set_shader_parameter(i,final_val)
 		else: 

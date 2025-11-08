@@ -75,7 +75,7 @@ static var data: Dictionary = {
 	
 	#region Screen Options
 	'window_mode': DisplayServer.WINDOW_MODE_WINDOWED,
-	'vsync_mode': DisplayServer.VSYNC_ENABLED,
+	'vsync_mode': ProjectSettings.get_setting("display/window/vsync/vsync_mode"),
 	'fps': 120,
 	
 	'timeBarType': 0, #0 = Disabled, 1 = TIME_LEFT, 2 = SONG_NAME, 3 = POSITION
@@ -90,6 +90,18 @@ static var data: Dictionary = {
 	#region Audio Options
 	'songOffset': 0.0,
 	#endregion
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	#region Visual  Options

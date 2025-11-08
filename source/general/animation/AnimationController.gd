@@ -18,21 +18,11 @@ extends Resource
 ##   animation.looped = true #Animation
 ##   animation.play() #Play Animation
 ##   animation.play_reverse() #Play in reverse.
-##   
-##func _notification(what: int) -> void:
-##   match what:
-##       #Make the animation pause when stop processing.
-##       NOTIFICATION_DISABLED, NOTIFICATION_EXIT_TREE:
-##          animation.curAnim.can_process = false
-##          animation.curAnim.playing = false
-##       #Make the animation resumes when returns processing.
-##       NOTIFICATION_ENABLED, NOTIFICATION_ENTER_TREE:
-##          animation.curAnim.can_process = true
-##          animation.curAnim.start_process()
+##func _process(delta):
+##   process_frame(delta)
 ##[/codeblock][br]
 
 
-static var node_paths: Dictionary[StringName,NodePath] = {}
 ##Frames that will be played. 
 ##This stores an [Array] that contains a [Dictionary]:[code]
 ##{
@@ -64,12 +54,11 @@ var node_to_animate: Node: set = set_node_animate ##The Node to animate, [u][b]e
 
 @export var loop_frame: int = 0
 
- ##The velocity of the animation.
-@export var frameRate: float = 24.: set = set_frame_rate
+@export var frameRate: float = 24.: set = set_frame_rate ##The velocity of the animation.
 @export var maxFrames: int = 0 ##The number of frames in the animation.
 
-##The current frame of the animation. Can also be changed outside of the script.
-@export var curFrame: int = 0: set = set_cur_frame, get = get_cur_frame
+
+@export var curFrame: int = 0: set = set_cur_frame, get = get_cur_frame ##The current frame of the animation. Can also be changed outside of the script.
 
 var curFrameData: Dictionary
 
@@ -78,9 +67,7 @@ var curFrameData: Dictionary
 @export var finished: bool = false: set = _set_finished ##If the animation is finished.
 var paused: bool = false: set = pause
 
- ##A multiplier for the speed of the animation.
-@export var speed_scale: float = 1.0: set = set_speed_scale
-var can_process: bool = false
+@export var speed_scale: float = 1.0: set = set_speed_scale  ##A multiplier for the speed of the animation.
 
 ##If [code]true[/code], the animation will restarts when it finishes.
 @export var looped: bool = false
@@ -90,7 +77,7 @@ var _float_frame: float = 0.0
 ##If the animation is playing.
 ##Setting to [code]false[/code], the animation will be stop playing, 
 ##useful if you want to stop it for a pause menu or something similar.
-var playing: bool: set = start_process
+var playing: bool
 
 var _animation_speed: float = frameRate
 
@@ -99,8 +86,8 @@ signal animation_started
 signal animation_resumed
 signal animation_stopped
 
-##Process animation
-func process_frame(delta: float) -> void:
+func process_frame(delta: float) -> void: ##Process animation
+	if !playing: return
 	if reverse: _float_frame -= delta*_animation_speed
 	else: _float_frame += delta*_animation_speed
 	
@@ -118,7 +105,7 @@ func play() -> void: ##Start the animation.
 	_float_frame = 0
 	loop_frame = 0
 	start_anim()
-	
+
 func play_reverse() -> void: ##Play the animation in reverse.
 	reverse = true
 	_float_frame = maxFrames-1
@@ -137,32 +124,18 @@ func start_anim():
 	
 	animation_started.emit()
 	
-func _can_start_anim() -> bool: return can_process and not paused and not finished
-
-##Resume progress
-func resume() -> void: 
+func resume() -> void:  ##Resume progress
 	paused = false
 	animation_resumed.emit()
-	start_process()
 
-##Pause animation
-func pause(p: bool = true) -> void: paused = p; playing = !p
+func pause(p: bool = true) -> void: paused = p; playing = !p ##Pause animation
 
 func stop() -> void: ##Stop the animation, making it not process frames.
 	paused = false
 	playing = false
 	_float_frame = 0
 	animation_stopped.emit()
-	
-func start_process(start: bool = true) -> void:
-	start = start and _can_start_anim()
-	if start == playing: return
-	playing = start
-	if start: AnimationService.anims_to_update[get_instance_id()] = self
 
-
-	
-	
 func set_frame(frame: int = _real_cur_frame) -> void:
 	curFrameData = frames[frame]
 	for i in curFrameData:
@@ -191,12 +164,7 @@ func _set_finished(f: bool):
 
 func set_node_animate(node) -> void:
 	node_to_animate = node
-	if node: 
-		can_process = node.is_inside_tree()
-		start_process()
-		return
-	can_process = false; 
-	stop();
+	if !node: stop();
 
 func set_frame_rate(value: float) -> void:
 	if value == frameRate: return

@@ -3,7 +3,7 @@ extends FunkinSprite
 
 const NoteSplash = preload("res://source/objects/Notes/NoteSplash.gd")
 
-static var splash_datas: Dictionary = {}
+static var splash_datas: Dictionary[String,Dictionary] = {}
 static var mosaicShader: Material
 
 enum SplashType{
@@ -32,7 +32,6 @@ var type: String = 'noteSplash'
 var splashType: SplashType = SplashType.NORMAL
 var splashData: Dictionary
 
-var _animsOffset: Dictionary = {}
 func _init():
 	super._init(true)
 	visibility_changed.connect(func():
@@ -47,17 +46,17 @@ func _set_pixel(isPixel: bool):
 	if isPixel:
 		if !mosaicShader: mosaicShader = Paths.loadShader('MosaicShader')
 		material = mosaicShader
-		if material: material.set_shader_parameter('strength',6.0)
+		if material: material.set_shader_parameter(&'strength',6.0)
 	else: material = null
 	
 ##Add animation to splash. Returns [code]true[/code] if the animation as added successfully.
 func loadSplash(type: StringName, prefix: StringName) -> bool:
 	splashData = getSplashData(style,type)
-	if !splashData: prints(type,prefix); return false
+	if !splashData: return false
 	
 	addSplashAnimation(self,prefix)
 	
-	var data_scale = splashData.get('scale')
+	var data_scale = splashData.get(&'scale')
 	if data_scale: scale = Vector2(data_scale,data_scale)
 	return true
 
@@ -68,29 +67,28 @@ func _process(_d) -> void:
 		if strum.mustPress: visible = Input.is_action_pressed(strum.hit_action)
 		followStrum()
 
-func followStrum():
+func followStrum() -> void:
 	modulate.a = strum.modulate.a
 	if splashType == SplashType.HOLD_COVER: rotation = strum.rotation
 	_position = strum._position
 
-static func addSplashOffsetFromData(splash: NoteSplash, anim_name: String, prefix: String) -> void:
-	var prefixs = splash.splashData.data
-	var _offset = prefixs.get('offsets'); if !_offset: splash.splashData.get('offsets',[0,0])
-	_offset = VectorUtils.as_vector2(_offset) if _offset else Vector2(100,100) 
-	splash.addAnimOffset(anim_name,_offset)
+static func addSplashOffsetFromData(splash: NoteSplash, anim_name: String, data: Dictionary) -> void:
+	var _offset = data.get(&'offsets',splash.splashData.get(&'offsets'))
+	splash.addAnimOffset(anim_name,VectorUtils.as_vector2(_offset) if _offset else Vector2(100,100) )
 
 
 static func addSplashAnimation(splash: NoteSplash, prefix: String):
-	var anim_data = splash.splashData.get('data'); if !anim_data: return false
+	var anim_data = splash.splashData.get(&'data'); if !anim_data: return false
 	
 	var prefixs = anim_data.get(prefix)
-	if !prefixs: prefixs = anim_data.get('default'); if !prefixs: return false
+	if !prefixs: prefixs = anim_data.get(&'default'); if !prefixs: return false
 	
 	if prefixs is Array: prefixs = prefixs.pick_random()
 	
-	var asset = prefixs.get('assetPath')
-	if !asset: asset = splash.splashData.get('assetPath'); if !asset: return false
-	splash.image.texture = Paths.imageTexture(asset)
+	var asset = prefixs.get(&'assetPath')
+	if !asset: asset = splash.splashData.get(&'assetPath'); if !asset: return false
+	
+	splash.image.texture = Paths.texture(asset)
 	
 	if !splash.image.texture: return false
 	
@@ -100,22 +98,22 @@ static func addSplashAnimation(splash: NoteSplash, prefix: String):
 	#Set Offset
 	match splash.splashType:
 		SplashType.NORMAL:
-			var prefix_anim = prefixs.get('prefix','')
+			var prefix_anim = prefixs.get(&'prefix','')
 			if !prefix_anim: return false
-			splash.animation.addAnimByPrefix('splash',prefix_anim,24.0,false)
-			addSplashOffsetFromData(splash,'splash',prefix)
+			splash.animation.addAnimByPrefix(&'splash',prefix_anim,24.0,false)
+			addSplashOffsetFromData(splash,&'splash',prefixs)
 		SplashType.HOLD_COVER:
-			var start_data = prefixs.get('start')
+			var start_data = prefixs.get(&'start')
 			if start_data:
-				var sprefix = start_data.get('prefix')
+				var sprefix = start_data.get(&'prefix')
 				if sprefix:
-					splash.animation.addAnimByPrefix('splash',sprefix,24.0,false)
+					splash.animation.addAnimByPrefix(&'splash',sprefix,24.0,false)
 					splash.animation.auto_loop = true
-					addSplashOffsetFromData(splash,'splash','start')
+					addSplashOffsetFromData(splash,&'splash',start_data)
 			
-			var hold_data = prefixs.get('hold')
+			var hold_data = prefixs.get(&'hold')
 			if hold_data:
-				var hprefix = hold_data.get('prefix')
+				var hprefix = hold_data.get(&'prefix')
 				if hprefix:
 					splash.animation.addAnimByPrefix(
 						'splash-hold',
@@ -123,25 +121,29 @@ static func addSplashAnimation(splash: NoteSplash, prefix: String):
 						24.0,
 						true
 					)
-				addSplashOffsetFromData(splash,'splash-hold','hold')
+				addSplashOffsetFromData(splash,&'splash-hold',hold_data)
 		SplashType.HOLD_COVER_END:
-			var end_data = prefixs.get('end')
+			var end_data = prefixs.get(&'end')
 			if !end_data: return false
 			splash.animation.addAnimByPrefix(
-				'splash',
-				end_data.get('prefix',''),
+				&'splash',
+				end_data.get(&'prefix',&''),
 				24.0,
 				false
 			)
-			addSplashOffsetFromData(splash,'splash','end')
+			addSplashOffsetFromData(splash,&'splash',end_data)
 	return true
 
 static func getSplashData(file: String, type: StringName) -> Variant: ##Returns the splash data from the [param preffix] in the [param file].
-	var data: Dictionary
+	var data: Dictionary[StringName,Variant]
 	
 	if splash_datas.has(file): data = splash_datas[file]
 	else:
-		data = Paths.loadJson('data/splashstyles/'+file)
+		data = Dictionary(
+			Paths.loadJson('data/splashstyles/'+file),
+			TYPE_STRING_NAME,'',null,
+			TYPE_NIL,'',null
+		)
 		if !data: return {}
 		splash_datas[file] = data
 	

@@ -68,7 +68,7 @@ func _ready():
 	name = 'Freeplay'
 	#var bg = Sprite2D.new()
 	#bg.centered = false
-	#bg.texture = Paths.imageTexture('menuBG')
+	#bg.texture = Paths.texture('menuBG')
 	#bg.name = 'bg'
 	#bg.modulate = Color.GRAY
 	#add_child(bg)
@@ -76,39 +76,46 @@ func _ready():
 	add_child(bar_top)
 	add_child(bar_bottom)
 	
-	#Mod Sprites
-	cur_mod_image.add_child(modSelectLeft)
-	modSelectLeft.scale = Vector2(1.7,1.7)
-	modSelectRight.scale = Vector2(1.7,1.7)
-	modSelectRight.flipX = true
-	modSelectLeft.position.x = -100
-	cur_mod_image.add_child(modSelectRight)
 	
 	#Difficulty Sprite
-	difficultySprite.position = Vector2(ScreenUtils.screenWidth,50)
+	difficultySprite.set_position_xy(ScreenUtils.screenWidth,50)
 	difficultySprite.modulate.a = 0.0
 	add_child(difficultySprite)
 	difficultySprite.add_child(difficultyText)
 	
 	for i in [diffiSelectLeft,diffiSelectRight,modSelectLeft,modSelectRight]:
-		i.image.texture = Paths.imageTexture('freeplay/freeplaySelector')
+		i.image.texture = Paths.texture('freeplay/freeplaySelector')
 		i.animation.addAnimByPrefix('anim','arrow pointer loop',24,true)
 	
-	diffiSelectLeft.position = -Vector2(80,15)
+	diffiSelectLeft._position = -Vector2(80,15)
 	difficultySprite.add_child(diffiSelectLeft)
 	
-	diffiSelectRight.position.y = -15
+	diffiSelectRight._position.y = -15
 	diffiSelectRight.flipX = true
 	difficultySprite.add_child(diffiSelectRight)
 	
+	
+	
+	#Mod Sprites
 	bar_top.add_child(cur_mod_image)
 	cur_mod_image.add_child(cur_mod_text)
+	cur_mod_image.add_child(modSelectLeft)
 	
-	cur_mod_text.scale = ModInfoScale + Vector2.ONE
-	cur_mod_text.position.y = 20
 	cur_mod_image.centered = false
 	cur_mod_image.position.x = 50
 	cur_mod_image.scale = ModInfoScale
+	
+	modSelectLeft.scale = Vector2(1.7,1.7)
+	modSelectRight.scale = Vector2(1.7,1.7)
+	modSelectRight.flipX = true
+	modSelectRight._position.y = 25
+	modSelectLeft.set_position_xy(-100,25)
+	
+	cur_mod_image.add_child(modSelectRight)
+	
+	cur_mod_text.scale = ModInfoScale + Vector2.ONE
+	cur_mod_text.position.y = 20
+	
 	
 	bar_top.size = Vector2(ScreenUtils.screenWidth,BarSize)
 	bar_top.position.y = -BarSize
@@ -126,14 +133,8 @@ func _ready():
 	var old_selected = curSongIndex
 	setModSelected(curMod)
 	setSongSelected(old_selected,false)
-	exiting.connect(func():
-		if cur_week_node: for i in get_children(): remove_child(i)
-		queue_free()
-	)
-	Global.onSwapTree.connect(func():
-		exiting.emit()
-		menuSong.queue_free(),CONNECT_ONE_SHOT
-	)
+	exiting.connect(func(): if cur_week_node: for i in get_children(): remove_child(i); queue_free())
+	Global.onSwapTree.connect(func(): exiting.emit(); menuSong.queue_free(),CONNECT_ONE_SHOT)
 	
 	bar_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	bar_tween.parallel().tween_property(bar_top,"position:y",0,1)
@@ -146,16 +147,14 @@ func _ready():
 func loadWeekFrom(path: String):
 	var mod = Paths.getModFolder(path)
 	if !mod: mod = Paths.game_name
-	#Check if mod is already loaded
-	for i in mods: if i[0] == mod: return
+	for i in mods: if i[0] == mod: return #Check if mod is already loaded
 
 	var weekFolder = Paths.exePath+'/'+path
 	var weeksFounded: Array = []
 	if Paths.dir_exists(weekFolder):
 		if FileAccess.file_exists(weekFolder+'/weekList.txt'):
 			for split in FileAccess.get_file_as_string(weekFolder+'/weekList.txt').split('\n'):
-				if FileAccess.file_exists(weekFolder+'/'+split+'.json'):
-					weeksFounded.append(split)
+				if FileAccess.file_exists(weekFolder+'/'+split+'.json'): weeksFounded.append(split)
 			
 		for week in DirAccess.get_files_at(weekFolder):
 			if not week.replace('.json','') in weeksFounded and week.ends_with(".json"):
@@ -165,7 +164,7 @@ func loadWeekFrom(path: String):
 	var songs_nodes = []
 	Paths.curMod = mod
 	
-	var mod_array = [mod,mod_node,Paths.imageTexture('pack',false),songs_nodes,{}]
+	var mod_array = [mod,mod_node,Paths.texture('pack',false),songs_nodes,{}]
 	for week in weeksFounded:
 		var songArray: Dictionary = Paths.loadJson(weekFolder+'/'+week)
 		
@@ -187,14 +186,10 @@ func loadWeekFrom(path: String):
 	
 func loadWeekProperties(week_data: Dictionary) -> Dictionary:
 	var dif: String = week_data.get('difficulties','')
-	if !dif:
-		dif = 'easy, normal, hard'
+	if !dif: dif = 'easy, normal, hard'
 		
 	var dif_split: Array = StringUtils.split_no_space(dif,',')
-	var data: Dictionary = {
-		'songs': [],
-		'difficulties': dif
-	}
+	var data: Dictionary = {'songs': [],'difficulties': dif}
 	
 	for song in week_data.get('songs',[]):
 		var alphabet = AlphabetText.new(song[0])
@@ -287,7 +282,7 @@ func setModSelected(banner_id: int = 0):
 	cur_mod_image.texture = mod_image
 	
 	var image_size = mod_image.get_size().x
-	cur_mod_text.position.x = image_size + 50
+	cur_mod_text.position.x = image_size + 100
 	modSelectRight.position.x = image_size
 	setSongSelected(0,false)
 	
@@ -323,23 +318,27 @@ func _set_difficulty_text(text: String):
 	difficultySprite.image.texture = null
 	difficultyText.text = difficulty
 	
-	var offset = -difficultySprite.pivot_offset.x*2*difficultySprite.scale.x + 180
+	var offset = -difficultyText.width*difficultyText.scale.x + 180
 	difficultyText.position.x = offset
 	diffiSelectLeft.position.x = offset - 80
 	diffiSelectRight.position.x = offset
+
 func _load_difficulty_image(path_absolute: String):
 	if FileAccess.file_exists(path_absolute.get_basename()+'.xml'):
-		difficultySprite.image.texture = Paths.imageTexture(path_absolute)
-		difficultySprite.animation.addAnimByPrefix('anim','idle',24,true)
-		difficultySprite.animation.play('anim')
+		difficultySprite._auto_resize_image = false
+		difficultySprite.image.texture = Paths.texture(path_absolute)
+		difficultySprite.animation.addAnimByPrefix(&'anim','idle',24,true)
+		difficultySprite.animation.play(&'anim')
 	else:
-		difficultySprite.image.texture = Paths.imageTexture(path_absolute)
-		difficultySprite.image.region_rect.size = difficultySprite.imageSize
+		difficultySprite.animation.stop()
+		difficultySprite._auto_resize_image = true
+		difficultySprite.image.texture = Paths.texture(path_absolute)
+	
 	
 	var difWidth = difficultySprite.pivot_offset.x*2*difficultySprite.scale.x
 	difficultySprite.position.x = ScreenUtils.screenWidth - difWidth - 100
 	diffiSelectLeft.position.x = -50
-	diffiSelectRight.position.x = difWidth + 20
+	diffiSelectRight.position.x = difWidth + 10
 func exitDifficulty():
 	if diffiTween: diffiTween.kill()
 	diffiTween = create_tween().parallel().set_ease(Tween.EASE_IN)
@@ -440,9 +439,10 @@ func _input(event: InputEvent) -> void:
 		if scroll_index == -1: scroll_index = curSongIndex
 		else: scroll_index -= event.relative.y/100
 		
-		if int(scroll_index) != curSongIndex:
+		var int_scroll = int(scroll_index)
+		if int_scroll != curSongIndex:
 			click_select_song = false
-			setSongSelected(scroll_index)
+			setSongSelected(int_scroll)
 
 func startSong():
 	var song_name = cur_song_data[0].text

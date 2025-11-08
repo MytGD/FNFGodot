@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://berrm8mumlyed" path="res://source/custom_nodes/DropdownBox.gd" id="1_btham"]
 
 [node name="DropdownBox" type="Control"]
-custom_minimum_size = Vector2(0, 23)
+custom_minimum_size = Vector2(134, 24)
 layout_mode = 3
 anchors_preset = 0
 offset_right = 130.0

@@ -248,7 +248,7 @@ func _ready():
 	mouse_rect_follow.scale = CHESS_REAL_SIZE
 	add_child(mouse_selection)
 	var bg = Sprite2D.new()
-	bg.texture = Paths.imageTexture('menuDesat')
+	bg.texture = Paths.texture('menuDesat')
 	bg.centered = false
 	bg.modulate = Color(0.1,0.1,0.1)
 	#add_child(bg)
@@ -266,7 +266,7 @@ func _ready():
 	chess_events.name = 'ChessEvents'
 	
 	var eventIcon = Sprite2D.new()
-	eventIcon.texture = Paths.imageTexture('eventArrow')
+	eventIcon.texture = Paths.texture('eventArrow')
 	eventIcon.position = Vector2(chess_events.global_position.x,20)
 	eventIcon.scale = ICON_SCALE - Vector2(0.2,0.2)
 	eventIcon.centered = false
@@ -395,7 +395,7 @@ func changeSongBpm(to: float) -> void: Conductor.setSongBpm(to)
 #region Editor Methods
 func set_zoom(new_zoom: float):
 	cur_zoom = new_zoom
-	var steps = 16*new_zoom
+	var steps: int = 16*int(new_zoom)
 	for i in chess_array:
 		i.steps = steps
 		i.draw_chess()

@@ -55,7 +55,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_LOCAL_TRANSFORM_CHANGED: _update_real_step_init()
 
 func _update_real_step_init():
-	_step_offset = ceili((position.x+30)/timeline_space)-1.0
+	_step_offset = ceili((position.x+30)/timeline_space)-1
 	_real_step_init = step_init + _step_offset
 
 #region Setters
@@ -71,7 +71,7 @@ func set_font_size(size: int) -> void:
 	font_size = size; queue_redraw()
 
 func set_step_init(init: int): 
-	init = minf(init,steps)
+	init = mini(init,steps)
 	if step_init == init: return
 	step_init = init;
 	_update_real_step_init()

@@ -23,7 +23,6 @@ func show_separator(show: bool = false):
 
 func _ready():
 	separator.show_behind_parent = true
-	
 	folder_container.minimum_size_changed.connect(_update_minimum_size.call_deferred)
 	_update_minimum_size()
 	

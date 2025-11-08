@@ -1,6 +1,5 @@
 extends "res://source/objects/Notes/Note.gd"
 ##Sustain Base Note Class
-
 const NoteHit = preload("res://source/objects/Notes/NoteHit.gd")
 
 var isBeingDestroyed: bool = false
@@ -10,6 +9,9 @@ var hit_action: String:
 var noteParent: NoteHit ##Sustain's Note Parent
 
 var sus_size: float = 0
+var default_sus_height: float = 0.0
+var is_sus_animated: bool = false
+
 func _init(data: int, length: float = 0) -> void:
 	noteSplashData.style = 'HoldNoteSplashes'
 	noteSplashData.type = 'holdNoteCover'
@@ -17,58 +19,90 @@ func _init(data: int, length: float = 0) -> void:
 	sustainLength = length
 	super._init(data)
 
+func _enter_tree() -> void: if !isEndSustain: _update_sustain_scale()
+
+func _check_hit() -> void:
+	canBeHit = distance <= 30.0 and (!noteParent or noteParent.wasHit and not isBeingDestroyed)
 
 func reloadNote() -> void: ##Reload Note Texture
 	animation.clearLibrary()
 	_animOffsets.clear()
 	offset = Vector2.ZERO
-	
-	var prefix = styleData.get('data')
-	if prefix: prefix = prefix.get((directions[noteData]+'End') if isEndSustain else directions[noteData])
-	var anim_name = 'holdEnd' if isEndSustain else 'hold'
-	if prefix: 
-		animation.addAnimByPrefix(anim_name,prefix,24,true)
+	var data = styleData.data.get(noteDirection+'End' if isEndSustain else noteDirection)
+	if !data: loadSustainFrame()
 	else:
-		image.region_rect.size = Vector2(imageSize.x/(Conductor.keyCount*2),imageSize.y)
-		var data = noteData*2
-		animation.addFrameAnim(anim_name,[(data+1) if isEndSustain else data])
+		var anim_data = data.get('data')
+		if anim_data: 
+			var prefix = anim_data.get('prefix')
+			is_sus_animated = !!prefix
+			if is_sus_animated: 
+				animation.addAnimByPrefix(getNoteAnimName(self),
+					prefix,
+					24,
+					true
+				)
+			else: 
+				var region = anim_data.get('region')
+				if region: setNoteRect(Rect2(region[0],region[1],region[2],region[3]))
+				else: loadSustainFrame()
+		else: loadSustainFrame()
+	
 	var note_scale = styleData.get('scale',0.7)
 	setGraphicScale(Vector2(note_scale,note_scale))
 
+func loadSustainFrame():
+	var frame: int = noteData*2
+	var cut: int = int(imageSize.x)/(Song.keyCount*2)
+	
+	setNoteRect(
+		Rect2(
+			cut*(frame+1 if isEndSustain else frame),
+			0.0,
+			cut,
+			imageSize.y
+		)
+	)
+
 func updateNote() -> void:
-	if !isEndSustain: 
-		var rect = animation.curAnim.curFrameData.get('region_rect')
-		if rect: scale.y = sus_size/rect.size.y
 	distance = (strumTime - Conductor.songPositionDelayed) * _real_note_speed
 	if isBeingDestroyed: updateSustain();
-	else: 
-		canBeHit = distance <= 30.0 and \
-				(!noteParent or noteParent.wasHit and not isBeingDestroyed)
+	else: _check_hit()
 	followStrum()
-	
+
+func getSustainHeight() -> float:
+	if is_sus_animated: var rect = animation.curAnim.curFrameData.get('region_rect'); if rect: return rect.size.y
+	return imageSize.y
+
+func _update_sustain_scale() -> void: scale.y = sus_size/getSustainHeight()
+
 func updateSustain():
 	if distance > 0.0: return
 	var fill = distance/scale.y
-	var current_sus_rect = animation.curAnim.curFrameData.get('region_rect')
-	if current_sus_rect:
-		var sustain_size = current_sus_rect.size.y + fill
-		image.region_rect.position.y = current_sus_rect.position.y - fill
-		image.region_rect.size.y = sustain_size
+	var _height: float = imageSize.y
+	var _y_atlas: float = 0.0
+	if is_sus_animated:
+		var rect = animation.curAnim.curFrameData.get('region_rect')
+		if rect: _height = rect.size.y; _y_atlas = rect.position.y
+	
+	image.region_rect.position.y = _y_atlas - fill
+	
+	_height += fill
+	image.region_rect.size.y = _height
+	
 	distance = 0.0
 	
-	if image.region_rect.size.y <= 0.0:  kill(); _is_processing = false
+	if _height <= 0.0:  kill(); _is_processing = false
 
 func resetNote() -> void:
 	super.resetNote()
 	var rect = animation.curAnim.curFrameData.get('region_rect')
 	if rect: image.region_rect = rect
+	else: image.region_rect.position.y = 0; image.region_rect.size.y = imageSize.y
 	
 	canBeHit = false
 	isBeingDestroyed = false
-	
-func killNote() -> void:
-	canBeHit = false
-	isBeingDestroyed = true
+
+func killNote() -> void: canBeHit = false; isBeingDestroyed = true
 
 ##Update the Note position from the his [param strumNote].
 func followStrum(strum: StrumNote = strumNote) -> void:
@@ -77,7 +111,9 @@ func followStrum(strum: StrumNote = strumNote) -> void:
 
 func _update_note_speed() -> void:
 	super._update_note_speed()
+	if isEndSustain: return
 	sus_size = sustainLength * _real_note_speed
+	_update_sustain_scale()
 
 func setNoteData(_data: int) -> void:
 	super.setNoteData(_data)
@@ -85,15 +121,9 @@ func setNoteData(_data: int) -> void:
 
 func _update_splash_data() -> void: noteSplashData.prefix = directions[noteData]
 
-static func getStyleData(style: String):
-	return Paths.loadJson('data/notestyles/'+style,false).get('holdNote',{})
-	
-static func getNoteTexture(_texture: String, is_pixel: bool = false) -> String:
-	var tex = super.getNoteTexture(_texture,is_pixel)
-	if is_pixel and not tex.ends_with('ENDS'): return tex+'ENDS'
-	return tex
-
 func set_pivot_offset(value: Vector2) -> void:
 	value.y = 0
 	image.pivot_offset.y = 0
 	super.set_pivot_offset(value)
+
+static func getStyleData(style: String): return Paths.loadJson('data/notestyles/'+style).get('holdNote',{})

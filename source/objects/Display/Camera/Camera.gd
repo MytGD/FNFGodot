@@ -4,7 +4,6 @@ class_name CameraCanvas extends Node2D
 @export var x: float: set = set_x, get = get_x
 @export var y: float: set = set_y, get = get_y
 @export var zoom: float = 1.0: set = set_zoom
-@export var alpha: float: set = set_alpha,get = get_alpha
 
 
 var color: Color: set = set_color,get = get_color
@@ -312,7 +311,6 @@ func set_x(_x: float) -> void: position.x = _x
 func set_y(_y: float) -> void: position.y = _y
 func set_width(value: int) -> void: width = value; _update_camera_size()
 func set_height(value: int) -> void: height = value; _update_camera_size()
-func set_alpha(value: float) -> void: scroll_camera.modulate.a = value
 func set_zoom(value: float) -> void: zoom = value; _update_zoom()
 func set_angle(value: float) -> void: angle_degrees = deg_to_rad(value)
 func set_angle_degress(value: float): angle_degrees = value; _update_angle()
@@ -335,8 +333,7 @@ func set_color(_color: Variant):
 #region Getters
 func get_x() -> float: return position.x
 func get_y() -> float: return position.y
-func get_alpha() -> float: return scroll_camera.modulate.a
-func get_angle() -> float: return deg_to_rad(angle_degrees)
+func get_angle() -> float: return rad_to_deg(angle_degrees)
 func get_color() -> Color: return scroll_camera.modulate
 func _property_get_revert(property: StringName) -> Variant:
 	match property:
