@@ -623,20 +623,19 @@ static func makeGraphic(object: Variant,width: float = 0.0,height: float = 0.0,c
 	if object is String:
 		var _sprite_name = object
 		object = _find_object(object)
-		if !object: 
-			object = SolidSprite.new()
-			_insert_sprite(_sprite_name,object)
+		if !object:  object = SolidSprite.new(); _insert_sprite(_sprite_name,object)
 	elif !object: return
 	
-	color = _get_color(color)
+	print(object)
 	if object is FunkinSprite:
 		if object.image is Graphic: 
 			object.image._make_solid()
-			object.image.modulate = color
+			object.image.modulate = _get_color(color)
 			object.image.set_graphic_size(Vector2(width,height))
-		elif object.image is CanvasItem: object.image.modulate = color
+			
+		elif object.image is CanvasItem: object.image.modulate = _get_color(color)
 	elif object is SolidSprite:
-		object.modulate = color
+		object.modulate = _get_color(color)
 		object.scale = Vector2(width,height)
 	
 
@@ -1509,7 +1508,6 @@ static func callScriptNoCheck(script: Object, function: StringName, parameters: 
 	var script_id = script.get_instance_id()
 	
 	var args = arguments.get(script_id)
-	if function == &'onCreatePost': prints(_find_script_path(script),function,args)
 	if !args or !args.has(function): return
 	
 	
