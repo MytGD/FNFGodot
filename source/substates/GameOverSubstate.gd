@@ -1,6 +1,6 @@
 extends Node2D
 
-const Character = preload("res://source/objects/Sprite/Character.gd")
+#const Character = preload("res://source/objects/Sprite/Character.gd")
 
 static var back_state
 static var characterName: StringName = 'bf-dead'

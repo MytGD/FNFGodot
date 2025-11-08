@@ -1,5 +1,6 @@
 @icon("res://icons/icon.png")
 ##A Character 2D Class
+class_name Character
 extends FunkinSprite
 const NoteHit = preload("uid://dx85xmyb5icvh")
 const Song = preload("uid://cerxbopol4l1g")
@@ -13,9 +14,9 @@ const Song = preload("uid://cerxbopol4l1g")
 #region Dance Variables
 var danceEveryNumBeats: int = 2
 
-var returnDance: bool = true ##If [code]false[/code], the character will not return to the idle anim.
+var danceAfterHold: bool = true ##If [code]false[/code], the character will not return to the idle anim.
 var forceDance: bool ##If [code]true[/code], the dance animation will be reset every beat hit, making character dance even though the animation hasn't finished.
-var danceWhenFinished: bool ##If [code]true[/code],the character will dance when a "sing" animation ends.
+var danceOnAnimEnd: bool ##If [code]true[/code],the character will dance when a "sing" animation ends.
 var autoDance: bool = true ##If [code]false[/code], the character will not return to dance while pressing the sing keys.
 var hasDanceAnim: bool: set = set_has_dance_anim ##If character have "danceLeft" or "danceRight" animation.
 var danced: bool ##Used to make the "danceLeft/danceRight" animation.
@@ -79,7 +80,7 @@ func _init(character:String = '', player: bool = false):
 	isPlayer = player
 	animation.animation_finished.connect(
 		func(_anim):
-			if specialAnim and returnDance or danceWhenFinished and _anim.begins_with('sing'): dance();
+			if specialAnim or danceOnAnimEnd and _anim.begins_with('sing'): dance();
 	)
 	
 func _ready() -> void: Conductor.bpm_changes.connect(updateBPM)
@@ -137,13 +138,16 @@ func loadData():
 	healthIcon = json.healthIcon.id
 	imageFile = json.assetPath
 	texture_filter = TEXTURE_FILTER_NEAREST if json.isPixel else TEXTURE_FILTER_PARENT_NODE
-	positionArray = VectorUtils.array_to_vec(json.offsets)
-	cameraPosition = VectorUtils.array_to_vec(json.camera_position)
-	jsonScale = json.scale
-	offset_follow_flip = json.offset_follow_flip
-	offset_follow_scale = json.offset_follow_scale
-	origin_offset = VectorUtils.array_to_vec(json.origin_offset)
-	scale = Vector2(json.scale,json.scale)
+	positionArray = VectorUtils.array_to_vec(json.get('offsets',[0,0]))
+	cameraPosition = VectorUtils.array_to_vec(json.get('camera_position',[0,0]))
+	jsonScale = json.get('scale',1.0)
+	offset_follow_flip = json.get('offset_follow_flip',true)
+	offset_follow_scale = json.get('offset_follow_scale',true)
+	origin_offset = VectorUtils.array_to_vec(json.get('origin_offset',[0,0]))
+
+	scale = Vector2(jsonScale,jsonScale)
+	danceAfterHold = json.get('danceAfterHold',true)
+	danceOnAnimEnd = json.get('danceOnAnimEnd',false)
 
 func getCameraPosition() -> Vector2: 
 	var cam_offset = cameraPosition
@@ -154,11 +158,12 @@ func getCameraPosition() -> Vector2:
 
 func _process(delta) -> void:
 	super._process(delta)
-	if !specialAnim and animation.current_animation.begins_with('sing'):
-		if holdTimer < _real_hold_limit: holdTimer += delta
-		elif returnDance and (autoDance or !InputUtils.is_any_actions_pressed(NoteHit.getInputActions())):
-			dance()
+	if specialAnim or !animation.current_animation.begins_with('sing'): return
 	
+	if holdTimer < _real_hold_limit: holdTimer += delta
+	elif danceAfterHold and (autoDance or !InputUtils.is_any_actions_pressed(NoteHit.getInputActions())):
+		dance()
+
 #region Character Animation
 ##Reload the character animations, used also in Character Editor.
 func reloadAnims():
@@ -341,7 +346,9 @@ static func getCharacterBaseData() -> Dictionary: ##Returns a base to character 
 		"origin_offset": [0,0],
 		"offset_follow_flip": false,
 		'offset_follow_scale': false,
-		'sing_follow_flip': false
+		'sing_follow_flip': false,
+		'danceAfterHold': true,
+		'danceOnAnimEnd': false,
 	}
 
 static func getCharactersList(return_jsons: bool = false) -> Variant:

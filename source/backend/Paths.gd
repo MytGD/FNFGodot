@@ -1,7 +1,7 @@
 @tool
 class_name Paths extends Object
 const AnimationService = preload("res://source/general/animation/AnimationService.gd")
-const Character = preload("res://source/objects/Sprite/Character.gd")
+#const Character = preload("res://source/objects/Sprite/Character.gd")
 
 const game_name: String = "Friday Night Funkin'"
 
@@ -13,7 +13,7 @@ static var is_system_case_sensitive: bool = curDevice in ['macOS','Linux',"FreeB
 
 #region Paths
 static var exePath: StringName = get_exe_path()
-static var replace_paths: PackedStringArray = [exePath+'/','assets/mods','assets/','mods/']
+static var _exe_length: int = exePath.length()
 #endregion
 
 #region Formats
@@ -352,9 +352,14 @@ static func model(path: String) -> Node3D:
 	modelsCreated[path] = null
 	return null
 
+const replace_relative_path: PackedStringArray = ['assets/','mods/']
+static func getRelativePath(path: String) -> String:
+	path = getPath(path)
+	for i in replace_relative_path: if path.begins_with(i): path = path.right(-i.length())
+	return path
 static func getPath(path: String, withMod: bool = true) -> String:
 	if !path: return path
-	for paths in replace_paths: if path.begins_with(paths): path = path.right(-paths.length())
+	if path.begins_with(exePath): path = path.right(-_exe_length-1)
 	
 	if !withMod:
 		var find = path.find('/')

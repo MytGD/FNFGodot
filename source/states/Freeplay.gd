@@ -307,10 +307,10 @@ func setDifficulty(id: int = curDifficulty):
 	difficulty = cur_song_difficulties[id]
 	curDifficulty = id
 	
-	var path = Paths.imagePath('menudifficulties/'+difficulty.to_lower())
-	if path: 
+	var texture = Paths.texture('menudifficulties/'+difficulty.to_lower())
+	if texture: 
 		difficultyText.text = ''
-		_load_difficulty_image(path)
+		_load_difficulty_image(texture)
 	else:
 		_set_difficulty_text(difficulty)
 	
@@ -323,17 +323,16 @@ func _set_difficulty_text(text: String):
 	diffiSelectLeft.position.x = offset - 80
 	diffiSelectRight.position.x = offset
 
-func _load_difficulty_image(path_absolute: String):
-	if FileAccess.file_exists(path_absolute.get_basename()+'.xml'):
+func _load_difficulty_image(texture: Texture):
+	if FileAccess.file_exists(texture.resource_name+'.xml'):
 		difficultySprite._auto_resize_image = false
-		difficultySprite.image.texture = Paths.texture(path_absolute)
+		difficultySprite.image.texture = texture
 		difficultySprite.animation.addAnimByPrefix(&'anim','idle',24,true)
 		difficultySprite.animation.play(&'anim')
 	else:
-		difficultySprite.animation.stop()
+		difficultySprite.animation.clearLibrary()
 		difficultySprite._auto_resize_image = true
-		difficultySprite.image.texture = Paths.texture(path_absolute)
-	
+		difficultySprite.image.texture = texture
 	
 	var difWidth = difficultySprite.pivot_offset.x*2*difficultySprite.scale.x
 	difficultySprite.position.x = ScreenUtils.screenWidth - difWidth - 100

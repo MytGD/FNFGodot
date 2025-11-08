@@ -28,27 +28,28 @@ func reloadNote() -> void: ##Reload Note Texture
 	animation.clearLibrary()
 	_animOffsets.clear()
 	offset = Vector2.ZERO
-	var data = styleData.data.get(noteDirection+'End' if isEndSustain else noteDirection)
-	if !data: loadSustainFrame()
-	else:
-		var anim_data = data.get('data')
-		if anim_data: 
-			var prefix = anim_data.get('prefix')
-			is_sus_animated = !!prefix
-			if is_sus_animated: 
-				animation.addAnimByPrefix(getNoteAnimName(self),
-					prefix,
-					24,
-					true
-				)
-			else: 
-				var region = anim_data.get('region')
-				if region: setNoteRect(Rect2(region[0],region[1],region[2],region[3]))
-				else: loadSustainFrame()
-		else: loadSustainFrame()
 	
 	var note_scale = styleData.get('scale',0.7)
-	setGraphicScale(Vector2(note_scale,note_scale))
+	var data = styleData.data.get((noteDirection+'End') if isEndSustain else noteDirection)
+	if !data: loadSustainFrame(); setGraphicScale(Vector2(note_scale,note_scale)); return
+	
+	var prefix = data.get('prefix')
+	is_sus_animated = !!prefix
+	if is_sus_animated: 
+		animation.addAnimByPrefix(
+			getNoteAnimName(self),
+			prefix,
+			24,
+			true
+		)
+	else: 
+		var region = data.get('region')
+		if region: setNoteRect(Rect2(region[0],region[1],region[2],region[3]))
+		else: loadSustainFrame()
+	
+	setGraphicScale(Vector2(note_scale,1.0))
+	
+	
 
 func loadSustainFrame():
 	var frame: int = noteData*2

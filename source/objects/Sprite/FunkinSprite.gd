@@ -247,7 +247,6 @@ func _update_pivot():
 	_real_pivot_offset = pivot_offset*scale
 	if rotation: _real_pivot_offset = _real_pivot_offset.rotated(rotation)
 	_real_pivot_offset = _real_pivot_offset - pivot_offset
-	_update_position()
 
 func _update_real_offset() -> void:
 	_real_offset = offset

@@ -21,7 +21,12 @@ var options: Array[Dictionary] = [
 			'name': 'play as opponent','visual': "Strums",
 			'object': ClientPrefs.data, 'property': 'playAsOpponent', 'setter': set_play_as_opponent,
 			'description': 'Enabling this, you will play as the opponent.'
-		}
+		},
+		{
+			'name': 'Botplay','visual': "Strums",
+			'object': ClientPrefs.data, 'property': 'botplay',
+			'description': 'Botplay, just that.'
+		},
 	]},
 	{'name': 'Visual Options', 'menu': [
 		{
@@ -188,7 +193,6 @@ func _input(event: InputEvent) -> void:
 func _call_setter(value: Variant) -> bool:
 	var setter = cur_menu.cur_data.get('setter')
 	if setter: setter.call(value); return true
-	print(value)
 	cur_menu.cur_data.object[cur_menu.cur_data.property] = value
 	return false
 	

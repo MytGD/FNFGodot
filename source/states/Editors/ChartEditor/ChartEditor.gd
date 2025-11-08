@@ -31,7 +31,7 @@ const EVENT_VARIABLES_LIMIT_Y: float = 100
 const STEP_LENGTH: int = 16
 
 const Icon = preload("res://source/objects/UI/Icon.gd")
-const Character = preload('res://source/objects/Sprite/Character.gd')
+#const Character = preload('res://source/objects/Sprite/Character.gd')
 const PlayState = preload("res://source/states/PlayState.gd")
 
 static var back_to: Variant

@@ -23,12 +23,13 @@ func _init(texture: String = ''):
 func changeIcon(icon: String = "icon-face"):
 	icon = Paths.icon(icon)
 	if !icon: icon = Paths.icon('icon-face')
+	
 	if imageFile == icon: return
 	animation.clearLibrary()
 	
-	var texture = Paths.texture(icon)
+	var texture = Paths.texture(Paths.getRelativePath(icon))
 	image.texture = texture
-	hasWinningIcon = Paths.getPath(icon,false).begins_with("images/winning_icons/")
+	hasWinningIcon = icon.trim_suffix('/').ends_with("winning_icons")
 	
 	icon = icon.substr(0,icon.length()-4)
 	

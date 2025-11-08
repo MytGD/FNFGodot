@@ -80,7 +80,7 @@ static var data: Dictionary = {
 	
 	'timeBarType': 0, #0 = Disabled, 1 = TIME_LEFT, 2 = SONG_NAME, 3 = POSITION
 	'hideHud': false,
-	'botPlay': false,
+	'botplay': false,
 	
 	'splashesEnabled': true,
 	'opponentSplashes': false,

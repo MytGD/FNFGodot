@@ -129,7 +129,7 @@ var noteScore: int = 350 ##Hit's Score.
 @export var playAsOpponent: bool = ClientPrefs.data.playAsOpponent: set = _set_play_opponent
 
 ##When activate, the notes will be hitted automatically.
-@export var botplay: bool = ClientPrefs.data.botPlay: set = _set_botplay
+@export var botplay: bool = ClientPrefs.data.botplay: set = _set_botplay
 
 @export var downScroll: bool = ClientPrefs.data.downscroll: set = _set_downscroll
 @export var middleScroll: bool = ClientPrefs.data.middlescroll: set = _set_middlescroll
@@ -604,7 +604,7 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 	splash._is_custom_parent = !!splashGroup
 	splash.strum = strum
 	splash.isPixelSplash = isPixelStage
-	splash._position = strum._position
+	splash.followStrum()
 	match splash_type:
 		NoteSplash.SplashType.HOLD_COVER:
 			var direction = getStrumDirection(strum.data,note.mustPress)

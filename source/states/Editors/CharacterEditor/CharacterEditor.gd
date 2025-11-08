@@ -1,5 +1,5 @@
 extends Node
-const Character = preload("res://source/objects/Sprite/Character.gd")
+#const Character = preload("res://source/objects/Sprite/Character.gd")
 const Bar = preload("res://source/objects/UI/Bar.gd")
 const Icon = preload("res://source/objects/UI/Icon.gd")
 const AnimClass = preload("res://source/general/animation/AnimationService.gd")
@@ -169,7 +169,7 @@ func loadCharacter(json: StringName, isPlayer: bool = json.begins_with('bf')) ->
 	return character
 
 func insertCharToEditor(char):
-	char.returnDance = false
+	char.danceAfterHold = false
 	char.animation.auto_loop = false
 	camera.add_child(char)
 	

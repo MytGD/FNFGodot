@@ -5,7 +5,7 @@ extends "res://source/states/StrumState.gd"
 const CameraCanvas = preload("res://source/objects/Display/Camera/Camera.gd")
 const TimeLabel = preload("res://source/objects/Display/TimeLabel.gd")
 const PauseSubstate = preload("res://source/substates/PauseSubstate.gd")
-const Character = preload("res://source/objects/Sprite/Character.gd")
+#const Character = preload("res://source/objects/Sprite/Character.gd")
 const Bar = preload("res://source/objects/UI/Bar.gd")
 const Stage = preload("res://source/gdscript/FunkinStage.gd")
 
