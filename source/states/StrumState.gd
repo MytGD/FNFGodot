@@ -468,6 +468,7 @@ func spawnNote(note: Note) -> void: ##Spawns the note
 	if note.strumTime < note.missOffset: noteMiss(note); return
 	if !note.noteGroup: addNoteToGroup(note,notes); return
 	notes.members.append(note)
+	note.groups.append(notes)
 	addNoteToGroup(note,note.noteGroup)
 	
 func addNoteToGroup(note: Note, group: Node) -> void:
@@ -475,6 +476,7 @@ func addNoteToGroup(note: Note, group: Node) -> void:
 		if note.isSustainNote: group.insert(0,note)
 		else: group.add(note)
 		return
+	
 	group.add_child(note)
 	if note.isSustainNote and note.noteGroup == note.noteParent.noteGroup: group.move_child(note,note.noteParent.get_index())
 
@@ -507,14 +509,17 @@ func updateNote(note: Note):
 	elif note.distance == lastN.distance and Input.is_action_just_pressed(note.hit_action): hitNote(note)
 	return true
 
+func preHitNote(note: Note):
+	if !note: return
+	note.wasHit = true
+	note.judgementTime = _songPos
+
 func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase] 
 	if !note: return
+	preHitNote(note)
 	var mustPress: bool = note.mustPress
 	var playerNote: bool = mustPress != playAsOpponent
 	var strumAnim = &'confirm'
-	
-	note.wasHit = true
-	note.judgementTime = _songPos
 	
 	var strum: StrumNote = note.strumNote
 	
@@ -535,11 +540,15 @@ func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase]
 			strum.strumConfirm(strumAnim)
 			strum.return_to_static_on_finish = true
 	
+	_on_hit_note(note)
+	
 	if splashAllowed(note): createSplash(note)
 	note.killNote()
 
+func _on_hit_note(note: Note): pass
+
 func reloadNotes() -> void: for i in unspawnNotes: reloadNote(i)
-	
+
 func reloadNote(note: Note):
 	note.loadFromStyle(arrowStyle)
 	var noteStrum: StrumNote = strumLineNotes.members.get((note.noteData + keyCount) if note.mustPress else note.noteData)
@@ -548,8 +557,8 @@ func reloadNote(note: Note):
 	note.resetNote()
 	if note.isSustainNote: 
 		note.flipY = noteStrum.downscroll
-		if splashHoldStyle: note.noteSplashData.style = splashHoldStyle
-	else: if splashStyle: note.noteSplashData.style = splashStyle
+		if splashHoldStyle: note.splashStyle = splashHoldStyle
+	else: if splashStyle: note.splashStyle = splashStyle
 
 
 ##Called when the player miss a [Note]
@@ -561,7 +570,7 @@ func noteMiss(note, kill_note: bool = true) -> void:
 	
 	combo = 0
 	songMisses += 1
-	if !note.ratingDisabled: songScore -= 10.0
+	if !note.ratingDisabled: songScore -= 10
 	totalNotes += 1
 	updateScore()
 	if ClientPrefs.data.notHitSustainWhenMiss: _disable_note_sustains(note)
@@ -573,18 +582,18 @@ func _disable_note_sustains(note: Note) -> void:
 
 #region Splash Methods
 func createSplash(note) -> NoteSplash: ##Create Splash
-	var splashData = note.noteSplashData
-	var style = splashData.style
-	var type = splashData.type
+	
 	var strum: StrumNote = note.strumNote
-	var splashGroup: Node = splashData.parent
-	
 	if !strum or !strum.visible: return
-	if !style: style = splashStyle
 	
-	var prefix = splashData.prefix
+	var style = note.splashStyle
+	var type = note.splashType
 	
+	var prefix = note.splashPrefix
+	
+	var splashParent = note.splashParent
 	var splash_type = NoteSplash.SplashType.NORMAL
+	
 	if note.isSustainNote:
 		if note.isEndSustain: splash_type = NoteSplash.SplashType.HOLD_COVER_END
 		else: splash_type = NoteSplash.SplashType.HOLD_COVER
@@ -594,14 +603,14 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 		splash = _createNewSplash(style,type,prefix,splash_type)
 		if !splash: return
 		
-		if splashGroup: grpNoteSplashes.members.append(splash); splashGroup.add_child(splash)
+		if splashParent: grpNoteSplashes.members.append(splash); splashParent.add_child(splash)
 		else: grpNoteSplashes.add(splash)
 	else: 
 		splash.visible = true
-		if splashGroup: splash.reparent(splashGroup,false)
+		if splashParent: splash.reparent(splashParent,false)
 		elif splash._is_custom_parent: splash.reparent(grpNoteSplashes,false)
 	
-	splash._is_custom_parent = !!splashGroup
+	splash._is_custom_parent = !!splashParent
 	splash.strum = strum
 	splash.isPixelSplash = isPixelStage
 	splash.followStrum()
@@ -669,7 +678,7 @@ func _getSplashAvaliable(style: StringName, type: String, prefix: String, splash
 	return
 	
 func splashAllowed(note: Note) -> bool:
-	return splashesEnabled and !note.noteSplashData.disabled and note.ratingMod <= 1 and \
+	return splashesEnabled and !note.splashDisabled and note.ratingMod <= 1 and \
 			(note.strumNote and note.mustPress != playAsOpponent or opponentSplashes or \
 			note.isSustainNote and not note.isEndSustain)
 
@@ -721,7 +730,7 @@ func createCombo(rating: String) -> Combo: ##Create the Combo Image
 	return comboSprite
 
 func createNumbers(number: int = combo): ##Create the Numbers combo
-	var stringCombo = str(number)
+	var stringCombo = String.num_int64(number)
 	var stringLength = maxi(3,stringCombo.length())
 	while stringCombo.length() < stringLength: stringCombo = '0'+stringCombo
 	
@@ -848,23 +857,21 @@ static func getNotesFromData(songData: Dictionary = {}) -> Array[Note]:
 static func _create_note_sustains(note: Note, length: float, stepCrochet: float) -> void:
 	note.sustainLength = length
 	var susNotes: Array[NoteSustain] = note.sustainParents
-	var noteStrum = note.strumTime
-	for i in (length/stepCrochet):
-		var step = stepCrochet*i
-		var sus = createSustainFromNote(note,minf(stepCrochet, length - step))
-		sus.strumTime = noteStrum + step
+	var time = note.strumTime
+	
+	var index: int = 0
+	var susCount = ceili(length/stepCrochet)-1
+	while index <= susCount:
+		var step = stepCrochet*index
+		var sus = createSustainFromNote(note,minf(stepCrochet, length - step),index == susCount)
+		sus.strumTime = time + step
+		sus.splashDisabled = true
 		susNotes.append(sus)
+		index += 1
 	
-	var firstSus = susNotes[0]
-	firstSus.noteSplashData.disabled = false
-	firstSus.noteSplashData.sustain = true
+	susNotes[0].splashDisabled = false
+	susNotes.back().splashDisabled = false
 	
-	var lastSus: NoteSustain = susNotes.back()
-	var susEnd: NoteSustain = createSustainFromNote(note,0,true)
-	susEnd.strumTime = lastSus.strumTime + lastSus.sustainLength
-	susEnd.noteSplashData.disabled = false
-	susNotes.append(susEnd)
-
 static func _insert_note_to_array(note: Note, array: Array) -> bool:
 	if !note: return false
 	if !array:  array.append(note); return true
@@ -896,7 +903,7 @@ static func createNoteFromData(data: Array, sectionData: Dictionary, keyCount: i
 
 static func createSustainFromNote(note: Note,length: float, isEnd: bool = false) -> NoteSustain:
 	var sus: NoteSustain = NoteSustain.new(note.noteData,length)
-	sus.noteSplashData.disabled = true
+	sus.splashStyle = ''
 	sus.noteParent = note
 	sus.isEndSustain = isEnd
 	for noteVars in noteSusVars: sus[noteVars] = note[noteVars]

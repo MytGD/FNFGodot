@@ -84,7 +84,7 @@ func _create_version():
 	version.label_settings.outline_size = 6
 	version.label_settings.outline_color = Color.BLACK
 	version.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	version.text = 'FNF: Godot Engine v'+str(ProjectSettings.get_setting("application/config/version"))+'\nby n_Myt'
+	version.text = 'FNF: Godot Engine v'+ProjectSettings.get_setting("application/config/version")+'\nby n_Myt'
 	
 	add_child(version)
 	version.position.y = ScreenUtils.screenHeight-50

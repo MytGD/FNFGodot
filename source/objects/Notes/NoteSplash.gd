@@ -3,7 +3,7 @@ extends FunkinSprite
 
 const NoteSplash = preload("res://source/objects/Notes/NoteSplash.gd")
 
-static var splash_datas: Dictionary[String,Dictionary] = {}
+static var splash_datas: Dictionary[StringName,Dictionary] = {}
 static var mosaicShader: Material
 
 enum SplashType{
@@ -11,19 +11,16 @@ enum SplashType{
 	HOLD_COVER = 1,
 	HOLD_COVER_END = 2
 }
-var texture: StringName = ''## Splash Texture
+var texture: StringName ## Splash Texture
 
 var direction: int = 0 ##Splash Direction
 var isPixelSplash: bool = false: set = _set_pixel ##If is a [u]pixel[/u] splash.
-var preffix: StringName = '' ##The splash animation from his sparrow animation(.xml file).
+var preffix: StringName ##The splash animation from his sparrow animation(.xml file).
 @warning_ignore("unused_private_class_variable")
 var _is_custom_parent: bool = false #Used in StrumState.
 
 
-var strum: Node: ##The Splash strum.
-	set(value):
-		strum = value
-		position = value.position - offset
+var strum: Node ##The Splash strum.
 
 var splash_scale: Vector2 = Vector2.ZERO ##Splash scale.
 
@@ -34,10 +31,11 @@ var splashData: Dictionary
 
 func _init():
 	super._init(true)
-	visibility_changed.connect(func():
-		_update_position()
-		set_process(visible)
-	)
+	visibility_changed.connect(_on_visibility_changed)
+
+func _on_visibility_changed():
+	set_process(visible)
+	if visible: _update_position()
 
 func _set_pixel(isPixel: bool):
 	if isPixel == isPixelSplash: return
@@ -64,8 +62,8 @@ func _process(_d) -> void:
 	super._process(_d)
 	if !visible: return
 	if splashType == SplashType.HOLD_COVER and strum: 
-		if strum.mustPress: visible = Input.is_action_pressed(strum.hit_action)
 		followStrum()
+		if strum.mustPress: visible = Input.is_action_pressed(strum.hit_action)
 
 func followStrum() -> void:
 	modulate.a = strum.modulate.a
@@ -74,12 +72,14 @@ func followStrum() -> void:
 
 static func addSplashOffsetFromData(splash: NoteSplash, anim_name: String, data: Dictionary) -> void:
 	var _offset = data.get(&'offsets',splash.splashData.get(&'offsets'))
-	splash.addAnimOffset(anim_name,VectorUtils.as_vector2(_offset) if _offset else Vector2(100,100) )
+	splash.addAnimOffset(
+		anim_name,
+		VectorUtils.as_vector2(_offset) if _offset else Vector2(100,100)
+	)
 
 
-static func addSplashAnimation(splash: NoteSplash, prefix: String):
-	var anim_data = splash.splashData.get(&'data'); if !anim_data: return false
-	
+static func addSplashAnimation(splash: NoteSplash, prefix: StringName):
+	var anim_data = splash.splashData.data
 	var prefixs = anim_data.get(prefix)
 	if !prefixs: prefixs = anim_data.get(&'default'); if !prefixs: return false
 	
@@ -88,12 +88,11 @@ static func addSplashAnimation(splash: NoteSplash, prefix: String):
 	var asset = prefixs.get(&'assetPath')
 	if !asset: asset = splash.splashData.get(&'assetPath'); if !asset: return false
 	
+	
 	splash.image.texture = Paths.texture(asset)
 	
 	if !splash.image.texture: return false
-	
-	var alpha: float = splash.splashData.get('alpha',1.0)
-	if alpha: splash.modulate.a = alpha
+	splash.splashData.get('alpha',1.0)
 	
 	#Set Offset
 	match splash.splashType:
@@ -102,6 +101,7 @@ static func addSplashAnimation(splash: NoteSplash, prefix: String):
 			if !prefix_anim: return false
 			splash.animation.addAnimByPrefix(&'splash',prefix_anim,24.0,false)
 			addSplashOffsetFromData(splash,&'splash',prefixs)
+		
 		SplashType.HOLD_COVER:
 			var start_data = prefixs.get(&'start')
 			if start_data:
@@ -134,20 +134,16 @@ static func addSplashAnimation(splash: NoteSplash, prefix: String):
 			addSplashOffsetFromData(splash,&'splash',end_data)
 	return true
 
-static func getSplashData(file: String, type: StringName) -> Variant: ##Returns the splash data from the [param preffix] in the [param file].
-	var data: Dictionary[StringName,Variant]
+static func getSplashData(file: StringName, type: StringName) -> Dictionary: ##Returns the splash data from the [param preffix] in the [param file].
+	var data: Dictionary
 	
 	if splash_datas.has(file): data = splash_datas[file]
 	else:
-		data = Dictionary(
-			Paths.loadJson('data/splashstyles/'+file),
-			TYPE_STRING_NAME,'',null,
-			TYPE_NIL,'',null
-		)
+		data = Paths.loadJson('data/splashstyles/'+file)
 		if !data: return {}
 		splash_datas[file] = data
 	
-	var type_data = data.get(type)
+	var val = data.get(type)
+	if !val: return {}
 	
-	if !type_data: return {}
-	return type_data
+	return val

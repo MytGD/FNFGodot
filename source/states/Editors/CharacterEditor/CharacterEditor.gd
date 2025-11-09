@@ -207,7 +207,7 @@ func setAnimationPrefix(new_text: String) -> void:
 
 func get_animation_indices_str(indices = animData.get('frameIndices',[])):
 	var string = ''
-	for i in indices: string += str(int(i))+', '
+	for i in indices: string += String.num_int64(i)+', '
 	return string.left(-2)	
 
 func updateAnimData():

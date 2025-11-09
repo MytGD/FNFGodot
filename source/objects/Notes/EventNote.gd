@@ -164,7 +164,7 @@ static func look_for_function_in_line(string: String, function: String):
 		index += function_length
 		
 		var func_data = string.right(-index-1)
-		var func_name = function+str(index)
+		var func_name = function+String.num_int64(index)
 		
 		var variables = func_data.left(StringUtils._find_last_parentese(func_data)+1)
 		var variables_array = StringUtils.get_function_data(variables)[1]

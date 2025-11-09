@@ -12,6 +12,7 @@ const Stage = preload("res://source/gdscript/FunkinStage.gd")
 const CharacterEditor = preload("res://scenes/states/Editors/CharacterEditor.tscn")
 const ChartEditorScene = preload("res://scenes/states/Editors/ChartEditor.tscn")
 
+const FunkinVideo = preload("uid://w8ju6w7jofop")
 static var back_state = preload("res://source/states/Menu/ModeSelect.gd")
 var stateLoaded: bool = false #Used in FunkinGD
 
@@ -358,8 +359,9 @@ func updateNotes() -> void: #Function from StrumState
 		if event.strumTime > _songPos: break
 		triggerEvent(event.event,event.variables)
 		eventIndex += 1
-func hitNote(note: Note, character: Variant = null) -> void:
-	if not note: return
+
+func preHitNote(note: Note, character: Variant = null):
+	if !note: return
 	if note.noteType:
 		FunkinGD.callScript(
 			'custom_notetypes/'+note.noteType+'.gd',
@@ -367,10 +369,10 @@ func hitNote(note: Note, character: Variant = null) -> void:
 			[note,character]
 		)
 	FunkinGD.callOnScripts(&'goodNoteHitPre' if note.mustPress else &'opponentNoteHitPre',[note])
-	FunkinGD.callOnScripts(&'onHitNote',[note,character])
-	super.hitNote(note)
-	
-	#Add Health if the note is from the player
+	FunkinGD.callOnScripts(&'onPreHitNote',[note,character])
+	super.preHitNote(note)
+
+func _on_hit_note(note: Note, character: Variant = null) -> void:
 	if !note.mustPress: camZooming = true
 	if note.mustPress != playAsOpponent: health += note.hitHealth * note.ratingMod 
 	
@@ -400,8 +402,8 @@ func noteMiss(note, character: Variant = null) -> void:
 func _load_song_scripts():
 	if loadScripts:
 		print('Loading Scripts from Scripts Folder')
-		print(Paths.getFilesAt('scripts',true,'.gd'))
-		for i in Paths.getFilesAt('scripts',true,'.gd'): FunkinGD.addScript(i)
+		for i in Paths.getFilesAt('scripts',true,'.gd'): 
+			FunkinGD.addScript(i)
 	
 	if loadStageScript:
 		print('Loading Stage Script')
@@ -607,35 +609,24 @@ func characterEditor():
 #endregion
 
 #region Video Methods
-func _load_video(stream: VideoStreamTheora) -> VideoStreamPlayer:
-	var video_player = VideoStreamPlayer.new()
-	camOther.add(video_player)
-	video_player.stream = stream
-	video_player.play()
-	return video_player
 
-func _update_video_size_to_screen():
-	if !videoPlayer: return
-	var video_div = ScreenUtils.screenSize/videoPlayer.size
-	var video_scale = minf(video_div.x,video_div.y)
-	videoPlayer.scale = Vector2(video_scale,video_scale)
-
-func startVideo(path: Variant, isCutscene: bool = true) -> VideoStreamPlayer:
-	var video = path if path is VideoStreamTheora else Paths.video(path)
-	if !video: return VideoStreamPlayer.new()
-	var new_video = _load_video(video)
+func startVideo(path: Variant, isCutscene: bool = true) -> FunkinVideo:
+	var video_player = FunkinVideo.new()
+	video_player.load_stream(path)
 	
+	if !video_player.stream: return video_player
+	
+	camOther.add(video_player)
 	if !isCutscene: 
-		new_video.finished.connect(video.queue_free) 
-		return new_video
+		video_player.finished.connect(video_player.queue_free) 
+		return video_player
 	
 	if videoPlayer: videoPlayer.queue_free()
 	
-	videoPlayer = new_video
+	videoPlayer = video_player
 	canPause = false
 	inCutscene = true
 	
-	videoPlayer.resized.connect(_update_video_size_to_screen)
 	videoPlayer.finished.connect(_on_cutscene_ends)
 	return videoPlayer
 
@@ -666,7 +657,7 @@ func _resetScore():
 
 func updateScore():
 	super.updateScore()
-	scoreTxt.text = 'Score: '+str(songScore)+' | Misses: '+str(songMisses)+ ' | Accurancy: '+str(int(ratingPercent*10)/10.0)+'%'+ratingFC
+	scoreTxt.text = 'Score: '+String.num_int64(songScore)+' | Misses: '+String.num_int64(songMisses)+ ' | Accurancy: '+String.num(ratingPercent,2)+'%'+ratingFC
 	FunkinGD.callOnScripts(&'onUpdateScore')
 #endregion
 

@@ -38,15 +38,13 @@ var specialAnim: bool
 
 var downscroll: bool ##Invert the note direction.
 
-var multSpeed: float = 1.0 ##The note speed multiplier.
+var multSpeed: float = 1.0: set = setMultSpeed ##The note speed multiplier.
 
 ## Time used to determine when the strum should return to the 'static' animation after being hit.
 ## When this reaches 0, the 'static' animation is played.
 var hitTime: float = 0.0
 
-#var rgbShader: ShaderMaterial = RGBPalette.new()
-#var useRGBShader: bool = true
-signal texture_changed(old_tex, new_tex)
+signal mult_speed_changed
 func _init(dir: int = 0):
 	"""
 	shader = rgbShader
@@ -119,12 +117,18 @@ func setTexture(_texture: String) -> void: texture = _texture;reloadStrumNote()
 func setStrumStyleName(_name: String):
 	styleName = _name
 	styleData = getStrumStyleData(_name)
+
+func setMultSpeed(speed: float):
+	if speed == multSpeed: return
+	multSpeed = speed
+	mult_speed_changed.emit()
 #endregion
+
 
 func strumConfirm(anim: String = 'confirm'):
 	animation.play(anim,true)
 	hitTime = Conductor.stepCrochet/1000.0
-		
+
 func _process(delta: float) -> void:
 	super._process(delta)
 	if mustPress:

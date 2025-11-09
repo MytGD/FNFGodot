@@ -8,10 +8,10 @@ const key_actions: Array = [
 	[&"note_left",&"note_down",&"note_up",&"note_right"],
 	[&"note_left",&"note_down",&"note_center",&"note_up",&"note_right"],
 ]
-var sustainParents: Array[NoteSustain] = []
+var sustainParents: Array[NoteSustain]
 
 var hit_action: StringName ##The Key that have to be press to hit the note, this auto changes when [member noteData] is setted.
-var copyAngle: bool = true## Follow strum angle
+var copyAngle: bool = true ## Follow strum angle
 var copyScale: bool ##If [code]true[/code], the note will follow the scale from his [member strum].
 
 func updateNote():

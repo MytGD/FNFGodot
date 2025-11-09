@@ -280,7 +280,7 @@ func _ready():
 			color_rect.size = Vector2(BLOCK_SIZE.x*keyCount,1.0)
 			updateBeatLinePosition(color_rect,beat)
 			color_rect.color = Color(0.8,0,0)
-			color_rect.name = 'Beat'+str(beat)
+			color_rect.name = 'Beat'+String.num_int64(beat)
 			i.add_child(color_rect)
 			
 	chess_opponent.name = 'ChessOpponent'
@@ -607,8 +607,8 @@ func eraseSection():
 
 #region Song Information Methods
 func _update_song_info():
-	song_info.text = 'Song Position: '+str(int(songPosition))+'\nBeat: '+str(Conductor.beat)+\
-	'\nStep: '+str(Conductor.step)+'\nSection: '+str(Conductor.section)
+	song_info.text = 'Song Position: '+String.num_int64(int(songPosition))+'\nBeat: '+String.num_int64(Conductor.beat)+\
+	'\nStep: '+String.num_int64(Conductor.step)+'\nSection: '+String.num_int64(Conductor.section)
 
 
 func _update_icon_in_section():
@@ -1172,7 +1172,7 @@ func enableStrums(enable: bool):
 	for i in range(keyCount*2):
 		var strum = StrumNote.new(i%keyCount)
 		var group = chess_opponent if i < keyCount else chess_player
-		strum.texture_changed.connect(func(_o,_n): updateStrumScale(strum))
+		updateStrumScale(strum)
 		strum.texture = arrowSkin
 		strum.offset_follow_scale = true
 		

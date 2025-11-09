@@ -141,9 +141,10 @@ func addCharacterToList(type: int = 0,charFile: StringName = 'bf') -> Character:
 	newCharacter.process_mode = Node.PROCESS_MODE_DISABLED
 	return newCharacter
 
-func hitNote(note: Note, character: Variant = getCharacterNote(note)):
+
+func _on_hit_note(note: Note, character: Variant = getCharacterNote(note)):
 	if not note: return
-	if note.noAnimation: super.hitNote(note,character); return
+	if note.noAnimation: super._on_hit_note(note,character); return
 	
 	var mustPress: bool = note.mustPress
 	var target = boyfriend if mustPress else dad
@@ -157,7 +158,7 @@ func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 		if target: target.autoDance = dance
 		if gf: gf.autoDance = true
 	
-	if !character: super.hitNote(note,character); return;
+	if !character: super._on_hit_note(note,character); return;
 	var animNote = singAnimations[note.noteData]
 	
 	var anim = character.animation
@@ -165,7 +166,8 @@ func hitNote(note: Note, character: Variant = getCharacterNote(note)):
 	character.heyTimer = 0.0
 	character.specialAnim = false
 	if !note.animSuffix or !anim.play(animNote+note.animSuffix,true): anim.play(animNote,true)
-	super.hitNote(note,character)
+	
+	super._on_hit_note(note,character)
 
 func noteMiss(note: Note, character: Variant = getCharacterNote(note)):
 	if character: character.animation.play(singAnimations[note.noteData]+'miss',true)

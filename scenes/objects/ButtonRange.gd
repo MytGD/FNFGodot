@@ -92,8 +92,8 @@ func _draw() -> void: _on_minimum_size_change()
 func update_value_text()  -> void:
 	if !line_edit: return
 	var value_int = int(value)
-	if int_value or value_int == value: _value_str = str(value_int)
-	else: _value_str = str(value)
+	if int_value or value_int == value: _value_str = String.num_int64(value_int)
+	else: _value_str = String.num(value)
 	_set_value_text()
 
 func _set_value_text() -> void: if line_edit: line_edit.text = prefix+_value_str+suffix

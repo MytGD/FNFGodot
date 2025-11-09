@@ -44,7 +44,7 @@ var missHealth: float = 0.0475##the amount of life will lose by missing the note
 #region Strum Vars
 var strumConfirm: bool = true ##If [code]true[/code], the strum will play animation when hit the note
 var strumTime: float ##Position of the note in the song
-var strumNote: StrumNote ##Strum Parent that note will follow
+var strumNote: StrumNote: set = setStrum ##Strum Parent that note will follow
 #endregion
 
 
@@ -88,28 +88,23 @@ var missed: bool ##Detect if the note is missed
 var offsetX: float ##Distance on x axis
 var offsetY: float ##Distance on y axis
 
-var distance: float  ##The distance between the note and the strum
+var distance: float: set = setDistance  ##The distance between the note and the strum
+var real_distance: float
+
 var canBeHit: bool  ##If the note can be hit
 
 var wasHit: bool
 var judgementTime: float = INF ##Used in ModchartEditor
 
 
-## Note Splash Data.[br]
-##A [Dictionary] that can contain: {[br]
-##[code]disabled[/code]: Disable splash for this  note.[br]
-##[code]scale[/code]: Splash Scale(default: Vector2.ONE)[br]
-##[code]prefix[/code]: Splash prefix[br]
-##[code]type[/code]: Splash type(default: "noteSplash")[br]
-##[code]style[/code]: Splash Style Json(default: "NoteSplashes")[br]
-##[code]parent[/code]: Splash parents, can be used to change splash camera(default: null)[br][br]
-##}
-var noteSplashData: Dictionary[StringName,Variant] = { 
-	'disabled': false,
-	'type': 'noteSplash',
-	'style': 'NoteSplashes',
-	'parent': null
-}
+#region Splash
+var splashStyle: StringName = 'NoteSplashes' ##Splash Json
+var splashType: StringName = 'noteSplash' ##Splash Data
+var splashPrefix: StringName ##Splash Animation
+var splashDisabled: bool
+var splashParent: Node
+#endregion
+
 #endregion
 
 #region Rating Variables
@@ -118,15 +113,25 @@ var rating: StringName ## The Rating ot the note in [String]. [param sick, good,
 var ratingDisabled: bool ##Disable Rating. If [code]true[/code], the rating will always be "sick".
 #endregion
 
+
+func _enter_tree() -> void: 
+	if strumNote: 
+		strumNote.mult_speed_changed.connect(_update_note_speed)
+		_update_note_speed()
+
+func _exit_tree() -> void: if strumNote: strumNote.mult_speed_changed.disconnect(_update_note_speed)
+
+
 func _init(data: int = 0) -> void:
 	noteData = data
 	_update_note_speed()
 	super._init(true)
 
 func updateNote() -> void:
-	distance = (strumTime - Conductor.songPositionDelayed) * _real_note_speed
+	distance = (strumTime - Conductor.songPositionDelayed)
 	_check_hit()
 	followStrum()
+
 
 func _check_hit() -> void:
 	var limit = _rating_offset[3]
@@ -135,16 +140,13 @@ func _check_hit() -> void:
 func followStrum(strum: StrumNote = strumNote) -> void:
 	if !strum: return
 	
-	var dist = (distance * strumNote.multSpeed)
-	if strum.downscroll: dist = -dist
-	
 	var posX: float = strumNote.x + offsetX
 	var posY: float = strumNote.y + offsetY
 	
 	if strumNote._direction_radius:
-		posX += dist*strumNote._direction_lerp.y
-		posY += dist*strumNote._direction_lerp.x
-	else: posY += dist
+		posX += real_distance*strumNote._direction_lerp.y
+		posY += real_distance*strumNote._direction_lerp.x
+	else: posY += real_distance
 	
 	if copyX: x = posX
 	if copyY: y = posY
@@ -156,41 +158,49 @@ func resetNote() -> void: ##Reset Note values when spawned.
 	_is_processing = true
 	missed = false
 	offset = Vector2.ZERO
-	noteSplashData.parent = null
 
 func killNote() -> void: ##Delete the note from the scene.
 	_is_processing = false
 	kill()
 
-func _update_note_speed() -> void: _real_note_speed = noteSpeed * 0.45 * multSpeed
+#region Updaters
+func _update_distance() -> void: real_distance = distance*_real_note_speed
 
-func _update_splash_data() -> void: noteSplashData.prefix = directions[noteData]+'Splashes'
+func _update_note_speed() -> void: 
+	_real_note_speed = noteSpeed * 0.45 * multSpeed
+	if strumNote: _real_note_speed *= strumNote.multSpeed
 
-
+#endregion
 
 #region Setters
 func loadFromStyle(noteStyle: String) -> void:
 	super.loadFromStyle(noteStyle)
 	var offsets = styleData.get('offsets')
 	if offsets: offsetX = offsets[0]; offsetY = offsets[1]
-	
-func setNoteData(_data: int) -> void:
-	super.setNoteData(_data)
-	_update_splash_data()
 
 func setNoteSpeed(_speed: float) -> void:
 	if noteSpeed == _speed: return
 	noteSpeed = _speed
 	_update_note_speed()
 
+func setNoteData(data: int): noteData = data; splashPrefix = directions[data]
 func setEndSustain(is_end: bool) -> void: isEndSustain = is_end
+
+func setDistance(dist: float) -> void: distance = dist; _update_distance()
 
 func setMultSpeed(_speed: float):
 	if multSpeed == _speed: return
 	multSpeed = _speed
 	_update_note_speed() 
+
+func setStrum(strum: StrumNote) -> void:
+	var in_tree = is_inside_tree()
+	if strumNote and in_tree: strumNote.mult_speed_changed.disconnect(_update_note_speed)
+	strumNote = strum
+	if in_tree: strum.mult_speed_changed.connect(_update_note_speed); _update_note_speed()
 #endregion
 
+#region Getters
 #region Static Funcs
 ##Return the closer note from his [member Note.strumNote]
 static func detectCloseNote(array: Array):

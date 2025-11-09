@@ -36,7 +36,7 @@ func _draw() -> void:
 	step = first_step
 	pos_x = first_pos - 3
 	while step <= steps_to_be_draw:
-		var str_step = str(step)
+		var str_step = String.num_int64(step)
 		var cur_step_length = str_step.length()
 		var text_size: int = font_size - cur_step_length if cur_step_length else font_size
 		

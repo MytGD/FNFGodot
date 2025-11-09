@@ -1,8 +1,6 @@
 @tool
 class_name Paths extends Object
 const AnimationService = preload("res://source/general/animation/AnimationService.gd")
-#const Character = preload("res://source/objects/Sprite/Character.gd")
-
 const game_name: String = "Friday Night Funkin'"
 
 #region Device
@@ -162,23 +160,20 @@ static func _image_no_path_check(path_absolute: String) -> Image:
 static func texture(path: String, imagesDirectory: bool = true) -> ImageTexture:
 	path = imagePath(path,imagesDirectory)
 	if !path: return
-	if imagesTextures.has(path): return imagesTextures[path]
-	
-	var image = _image_no_path_check(path)
+	return _texture_no_check(path)
+
+static func _texture_no_check(path_absolute: String) -> Texture:
+	if imagesTextures.has(path_absolute): return imagesTextures[path_absolute]
+	var image = _image_no_path_check(path_absolute)
 	var texture = ImageTexture.create_from_image(image)
 	texture.resource_name = image.resource_name
-	imagesTextures[path] = texture
+	imagesTextures[path_absolute] = texture
 	return texture
-
-static func character(path: String) -> Dictionary:
-	var file = characterPath(path)
-	if !file: return {}
 	
-	var json = loadJsonNoCache(file)
-	var needs_to_convert = json.has('image')
-	if needs_to_convert: json.merge(Character._convert_psych_to_original(json),true)
-	else: json.merge(Character.getCharacterBaseData(),false)
-	return json
+static func icon(path: String) -> Texture:
+	var _icon_path = iconPath(path)
+	if !_icon_path: return
+	return _texture_no_check(_icon_path)
 
 static func video(path: String) -> VideoStreamTheora: ##Get the [param video] path
 	if !path.ends_with('.ogv'): path += '.ogv'
@@ -201,6 +196,7 @@ static func song(path: String) -> AudioStream:
 	var songPath = songPath(path)
 	if !songPath: return null
 	return audio(songPath)
+
 
 static func audio(path) -> AudioStream:
 	if songsCreated.has(path): return songsCreated[path].duplicate()
@@ -332,11 +328,12 @@ static func data(json: String = '',preffix: String = '',folder: String = '') -> 
 			if path_found: return path_found
 	return ''
 
-static func icon(path: String) -> String:
+static func iconPath(path: String) -> String:
 	for iconPath in icons_dirs:
 		var icon = imagePath(iconPath+path)
 		if icon: return icon
 	return ''
+
 
 static func model(path: String) -> Node3D:
 	if path in modelsCreated:
@@ -355,8 +352,9 @@ static func model(path: String) -> Node3D:
 const replace_relative_path: PackedStringArray = ['assets/','mods/']
 static func getRelativePath(path: String) -> String:
 	path = getPath(path)
-	for i in replace_relative_path: if path.begins_with(i): path = path.right(-i.length())
+	for i in replace_relative_path: path = path.trim_prefix(i)
 	return path
+
 static func getPath(path: String, withMod: bool = true) -> String:
 	if !path: return path
 	if path.begins_with(exePath): path = path.right(-_exe_length-1)
@@ -559,8 +557,8 @@ static func _detect_mods() -> void:
 ##[b]Note:[/b] If don't found, will return [param default].
 static func getModFolder(path: String, default: String = game_name) -> String:
 	path = getPath(path)
-	if path.begins_with('mods/'): path = path.right(-5)
-	elif path.begins_with('assets/'): path = path.left(-7)
+	path = path.trim_prefix("assets/")
+	path = path.trim_prefix("mods/")
 	
 	var bar_find = path.find('/')
 	if bar_find != -1: path = path.left(bar_find)
@@ -609,5 +607,22 @@ static func loadJsonNoCache(path: String) -> Dictionary:
 static func _load_json_absolute(absolute_path: String) -> Dictionary:
 	var json = JSON.parse_string(FileAccess.get_file_as_string(absolute_path))
 	return {} if json == null else json
-	
 #endregion
+
+#region Data Methods
+static func character(path: String) -> Dictionary:
+	var file = characterPath(path)
+	if !file: return {}
+	
+	var json = loadJsonNoCache(file)
+	var needs_to_convert = json.has('image')
+	if needs_to_convert: json.merge(Character._convert_psych_to_original(json),true)
+	else: json.merge(Character.getCharacterBaseData(),false)
+	return json
+
+static func _get_prefix_style_data(data: Dictionary, prefix: String):
+	pass
+static func noteStyle(style: String, type: String, prefix: String) -> Dictionary:
+	var data = Paths.loadJson('data/notestyles/'+style+'.json')
+	return data
+	

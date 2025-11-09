@@ -21,16 +21,12 @@ func _init(texture: String = ''):
 	name = 'icon'
 	
 func changeIcon(icon: String = "icon-face"):
-	icon = Paths.icon(icon)
-	if !icon: icon = Paths.icon('icon-face')
+	image.texture = Paths.icon(icon)
+	if !image.texture: image.texture = Paths.icon('icon-face')
 	
-	if imageFile == icon: return
 	animation.clearLibrary()
-	
-	var texture = Paths.texture(Paths.getRelativePath(icon))
-	image.texture = texture
-	hasWinningIcon = icon.trim_suffix('/').ends_with("winning_icons")
-	
+	hasWinningIcon = imageFile.get_base_dir().ends_with("winning_icons")
+
 	icon = icon.substr(0,icon.length()-4)
 	
 	animated = FileAccess.file_exists(icon+'.xml')

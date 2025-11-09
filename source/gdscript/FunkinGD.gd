@@ -278,7 +278,6 @@ const alternative_variables: Dictionary = {
 const property_replaces: Dictionary = {
 	'[': '.',
 	']': ''
-	#':': '.'
 }
 ##Set a Property. If [param target] set, the function will try to set the property from this object.
 static func setProperty(property: String, value: Variant, target: Variant = null) -> void:
@@ -626,8 +625,6 @@ static func makeGraphic(object: Variant,width: float = 0.0,height: float = 0.0,c
 		if !object:  object = SolidSprite.new(); _insert_sprite(_sprite_name,object)
 	elif !object: return
 	
-	print(object)
-	
 	if object is FunkinSprite:
 		if object.image is Graphic: 
 			object.image._make_solid()
@@ -672,24 +669,21 @@ static func setGraphicSize(object: Variant, sizeX: float = -1, sizeY: float = -1
 static func screenCenter(object: Variant, type: String = 'xy') -> void:
 	object = _find_object(object) as Node
 	if !object: return
+	var center = (object.get_viewport().size/2.0 if object.is_inside_tree() else ScreenUtils.screenCenter)
+	if object is FunkinSprite: center -= object.image.pivot_offset
+	else:
+		var tex = object.get('texture')
+		var size = tex.get_size() if tex else object.get('size')
+		if size: center += size/2.0
 	
-	var viewport = object.get_viewport()
-	if !viewport: 
-		show_funkin_warning('Error in screenCenter: '+object.name+' must be add first before using this method.')
-		return
+	var obj_pos = object.call('get_position')
 	
+	if !obj_pos: return
 	
-	var tex = object.get('texture')
-	var size: Vector2 = Vector2.ZERO
-	
-	if tex: size = tex.get_size()
-	else: size = object.get('size') as Vector2
-	
-	var pos = viewport.size/2.0 - size/2.0
 	match type:
-		'x': object.position.x = pos.x
-		'y': object.position.y = pos.y
-		_: object.position = pos
+		'x': object.set_position(center.x,obj_pos.y)
+		'y': object.set_position(obj_pos.x,center.y)
+		_: object.set_position(center)
 
 ##Scale object.
 ##If not [param centered], the sprite will scale from his top left corner.
@@ -893,12 +887,13 @@ static func textsExits(tag: String) -> bool: return textsCreated.has(tag)
 
 #region Tween Methods
 ##Start Tween. Similar to [method createTween].
-static func startTween(tag: String, object: Variant, what: Dictionary[String,Variant],time = 1.0, easing: String = '') -> TweenerObject:
+static func startTween(tag: String, object: Variant, what: Dictionary,time = 1.0, easing: String = '') -> TweenerObject:
 	if !object is Object:
 		var split = _find_object(object,true)
 		object = split[0]
 		if !object: return
 		if split[1]: var split_join = ":".join(split[1]); for i in what.keys(): DictionaryUtils.rename_key(what,i,split_join+':'+i)
+	
 	if !object: return
 	for property in what: #Checks if properties set in "what" exists in object.
 		if property in object: continue
@@ -1043,7 +1038,7 @@ static func noteTweenDirection(tag: String,noteID,target = 0.0,time = 1.0,tweenE
 static func noteTweenColor(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
 	return startNoteTween(tag,noteID,{'modulate': float(target)},float(time),tweenEase)
 
-static func startNoteTween(tag: String, noteID, values: Dictionary[String,Variant], time, ease: String) -> TweenerObject:
+static func startNoteTween(tag: String, noteID, values: Dictionary, time, ease: String) -> TweenerObject:
 	return startTween(
 		tag,
 		_find_group_members('strumLineNotes',int(noteID)),
@@ -1106,21 +1101,17 @@ static func initShader(shader: String, tag: String = '', obrigatory: bool = fals
 ##[br][br]See also [method setSpriteShader].
 static func addShaderCamera(camera: Variant, shader: Variant) -> void:
 	if !shader: return
-	var cameras = camera if camera is Array else [camera]
-	#Detect Shaders
-	if shader is String: shader = _find_shader_material(shader)
+	if shader is String: shader = _find_shader_material(shader); if !shader: return
 	if shader is ShaderMaterial:
-		for cam in cameras:
-			cam = getCamera(cam)
-			if !cam: continue
-			cam.addFilter(shader)
+		if camera is Array: for i in camera: var cam = getCamera(i); if cam: cam.addFilter(shader); return
+		if camera is String: camera = getCamera(camera)
+		if !camera: return
+		camera.addFilter(shader)
 		return
-	#Set Shaders to Cameras
-	for cam in cameras:
-		cam = getCamera(cam)
-		if !cam: return
-		cam.addFilters(shader)
 	
+	if camera is Array: for i in camera: var cam = getCamera(i); if cam: cam.addFilters(shader); return
+	if camera is String: camera = getCamera(camera)
+	if camera: camera.addFilters(shader)
 ##Remove shader from the camera, [code]shader[/code] can be a [String] or a [Array].
 ##[br]See also [method addShaderCamera].
 static func removeShaderCamera(camera: Variant, shader: Variant) -> void:
@@ -1375,8 +1366,7 @@ static func keyboardJustReleased(key: String) -> bool:
 
 ##Detect if the keycode is pressed, similar to [method Input.is_key_label_pressed].
 ##[br]See also [method keyboardJustPressed].
-static func keyboardPressed(key: String) -> bool:
-	return InputUtils.isKeyPressed(OS.find_keycode_from_string(key))
+static func keyboardPressed(key: String) -> bool: return Input.is_key_pressed(OS.find_keycode_from_string(key))
 
 #endregion
 
@@ -1479,6 +1469,8 @@ static func _load_script(path: String) -> Object:
 	var GScript: GDScript = GDScript.new()
 	GScript.source_code = FileAccess.get_file_as_string(absolutePath)
 	GScript.reload()
+	
+	#print('Adding: '+path+' script')
 	return GScript
 
 
@@ -1522,26 +1514,35 @@ static func callScriptNoCheck(script: Object, function: StringName, parameters: 
 
 static func _sign_parameters(args: Array,parameters: Variant) -> Array:
 	if !args: return args
+	
+	
+	if ArrayUtils.is_array(parameters): return _sign_parameters_array(args,parameters)
+	parameters = [_sign_value(parameters,args[0].type)]
+	var index: int = 1
+	while index < args.size(): 
+		var i = args[index]
+		if i.has('default'): break
+		parameters.append(MathUtils.get_new_value(i.type));
+		index += 1
+	 
+	return parameters
+
+static func _sign_parameters_array(args: Array, parameters: Array) -> Array:
 	var index: int = -1
 	
-	var new_parameters: Array[Variant] = []
-	var args_length: int = args.size()-1
-	if ArrayUtils.is_array(parameters):
-		var param_size = parameters.size()
-		while index < args_length:
-			index +=1
-			var parameter = args[index]
-			if index >= param_size: 
-				if parameter.has('default'): break
-				new_parameters.append(MathUtils.get_new_value(parameter.type))
-			new_parameters.append(_sign_value(parameters[index],parameter.type))
-	else:
-		new_parameters[0] = _sign_value(parameters[0],args[0].type)
-		index = 1
-		while index < args_length: new_parameters.append(args[index].default); index += 1;
-	 
-	return new_parameters
-
+	var args_length = args.size()-1
+	var append: bool = false
+	while index < args_length:
+		index +=1
+		var i = args[index]
+		if append:
+			if i.has('default'): break
+			parameters.append(MathUtils.get_new_value(i.type))
+		else: 
+			append = index == parameters.size()-1
+			parameters[index] = _sign_value(parameters[index],i.type)
+	
+	return parameters
 static func _sign_value(value: Variant, type_to_convert: Variant.Type):
 	if type_to_convert == TYPE_NIL or typeof(value) == type_to_convert: return value
 	return type_convert(value,type_to_convert)

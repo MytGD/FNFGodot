@@ -11,7 +11,7 @@ var int_value: bool = false
 var _call_signal: bool = true
 signal value_changed(value: float)
 func _ready() -> void: 
-	text = str(value)
+	text = String.num(value)
 	text_changed.connect(_on_text_changed)
 	if int_value: characters_allowed.erase('.')
 
@@ -43,7 +43,7 @@ func set_value(_v: float) -> void:
 	_v = clampf(_v,min_value,max_value)
 	if _v == value: return
 	value = _v
-	text = str(value)
+	text = String.num(value)
 	if _call_signal and is_node_ready(): value_changed.emit(value)
 
 func set_value_no_signal(_v: float) -> void:

@@ -275,7 +275,7 @@ func _set_auto_loop(loop: bool):
 #region Getters
 func get_frame_name() -> String: 
 	if !prefix: return ''
-	var frame_str = str(curAnim.curFrame)
+	var frame_str = String.num_int64(curAnim.curFrame)
 	return prefix+('0000').left(-frame_str.length())+frame_str
 #endregion
 

@@ -21,8 +21,8 @@ func update() -> void:
 	var songMinutes = songSeconds/60
 	songSeconds %= 60
 	
-	songMinutes = str(songMinutes)
-	songSeconds = str(songSeconds)
+	songMinutes = String.num_int64(songMinutes)
+	songSeconds = String.num_int64(songSeconds)
 	if songMinutes.length() <= 1: songMinutes = '0'+songMinutes
 	if songSeconds.length() <= 1: songSeconds = '0'+songSeconds
 	

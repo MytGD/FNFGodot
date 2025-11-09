@@ -39,7 +39,7 @@ func _update() -> void:
 			if i is NodePath: object.set_indexed(i,final_val)
 			else: object.set(i,final_val)
 		index += 1
-func tween_property(property: String, to: Variant) -> void: ##Tween the [member object] property.
+func tween_property(property: Variant, to: Variant) -> void: ##Tween the [member object] property.
 	if !object: return
 	var init_val: Variant
 	var prop = property

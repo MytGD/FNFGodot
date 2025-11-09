@@ -16,14 +16,15 @@ func set_value(number: Variant) -> void:
 	elif limit_max: number = minf(number,value_max)
 	elif limit_max: number = maxf(number,value_min)
 	if number == value: return
-	if int_value: value = get_value(); text = str(value)
-	else: value = number; text = str(get_value())
+	value = get_value()
+	_update_text()
 	value_changed.emit(value)
+	
+func _update_text(): text = String.num_int64(value) if int_value else String.num(value)
 
 func get_value() -> Variant: 
 	var value_int = int(value)
 	if int_value or value_int == value: return value_int
 	return value
 	
-func _ready() -> void:
-	text = str(get_value())
+func _ready() -> void: _update_text()
