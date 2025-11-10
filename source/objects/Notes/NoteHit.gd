@@ -17,15 +17,6 @@ var copyScale: bool ##If [code]true[/code], the note will follow the scale from 
 func updateNote():
 	super.updateNote()
 	updateRating()
-	if !canBeHit: return
-	if not (sustainParents and ClientPrefs.data.splashesEnabled): return
-	var firstSus = sustainParents[0]
-	var endSus = sustainParents.back()
-	firstSus.ratingMod = ratingMod
-	firstSus.rating = rating
-	
-	endSus.ratingMod = ratingMod
-	endSus.rating = rating
 
 func updateRating() -> void:
 	var timeAbs = absf(distance)

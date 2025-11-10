@@ -173,9 +173,10 @@ func _update_note_speed() -> void:
 #endregion
 
 #region Setters
-func loadFromStyle(noteStyle: String) -> void:
-	super.loadFromStyle(noteStyle)
-	var offsets = styleData.get('offsets')
+func loadFromStyle(noteStyle: String, prefix: String = stylePrefix) -> void:
+	super.loadFromStyle(noteStyle,prefix)
+	if !styleData: offsetX = 0.0; offsetY = 0.0; return
+	var offsets = styleData.offsets
 	if offsets: offsetX = offsets[0]; offsetY = offsets[1]
 
 func setNoteSpeed(_speed: float) -> void:
@@ -205,14 +206,9 @@ func setStrum(strum: StrumNote) -> void:
 ##Return the closer note from his [member Note.strumNote]
 static func detectCloseNote(array: Array):
 	if !array:return null
-	
 	var closeNote = array.pop_front()
 	for i in array:
 		if not i: continue
 		if absf(i.distance) < absf(closeNote.distance): closeNote = i 
 	return closeNote
-
-static func getNoteAnimName(note) -> String:
-	if note.isSustainNote: return 'holdEnd' if note.isEndSustain else 'hold'
-	return 'static'
 #endregion

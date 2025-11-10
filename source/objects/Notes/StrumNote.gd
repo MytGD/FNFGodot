@@ -1,13 +1,15 @@
 @icon("res://icons/StrumNote.png")
 extends FunkinSprite ##Strum Note
+
+const NoteStyleData = preload("uid://by78myum2dx8h")
 const Song = preload("uid://cerxbopol4l1g")
 const NoteHit = preload("uid://dx85xmyb5icvh")
 const default_offset: PackedFloat32Array = [0,0]
+
 ##Strum Direction
 ##[br][param 0: left, 1: down, 2: up, 3: right]
-@export var data: int = 0;
+@export var data: int;
 
-var prefixs: Dictionary
 ##Direction of the note in radius. [br]
 ##Example: [code]deg_to_rad(90)[/code] makes the notes come from the left,
 ##while [code]deg_to_rag(180)[/code] makes come from the top.[br]
@@ -16,25 +18,25 @@ var direction: float = 0.0:
 	set(value): direction = value; _direction_radius = deg_to_rad(value)
 var _direction_radius: float = 0.0:
 	set(value): _direction_radius = value; _direction_lerp = Vector2(cos(value),sin(value))
-var _direction_lerp: Vector2 = Vector2(0,1)
+
+var _direction_lerp: Vector2 = Vector2(0,1) #Used in Notes.gd
+
 var mustPress: bool = false ##Player Strum
-var hit_action: String = '' ##Hit Key
+var hit_action: StringName ##Hit Key
 
 var return_to_static_on_finish: bool = true
 
-var default_scale: float = 0.7
-##Pixel Note
-@export var isPixelNote: bool = false
+@export var default_scale: float = 0.7
+
+@export var isPixelNote: bool ##Pixel Note
 ##The [Input].action_key of the note, see [method Input.is_action_just_pressed]
 
 
 var styleName: String: set = setStrumStyleName
 var styleData: Dictionary
-##Strum Texture
-var texture: String: set = setTexture
-	
-##If [code]true[/code], make the strum don't make to Static anim when finish's animation
-var specialAnim: bool
+
+var texture: String: set = setTexture ##Strum Texture
+var specialAnim: bool ##If [code]true[/code], make the strum don't make to Static anim when finish's animation
 
 var downscroll: bool ##Invert the note direction.
 
@@ -70,16 +72,16 @@ func reloadStrumNote() -> void: ##Reload Strum Texture Data
 	image.texture = Paths.texture(texture)
 	antialiasing = !isPixelNote
 	
-	if prefixs: _load_anims_from_prefix()
+	if styleData.data: _load_anims_from_prefix()
 	else: _load_graphic_anims()
 	setGraphicScale(Vector2(default_scale,default_scale))
 
 func _load_anims_from_prefix() -> void:
 	var type = _anim_direction[data]
 	
-	var static_anim = prefixs[type+'Static']
-	var press_anim = prefixs[type+'Press']
-	var confirm_anim = prefixs[type+'Confirm']
+	var static_anim = styleData.data[type+'Static']
+	var press_anim = styleData.data[type+'Press']
+	var confirm_anim = styleData.data[type+'Confirm']
 	animation.addAnimByPrefix('static',static_anim.prefix,24,true)
 	animation.addAnimByPrefix('press',press_anim.prefix,24,false)
 	animation.addAnimByPrefix('confirm',confirm_anim.prefix,24,false)
@@ -105,7 +107,6 @@ func loadFromStyle(noteStyle: String):
 	if !styleData: return
 	
 	isPixelNote = styleData.get('isPixel',false)
-	prefixs = styleData.data
 	default_scale = styleData.get('scale',0.7)
 	texture = styleData.assetPath
 
@@ -116,7 +117,7 @@ func setTexture(_texture: String) -> void: texture = _texture;reloadStrumNote()
 
 func setStrumStyleName(_name: String):
 	styleName = _name
-	styleData = getStrumStyleData(_name)
+	styleData = NoteStyleData.getStyleData(_name,NoteStyleData.StyleType.STRUM)
 
 func setMultSpeed(speed: float):
 	if speed == multSpeed: return
@@ -125,22 +126,19 @@ func setMultSpeed(speed: float):
 #endregion
 
 
-func strumConfirm(anim: String = 'confirm'):
+func strumConfirm(anim: StringName = &'confirm'):
 	animation.play(anim,true)
 	hitTime = Conductor.stepCrochet/1000.0
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	if mustPress:
-		if animation.current_animation == 'static' and Input.is_action_just_pressed(hit_action): 
-			animation.play(&'press',true)
+		if animation.current_animation == &'static' and Input.is_action_just_pressed(hit_action): animation.play(&'press',true)
 		elif Input.is_action_just_released(hit_action): animation.play(&'static')
-	else:
-		if hitTime > 0.0:
-			hitTime -= delta
-			if hitTime <= 0.0:
-				hitTime = 0.0
-				animation.play(&'static')
+		return
+	if hitTime:
+		hitTime -= delta
+		if hitTime <= 0.0: hitTime = 0.0; animation.play(&'static')
 
 func _property_can_revert(property: StringName) -> bool:
 	match property:
@@ -153,11 +151,3 @@ func _property_get_revert(property: StringName) -> Variant:
 		&'mustPress': return false
 		&'scale': return Vector2(default_scale,default_scale)
 	return null
-
-static func getStrumStyleData(style: String) -> Dictionary:
-	var style_data = Paths.loadJson('data/notestyles/'+style)
-	if !style_data: 
-		style_data = Paths.loadJson('data/notestyles/funkin.json')
-		return {}
-	style_data = style_data.get('strums')
-	return style_data if style_data else {}

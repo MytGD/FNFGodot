@@ -20,3 +20,14 @@ static func rename_key(dic: Dictionary, key: Variant, new_key: Variant):
 	if !dic.has(key): return
 	dic[new_key] = dic[key]
 	dic.erase(key)
+
+static func convertKeysToStringNames(dict: Dictionary, recursive: bool = false) -> void:
+	for i in dict.keys():
+		var val = dict[i]
+		var key = i
+		if recursive and val is Dictionary: convertKeysToStringNames(val,true)
+		
+		if key is String:
+			key = StringName(key)
+			dict.erase(i)
+			dict[key] = val

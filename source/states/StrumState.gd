@@ -519,32 +519,37 @@ func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase]
 	preHitNote(note)
 	var mustPress: bool = note.mustPress
 	var playerNote: bool = mustPress != playAsOpponent
-	var strumAnim = &'confirm'
-	
-	var strum: StrumNote = note.strumNote
+	var strumAnim: StringName = &'confirm'
 	
 	if playerNote:
-		if not note.isSustainNote: addScoreFromNote(note)
+		if !note.isSustainNote: addScoreFromNote(note)
 		else: 
 			sicks += 1; 
 			songScore += 10
 			if note.isEndSustain: strumAnim = &'press'
 	else:  
-		if note.isEndSustain: _disableHoldSplash(getStrumDirection(strum.data,mustPress))
+		if note.isEndSustain: _disableHoldSplash(getStrumDirection(note.noteData,mustPress))
 	
-	if strum and note.strumConfirm:
-		if strum.mustPress or note.sustainLength:
-			strum.return_to_static_on_finish = false
-			strum.animation.play(strumAnim,true)
-		else:
-			strum.strumConfirm(strumAnim)
-			strum.return_to_static_on_finish = true
-	
+	if note.strumConfirm: _strum_confirm(note,strumAnim)
 	_on_hit_note(note)
 	
 	if splashAllowed(note): createSplash(note)
 	note.killNote()
 
+func _strum_confirm(note: Note, confirmAnim: StringName = &"confirm"):
+	var strum = note.strumNote
+	if !strum: return
+	
+	if strum.mustPress: strum.animation.play(confirmAnim,true); return
+	if !note.isSustainNote: 
+		strum.strumConfirm(confirmAnim); strum.return_to_static_on_finish = true; return
+	
+	strum.return_to_static_on_finish = note.isEndSustain
+	strum.hitTime = 0.0
+	strum.animation.play(confirmAnim,true)
+	
+		
+	
 func _on_hit_note(note: Note): pass
 
 func reloadNotes() -> void: for i in unspawnNotes: reloadNote(i)
@@ -804,112 +809,6 @@ func _set_middlescroll(value):
 	updateStrumsPosition()
 #endregion
 
-const noteSusVars: PackedStringArray = [
-	'noteData',
-	'noteType',
-	'gfNote',
-	'mustPress',
-	'animSuffix',
-	'noAnimation',
-	'isPixelNote',
-]
-
-##Load Notes from the Song.[br][br]
-##[b]Note:[/b] This function have to be call [u]when [member SONG] and [member keyCount] is already setted.[/u]
-static func getNotesFromData(songData: Dictionary = {}) -> Array[Note]:
-	var _notes: Array[Note] = []
-	var notesData: Array = songData.get('notes',[])
-	if !notesData: return []
-	
-	var bpmSection: int = songData.get('bpm',0.0)
-	var keyCount: int = songData.get('keyCount',4)
-	
-	var sectionCrochet: float = 60000.0/bpmSection # 60 seconds * 1000
-	var sectionStep: float = sectionCrochet/4.0
-	
-	
-	var types_founded: PackedStringArray = PackedStringArray()
-	for section: Dictionary in notesData:
-		if section.changeBPM:
-			bpmSection = section.bpm
-			sectionCrochet = Conductor.get_crochet(bpmSection)
-			sectionStep = sectionCrochet/4.0
-			
-		var altAnim = section.get("altAnim")
-		
-		for noteSection in section.sectionNotes:
-			var note: NoteHit = createNoteFromData(noteSection,section,keyCount)
-			
-			if !_insert_note_to_array(note,_notes): continue
-			
-			if altAnim: note.animSuffix = '-alt'
-			if note.noteType: types_founded.append(note.noteType)
-			
-			var susLength = ArrayUtils.get_array_index(noteSection,2,0)
-			if !susLength: continue 
-			_create_note_sustains(note,susLength,sectionStep)
-			for i in note.sustainParents: _insert_note_to_array(i,_notes)
-	
-	var type_unique: PackedStringArray = songData.get_or_add('noteTypes',PackedStringArray())
-	for i in types_founded: if not i in type_unique: type_unique.append(i)
-	return _notes
-
-static func _create_note_sustains(note: Note, length: float, stepCrochet: float) -> void:
-	note.sustainLength = length
-	var susNotes: Array[NoteSustain] = note.sustainParents
-	var time = note.strumTime
-	
-	var index: int = 0
-	var susCount = ceili(length/stepCrochet)-1
-	while index <= susCount:
-		var step = stepCrochet*index
-		var sus = createSustainFromNote(note,minf(stepCrochet, length - step),index == susCount)
-		sus.strumTime = time + step
-		sus.splashDisabled = true
-		susNotes.append(sus)
-		index += 1
-	
-	susNotes[0].splashDisabled = false
-	susNotes.back().splashDisabled = false
-	
-static func _insert_note_to_array(note: Note, array: Array) -> bool:
-	if !note: return false
-	if !array:  array.append(note); return true
-	var index = array.size()
-	while index > 0:
-		var prev_note = array[index-1]
-		if note.strumTime <= prev_note.strumTime: index -= 1; continue
-		array.insert(index,note)
-		return true
-	array.push_front(note)
-	return true
-	
-static func createNoteFromData(data: Array, sectionData: Dictionary, keyCount: int = 4) -> NoteHit:
-	var noteData = int(data[1])
-	if noteData < 0: return
-	
-	var note = NoteHit.new(noteData%keyCount)
-	var mustHitSection = sectionData.mustHitSection
-	var gfSection = sectionData.gfSection
-	var type = ArrayUtils.get_array_index(data,3)
-	
-	note.strumTime = data[0]
-	note.mustPress = mustHitSection and noteData < keyCount or not mustHitSection and noteData >= keyCount
-	if type and type is String: 
-		note.noteType = type
-		note.gfNote = gfSection and note.mustPress == mustHitSection or note.noteType == 'GF Sing'
-	else: note.gfNote = gfSection and note.mustPress == mustHitSection
-	return note
-
-static func createSustainFromNote(note: Note,length: float, isEnd: bool = false) -> NoteSustain:
-	var sus: NoteSustain = NoteSustain.new(note.noteData,length)
-	sus.splashStyle = ''
-	sus.noteParent = note
-	sus.isEndSustain = isEnd
-	for noteVars in noteSusVars: sus[noteVars] = note[noteVars]
-	sus.hitHealth /= 2.0
-	#sus.multAlpha = 0.7
-	return sus
 
 func clear() -> void: 
 	clearSongNotes() #Replaced in PlayStateBase
@@ -924,3 +823,108 @@ func clear() -> void:
 	inModchartEditor = false
 	isPixelStage = false
 	
+
+##Load Notes from the Song.[br][br]
+##[b]Note:[/b] This function have to be call [u]when [member SONG] and [member keyCount] is already setted.[/u]
+static func getNotesFromData(songData: Dictionary = {}) -> Array[Note]:
+	var _notes: Array[Note] = []
+	var notesData: Array = songData.get('notes',[])
+	if !notesData: return []
+	
+	var _bpm: int = songData.get('bpm',0.0)
+	var keyCount: int = songData.get('keyCount',4)
+	
+	var stepCrochet: float = Conductor.get_step_crochet(_bpm)
+	
+	var types_founded: PackedStringArray = PackedStringArray()
+	for section: Dictionary in notesData:
+		if section.changeBPM and section.bpm != _bpm:
+			_bpm = section.bpm
+			stepCrochet = Conductor.get_step_crochet(_bpm)
+			
+		var isAltSection: bool = section.get("altAnim",false)
+
+		for noteSection in section.sectionNotes:
+			var note: NoteHit = createNoteFromData(noteSection,section,keyCount)
+			if !_insert_note_to_array(note,_notes): continue
+			
+			if isAltSection: note.animSuffix = '-alt'
+			if note.noteType: types_founded.append(note.noteType)
+			
+			var susLength = noteSection[2] if noteSection.size() >= 3 else null
+			if !susLength: continue 
+			for i in _create_note_sustains(note,susLength,stepCrochet): _insert_note_to_array(i,_notes)
+	
+	var type_unique: PackedStringArray
+	for i in types_founded: if not i in type_unique: type_unique.append(i)
+	songData.noteTypes = type_unique
+	return _notes
+
+static func _insert_note_to_array(note: Note, array: Array) -> bool:
+	if !note: return false
+	if !array: array.append(note); return true
+	var index = array.size()
+	while index > 0:
+		var prev_note = array[index-1]
+		if note.strumTime <= prev_note.strumTime: index -= 1; continue
+		array.insert(index,note)
+		return true
+	array.push_front(note)
+	return true
+
+static func _create_note_sustains(note: Note, length: float, stepCrochet: float) -> Array[NoteSustain]:
+	var susNotes: Array[NoteSustain] = note.sustainParents
+	var time: float = note.strumTime
+	var index: int = 0
+	var susCount: int = ceili(length/stepCrochet)
+	while index <= susCount:
+		var step = stepCrochet*index
+		var sus_length = minf(stepCrochet, length - step)
+		var sus = createSustainFromNote(note,sus_length,index == susCount)
+		sus.strumTime = time
+		sus.splashDisabled = true
+		susNotes.append(sus)
+		time += sus_length
+		index += 1
+	
+	susNotes[0].splashDisabled = false
+	susNotes.back().splashDisabled = false
+	note.sustainLength = length
+	return susNotes
+
+	
+static func createNoteFromData(data: Array, sectionData: Dictionary, keyCount: int = 4) -> NoteHit:
+	var noteData = int(data[1])
+	if noteData < 0: return
+	
+	var note = NoteHit.new(noteData%keyCount)
+	var mustHitSection = sectionData.mustHitSection
+	var gfSection = sectionData.gfSection
+	var type = data[3] if data.size() >= 4 else null
+	
+	note.strumTime = data[0]
+	note.mustPress = mustHitSection and noteData < keyCount or not mustHitSection and noteData >= keyCount
+	if type and type is String: 
+		note.noteType = type
+		note.gfNote = gfSection and note.mustPress == mustHitSection or type == 'GF Sing'
+	else: note.gfNote = gfSection and note.mustPress == mustHitSection
+	return note
+
+const noteSusVars: Array = [
+	&'noteData',
+	&'noteType',
+	&'gfNote',
+	&'mustPress',
+	&'animSuffix',
+	&'noAnimation',
+	&'isPixelNote',
+]
+static func createSustainFromNote(note: Note,length: float, isEnd: bool = false) -> NoteSustain:
+	var sus: NoteSustain = NoteSustain.new(note.noteData,length)
+	sus.splashStyle = ''
+	sus.noteParent = note
+	sus.isEndSustain = isEnd
+	
+	for noteVars in noteSusVars: sus[noteVars] = note[noteVars]
+	sus.hitHealth /= 2.0
+	return sus

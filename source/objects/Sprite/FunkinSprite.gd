@@ -7,6 +7,12 @@ const Graphic = preload("res://source/objects/Sprite/Graphic.gd")
 
 var _position: Vector2: set = set_position
 
+#region Camera Vars
+var camera: Node: set = set_camera
+var _camera_is_canvas: bool = false
+#endregion
+
+var groups: Array[SpriteGroup] = []
 
 
 @export var pivot_offset: Vector2: set = set_pivot_offset
@@ -89,8 +95,6 @@ func _init(is_animated: bool = false,texture: Variant = null):
 
 func _ready() -> void: set_notify_local_transform(true); 
 
-func _enter_tree() -> void: _update_position()
-
 func _process(delta: float) -> void:
 	if _needs_factor_update: _update_scroll_factor()
 	if _accelerating: _add_velocity(delta)
@@ -156,6 +160,7 @@ func set_offset_from_anim(anim: String) -> void:
 	var off = _animOffsets[anim]
 	if animation and animation.current_animation == anim: offset = off
 #endregion
+
 
 #region Velocity Methods
 func _check_velocity() -> void: _accelerating = acceleration != Vector2.ZERO or velocity != Vector2.ZERO
@@ -225,6 +230,18 @@ func set_graphic_scale(_scale: Vector2): _graphic_scale = _scale; _update_graphi
 func set_texture(tex: Variant):
 	if !tex: image.texture = null; return;
 	image.texture = tex if tex is Texture2D else Paths.texture(tex)
+
+func setGraphicScale(_scale: Vector2) -> void: scale = _scale; _graphic_scale = Vector2.ONE-_scale
+func setGraphicSize(sizeX: float = -1.0, sizeY: float = -1.0) -> void: ##Cut the Image, just works if this sprite is [u]not animated[/u].
+	if !image.texture: return
+	if sizeX == -1.0: sizeX = image.region_rect.size.x
+	if sizeY == -1.0: sizeY = image.region_rect.size.y
+	var size = Vector2(sizeX ,sizeY)
+	image.region_rect.size = size
+	pivot_offset = size/2.0
+	image.pivot_offset = pivot_offset
+
+
 #endregion
 
 #region Image Getters
@@ -268,6 +285,7 @@ func _on_texture_changed() -> void:
 		pivot_offset = imageSize; 
 		image.pivot_offset = imageSize;
 		return
+	
 	imageSize = image.texture.get_size()
 	if _auto_resize_image: 
 		image.region_rect = Rect2(Vector2.ZERO,imageSize); 
@@ -284,12 +302,6 @@ func _update_image_flip() -> void:
 	if image is Graphic: image._update_offset()
 #endregion
 
-var groups: Array[SpriteGroup] = []
-
-#region Camera Vars
-var camera: Node: set = set_camera
-var _camera_is_canvas: bool = false
-#endregion
 
 func centerOrigin(): midpoint_scale = scale;
 
@@ -297,19 +309,6 @@ func centerOrigin(): midpoint_scale = scale;
 func kill() -> void: var parent = get_parent(); if parent: parent.remove_child(self)  
 
 func removeFromGroups() -> void: for group in groups: group.remove(self)
-
-#region Image Methods
-func setGraphicSize(sizeX: float = -1.0, sizeY: float = -1.0) -> void: ##Cut the Image, just works if this sprite is [u]not animated[/u].
-	if !image.texture: return
-	if sizeX == -1.0: sizeX = image.region_rect.size.x
-	if sizeY == -1.0: sizeY = image.region_rect.size.y
-	var size = Vector2(sizeX ,sizeY)
-	image.region_rect.size = size
-	pivot_offset = size/2.0
-	image.pivot_offset = pivot_offset
-
-func setGraphicScale(_scale: Vector2) -> void: scale = _scale; _graphic_scale = Vector2.ONE-_scale
-#endregion
 
 func screenCenter(type: StringName = 'xy') -> void: ##Move the sprite to the center of the screen
 	var viewport = get_viewport(); if !viewport: return
