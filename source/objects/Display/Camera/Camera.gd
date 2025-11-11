@@ -8,7 +8,7 @@ class_name CameraCanvas extends Node2D
 
 var color: Color: set = set_color,get = get_color
 var angle: float: set = set_angle, get = get_angle
-var angle_degrees: float = 0.0: set = set_angle_degress
+var angle_degrees: float: set = set_angle_degress
 var width: int: set = set_width
 var height: int: set = set_height
 var pivot_offset: Vector2 = Vector2.ZERO: set = set_pivot_offset
@@ -16,14 +16,14 @@ var pivot_offset: Vector2 = Vector2.ZERO: set = set_pivot_offset
 
 #region Camera
 var bg: SolidSprite = SolidSprite.new()
-var _first_index: int = 0
+var _first_index: int
 
 var scroll_camera: Node2D = Node2D.new()
-var scroll: Vector2 = Vector2.ZERO: set = set_scroll
-var scrollOffset: Vector2 = Vector2.ZERO: set = set_scroll_offset
-var _scroll_position: Vector2 = Vector2.ZERO: set = _set_scroll_position
-var _scroll_pivot_offset: Vector2 = Vector2.ZERO: set = _set_scroll_pivot_offset
-var _real_scroll_position: Vector2 = Vector2.ZERO
+var scroll: Vector2: set = set_scroll
+var scrollOffset: Vector2: set = set_scroll_offset
+var _scroll_position: Vector2: set = _set_scroll_position
+var _scroll_pivot_offset: Vector2: set = _set_scroll_pivot_offset
+var _real_scroll_position: Vector2
 
 var flashSprite: FlashSprite = FlashSprite.new()
 @export var defaultZoom: float = 1.0 #Used in PlayState
@@ -32,14 +32,14 @@ var flashSprite: FlashSprite = FlashSprite.new()
 @export_category("Shake")
 var shakeIntensity: float = 0.0: set = _set_shake_intensity
 var shakeTime: float = 0.0
-var _shake_pos: Vector2 = Vector2.ZERO: set = _set_shake_pos
+var _shake_pos: Vector2: set = _set_shake_pos
 var _is_shaking: bool = false
 #endregion
 
 #endregion
 
 #region Shaders
-var filtersArray: Array = []
+var filtersArray: Array[Material]
 var viewport: SubViewport
 var _viewports_created: Array[SubViewport]
 var _last_viewport_added: SubViewport
@@ -54,14 +54,14 @@ func _init() -> void:
 	clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 	
 	bg.modulate = Color.TRANSPARENT
-	bg.name = 'bg'
+	bg.name = &'bg'
 	width = ScreenUtils.screenWidth
 	height = ScreenUtils.screenHeight
 	
-	scroll_camera.name = 'Scroll'
+	scroll_camera.name = &'Scroll'
 	add_child(scroll_camera)
 	
-	flashSprite.name = 'flashSprite'
+	flashSprite.name = &'flashSprite'
 	flashSprite.modulate.a = 0.0
 	scroll_camera.child_exiting_tree.connect(func(node):
 		if node.get_index() < _first_index: _first_index -= 1
@@ -97,9 +97,7 @@ func setFilters(shaders: Array = []) -> void: ##Set Shaders in the Camera
 	if filtersArray.size() == 1: _shader_image.texture = viewport.get_texture(); return
 	
 	var index: int = filtersArray.size()-2
-	while index >= 0:
-		_addViewportShader(filtersArray[index])
-		index -= 1
+	while index >= 0: _addViewportShader(filtersArray[index]); index -= 1
 
 
 func addFilter(shader: ShaderMaterial):
@@ -108,8 +106,8 @@ func addFilter(shader: ShaderMaterial):
 	filtersArray.append(shader)
 	_shader_image.material = shader
 
-func addFilters(shaders: Array) -> void: ##Add shaders to the existing ones.
-	for i in _convertFiltersToMaterial(shaders): addFilter(i)
+##Add shaders to the existing ones.
+func addFilters(shaders: Array) -> void: for i in _convertFiltersToMaterial(shaders): addFilter(i)
 
 func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	if !_last_viewport_added: return
@@ -121,7 +119,7 @@ func _addViewportShader(filter: ShaderMaterial) -> Sprite2D:
 	if filter.shader.resource_name: shader_view.name = filter.shader.resource_name
 	
 	var tex = Sprite2D.new()
-	tex.name = 'Sprite2D'
+	tex.name = &'Sprite2D'
 	tex.centered = false
 	tex.texture = _last_viewport_added.get_texture()
 	tex.material = filter
@@ -154,11 +152,10 @@ func removeFilter(shader: ShaderMaterial) -> void: ##Remove shaders.
 func removeFilters(): ##Remove every shader created in this camera.
 	if !filtersArray: return
 	filtersArray.clear()
-	if _shader_image:
-		_shader_image.queue_free()
-		_shader_image = null
+	if _shader_image: _shader_image.queue_free(); _shader_image = null
 	
 	if can_remove_viewport(): remove_viewport()
+	
 	if _viewports_created:
 		for i in _viewports_created: i.queue_free()
 		_viewports_created.clear()
@@ -183,7 +180,7 @@ func create_shader_image():
 	if _shader_image: return
 	
 	_shader_image = Sprite2D.new()
-	_shader_image.name = 'ViewportTexture'
+	_shader_image.name = &'ViewportTexture'
 	_shader_image.centered = false
 	_shader_image.texture = viewport.get_texture()
 	
@@ -215,6 +212,7 @@ func _update_shake_time(delta: float):
 	if !shakeTime: return
 	shakeTime -= delta
 	if shakeTime <= 0.0: shakeIntensity = 0; shakeTime = 0; _shake_pos = Vector2.ZERO
+
 func _updateShake(delta: float):
 	_update_shake_time(delta)
 	_shake_pos = Vector2(
@@ -224,18 +222,24 @@ func _updateShake(delta: float):
 #endregion
 func fade(color: Variant = Color.BLACK,time: float = 1.0, _force: bool = true, _fadeIn: bool = true) -> void: ##Fade the camera.
 	var tag = 'fade'+name
-	if !_force and FunkinGD.isTweenRunning('fade'+tag): return
+	if !_force and FunkinGD.isTweenRunning(tag): return
+	
 	flashSprite.modulate = FunkinGD._get_color(color)
 	var target = 0.0 if _fadeIn else 1.0
 	if !time: FunkinGD.cancelTween(tag); flashSprite.modulate.a = target
-	else: FunkinGD.startTweenNoCheck(tag,flashSprite,{'modulate:a': target},time,'linear')
+	else: 
+		FunkinGD.startTweenNoCheck(
+			tag,
+			flashSprite,{FunkinGD.ModulateAlpha: target},
+			time
+		)
 
 func flash(color: Color = Color.WHITE, time: float = 1.0, force: bool = false) -> void: ##Flash bang
 	if time <= 0.0: return
 	var tag = 'flash'+name
 	if !force and FunkinGD.isTweenRunning(tag): return
 	flashSprite.modulate = color
-	FunkinGD.doTweenAlpha(tag,flashSprite,0.0,time,'linear').bind_node = self
+	FunkinGD.doTweenAlpha(tag,flashSprite,0.0,time).bind_node = self
 
 #endregion
 

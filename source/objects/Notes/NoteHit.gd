@@ -14,9 +14,6 @@ var hit_action: StringName ##The Key that have to be press to hit the note, this
 var copyAngle: bool = true ## Follow strum angle
 var copyScale: bool ##If [code]true[/code], the note will follow the scale from his [member strum].
 
-func updateNote():
-	super.updateNote()
-	updateRating()
 
 func updateRating() -> void:
 	var timeAbs = absf(distance)
@@ -25,6 +22,10 @@ func updateRating() -> void:
 		if timeAbs < _rating_offset[ratingMod]: break
 		ratingMod += 1
 	rating = _rating_string[ratingMod]
+	
+	if !sustainParents: return
+	sustainParents[0].ratingMod = ratingMod
+	sustainParents.back().ratingMod = ratingMod
 
 func setNoteData(_data: int) -> void: super.setNoteData(_data); hit_action = getInputActions()[_data]
 

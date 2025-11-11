@@ -1,23 +1,22 @@
-extends "res://source/objects/Notes/Note.gd"
-##Sustain Base Note Class
+extends "res://source/objects/Notes/Note.gd" ##Sustain Base Note Class
+
 const NoteHit = preload("res://source/objects/Notes/NoteHit.gd")
 
 var isBeingDestroyed: bool = false
-var hit_action: String: 
+var hit_action: StringName: 
 	get(): return noteParent.hit_action if noteParent else &''
 	
 var noteParent: NoteHit ##Sustain's Note Parent
 
-var sus_size: float = 0
-var default_sus_height: float = 0.0
-var _sus_animated: bool = false
+var sus_size: float
+var default_sus_height: float
+var _sus_animated: bool
 
-func _init(data: int, length: float = 0) -> void:
+func _init(data: int) -> void:
 	splashStyle = 'HoldNoteSplashes'
 	splashType = 'holdNoteCover'
 	
 	isSustainNote = true
-	sustainLength = length
 	super._init(data)
 
 func _check_hit() -> void:
@@ -30,21 +29,19 @@ func reloadNote() -> void: ##Reload Note Texture
 	
 	
 	var data = styleData.data.get((noteDirection+'End') if isEndSustain else noteDirection)
-	if !data: loadSustainFrame(); setGraphicScale(Vector2(noteScale,noteScale)); return
+	if !data: 
+		loadSustainFrame(); 
+		setGraphicScale(Vector2(noteScale,noteScale)); 
+		return
 	
 	var prefix = data.prefix
 	_sus_animated = !!prefix
 	if _sus_animated: 
 		noteScale = data.scale
-		animation.addAnimByPrefix(
-			&'holdEnd' if isEndSustain else &'hold',
-			prefix,
-			24,
-			true
-		)
+		animation.addAnimByPrefix(&'holdEnd' if isEndSustain else &'hold', prefix, 24, true)
 	else: 
 		noteScale = styleData.scale
-		var region = data.get('region')
+		var region = data.get(&'region')
 		if region: setNoteRect(Rect2(region[0],region[1],region[2],region[3]))
 		else: loadSustainFrame()
 	setGraphicScale(Vector2(noteScale,1.0))
@@ -52,7 +49,6 @@ func reloadNote() -> void: ##Reload Note Texture
 func loadSustainFrame():
 	var frame: int = noteData*2
 	var cut: int = int(imageSize.x)/(Song.keyCount*2)
-	
 	setNoteRect(
 		Rect2(
 			cut*(frame+1 if isEndSustain else frame),
@@ -69,8 +65,10 @@ func updateNote() -> void:
 	followStrum()
 
 func getSustainHeight() -> float:
-	if _sus_animated: var rect = animation.curAnim.curFrameData.get('region_rect'); if rect: return rect.size.y
-	return imageSize.y
+	if !_sus_animated: return imageSize.y
+	var rect = animation.curAnim.curFrameData.get('region_rect'); 
+	return rect.size.y if rect else imageSize.y
+	
 
 #region Updaters
 func _update_sustain_scale() -> void: scale.y = sus_size/getSustainHeight()
@@ -87,13 +85,11 @@ func updateSustain():
 		if rect: _height = rect.size.y; _y_atlas = rect.position.y
 	
 	image.region_rect.position.y = _y_atlas + fill_abs
+	image.region_rect.size.y = maxf(0.0,_height - fill_abs)
 	
-	_height += -fill_abs
-	image.region_rect.size.y = _height
+	real_distance = 0.0
 	
-	distance = 0.0
-	
-	if _height <= 0.0:  kill(); _is_processing = false
+	if distance <= -_height*1.45: kill(); _is_processing = false
 
 func _update_note_speed() -> void:
 	super._update_note_speed()
@@ -114,7 +110,7 @@ func resetNote() -> void:
 	super.resetNote()
 	var rect = animation.curAnim.curFrameData.get('region_rect')
 	if rect: image.region_rect = rect
-	else: image.region_rect.position.y = 0; image.region_rect.size.y = imageSize.y
+	else: image.region_rect.position.y = 0.0; image.region_rect.size.y = imageSize.y
 	
 	canBeHit = false
 	isBeingDestroyed = false
@@ -127,10 +123,9 @@ func followStrum(strum: StrumNote = strumNote) -> void:
 	super.followStrum(strum)
 	rotation_degrees = -strumNote.direction
 
-
 #region Setters
 func set_pivot_offset(value: Vector2) -> void:
-	value.y = 0
-	image.pivot_offset.y = 0
+	value.y = 0.0
+	image.pivot_offset.y = 0.0
 	super.set_pivot_offset(value)
 #endregion

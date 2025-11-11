@@ -1,9 +1,9 @@
 class_name FunkinGD extends Object
 
-#const SolidSprite = preload("res://source/objects/Sprite/SolidSprite.gd")
-#const SpriteAnimated = preload("res://source/objects/Sprite/SpriteAnimated.gd")
 const TweenerObject = preload("uid://b3wombi1g7mtv")
 const TweenerMethod = preload("uid://buyyxjslew1n1")
+const ModulateAlpha = NodePath('modulate:a') #Used in doTweenAlpha
+
 const Song = preload("uid://cerxbopol4l1g")
 const Bar = preload("uid://cesg7bsxvgdcm")
 
@@ -12,12 +12,12 @@ const Note = preload("uid://deen57blmmd13")
 const NoteHit = preload("uid://dx85xmyb5icvh")
 const StrumNote = preload("uid://coipwnceltckt")
 
-const Stage = preload("res://source/gdscript/FunkinStage.gd")
+const Stage = preload("uid://dh7syegxufdht")
 
 const PlayStateBase = preload("uid://dgnunksqrmpbr")
 
 const Character = preload("uid://gou2lt74gx0i")
-const Icon = preload("res://source/objects/UI/Icon.gd")
+const Icon = preload("uid://bgqwitowtypkw")
 
 const Graphic = preload("uid://bgqwitowtypkw")
 
@@ -29,18 +29,16 @@ const source_dirs: PackedStringArray = [
 ]
 
 
-
-
-static var debugMode: bool = false
+static var debugMode: bool = Engine.is_editor_hint()
 #region Public Vars
 @export_category('Class Vars')
-static var started: bool = false
+static var started: bool
 
-static var Function_Continue: int = 0
+static var Function_Continue: int
 static var Function_Stop: int = 1
 
 
-static var isStoryMode: bool = false
+static var isStoryMode: bool
 static var game: Object
 static var camGame:
 	get(): return game.camGame
@@ -55,10 +53,10 @@ static var botPlay: bool:
 	get(): return game.botplay
 
 ##The path of the script.
-var scriptPath: StringName = ''
+var scriptPath: StringName
 
 ##The Mod Folder of the script.
-var scriptMod: String = ''
+var scriptMod: String 
 
 
 @export_category("Files Saved")
@@ -202,6 +200,7 @@ static func _bpm_changes() -> void:
 	bpm = Conductor.bpm
 	stepCrochet = Conductor.stepCrochet
 	crochet = Conductor.crochet
+	prints(stepCrochet,'changed')
 	
 static func _beat_hit() -> void: curBeat = Conductor.beat; callOnScripts(&'onBeatHit')
 static func _step_hit() -> void: curStep = Conductor.step; callOnScripts(&'onStepHit')
@@ -279,66 +278,69 @@ const property_replaces: Dictionary = {
 	'[': '.',
 	']': ''
 }
+
+static func _show_property_no_found_error(property: String) -> void:
+	var split = property.split('.')
+	var obj_name = split[0]
+	if split.size() > 1:
+		show_funkin_warning('Error on setting property "'+property.right(-obj_name.length()-1)+'": '+obj_name+" not founded")
+	else:
+		show_funkin_warning('Error on setting property: '+obj_name+" not founded")
+	return
+
 ##Set a Property. If [param target] set, the function will try to set the property from this object.
 static func setProperty(property: String, value: Variant, target: Variant = null) -> void:
 	var split: PackedStringArray
 	if !target:
-		target = _find_object(property,true)
-		if !target[0]: 
-			split = property.split('.')
-			var obj_name = split[0]
-			if split.size() > 1:
-				push_warning('Error on setting property "'+property.right(-obj_name.length()-1)+'": '+obj_name+" not founded")
-			else:
-				push_warning('Error on setting property: '+obj_name+" not founded")
-			return
-		split = target[1]
-		target = target[0]
-	else:
-		#split = StringUtils.replace_chars_from_dict(property,property_replaces).split('.')
-		split = property.split('.')
+		var obj_find = _find_object_with_split(property)
+		if !obj_find[0]: _show_property_no_found_error(property); return
+		split = obj_find[1]
+		target = obj_find[0]
+	else: split = property.split('.')
 	
-	if !split: return 
+	if !split: return
+	
 	var value_to_set: String = split[split.size()-1]
 	var _property: String
 	var _prev_target: Variant
-	var i: int = 0
+	var size: int = split.size()-1
 	
-	while i < split.size()-1:
-		_property = split[i]
-		if MathUtils.value_exists(target,_property):
-			_prev_target = target
-			target = target[_property]
-			i += 1
-			continue
-		push_error('Error on setting property: '+str(_property)+" not founded in "+str(target))
-		return
+	
+	if size:
+		var i: int = 0
+		while i < size:
+			_property = split[i]
+			if MathUtils.value_exists(target,_property):
+				_prev_target = target
+				target = target[_property]
+				i += 1
+				continue
+			show_funkin_warning('Error on setting property: '+str(_property)+" not founded in "+str(target))
+			return
 	var type = typeof(target)
-	if ArrayUtils.is_array_type(type): target[int(value_to_set)] = value; return
-	match type:
-		TYPE_OBJECT: target.set(value_to_set,value)
-		TYPE_DICTIONARY: target[value_to_set] = value
-		TYPE_COLOR: if _prev_target: _prev_target[_property][value_to_set] = value
-		_: target[value_to_set] = value
+	if VectorUtils.is_vector_type(type): _prev_target[_property][value_to_set] = value; return
+	if ArrayUtils.is_array_type(type): target.set(int(value_to_set),value); return
+	target.set(value_to_set,value)
 
-static func setVar(variable: StringName, value: Variant = null) -> void: modVars[variable] = value
+static func setVar(variable: Variant, value: Variant = null) -> void: modVars[variable] = value ##Set/Add a variable to [member modVars].
 
-##Get a variable from the [member modVars].
-static func getVar(variable: StringName) -> Variant: return modVars.get(variable)
+static func getVar(variable: Variant) -> Variant: return modVars.get(variable) ##Get a variable from the [member modVars].
 
 static func getProperty(property: String, from: Variant = null) -> Variant: ##Get a Property from the game.
 	var split: PackedStringArray
 	if from == null:
-		from = _find_object(property,true)
+		from = _find_object_with_split(property)
 		if !from[0]: return null
 		split = from[1]
 		from = from[0]
-	else:
-		split = property.split('.')
+	else: split = property.split('.')
 	
-	for i in split:
-		from = _get_variable(from,i)
-		if from == null: return null
+	var index: int = 0
+	var size = split.size()
+	while index < size:
+		from = _get_variable(from,split[index]); 
+		if from == null: return from
+		index += 1
 	return from
 
 static func _find_property_owner(property: String) -> Variant:
@@ -346,10 +348,8 @@ static func _find_property_owner(property: String) -> Variant:
 	for i in dictionariesToCheck: if i.has(property): return i
 	return null
 	
-static func _find_object(property: Variant, return_rest: bool = false) -> Variant:
-	if not property is String: return property
-	#var split = get_as_property(property).split('.')
-	
+static func _find_object(property: Variant) -> Object:
+	if property is Object: return property
 	var split = get_as_property(property).split('.')
 	var key = split[0]
 	var object = _find_property_owner(key)
@@ -357,18 +357,28 @@ static func _find_object(property: Variant, return_rest: bool = false) -> Varian
 	var index: int = 0
 	while index < split.size():
 		var variable = _get_variable(object,split[index])
-		
-		if variable == null: 
-			if return_rest: return [null, split]
-			return null
+		if !variable: return null
 		elif !is_indexable(variable): break
 		object = variable
 		index += 1
-	
-	if return_rest: return [object,split.slice(index)]
-	
 	return object
+
+static func _find_object_with_split(property: Variant) -> Array:
+	if property is Object: return property
 	
+	var split = get_as_property(property).split('.')
+	var key = split[0]
+	var object = _find_property_owner(key)
+	
+	var size: int = split.size()
+	var index: int = 0
+	while index < size:
+		var variable = _get_variable(object,split[index])
+		if !variable:  return [null, split]
+		elif !is_indexable(variable): break
+		object = variable
+		index += 1
+	return [object,split.slice(index)]
 static func get_as_property(property: String) -> String:
 	return StringUtils.replace_chars_from_dict(property,property_replaces)
 
@@ -887,23 +897,27 @@ static func textsExits(tag: String) -> bool: return textsCreated.has(tag)
 
 #region Tween Methods
 ##Start Tween. Similar to [method createTween].
-static func startTween(tag: String, object: Variant, what: Dictionary,time = 1.0, easing: String = '') -> TweenerObject:
+static func startTween(tag: String, object: Variant, what: Dictionary,time = 1.0, easing: StringName = &'') -> TweenerObject:
 	if !object is Object:
-		var split = _find_object(object,true)
+		var split = _find_object_with_split(object)
 		object = split[0]
 		if !object: return
 		if split[1]: var split_join = ":".join(split[1]); for i in what.keys(): DictionaryUtils.rename_key(what,i,split_join+':'+i)
 	
 	if !object: return
-	for property in what: #Checks if properties set in "what" exists in object.
-		if property in object: continue
-		elif property.contains(':') and object.get_indexed(property) != null: continue
+	
+	for property in what:
+		if (property is NodePath or property.contains(':'))\
+		and object.get_indexed(property) != null or property in object: continue
 		
 		var alt = alternative_variables.get(property); if alt: what[alt] = what[property]
 		what.erase(property)
 	return startTweenNoCheck(tag,object,what,float(time),easing)
 
-static func startTweenNoCheck(tag: String,object: Object, what: Dictionary,time: float = 1.0, easing: String = '') -> TweenerObject:
+static func startTweenNoCheck(tag: String,object: Object, what: Dictionary,time: float = 1.0, easing: StringName = &'') -> TweenerObject:
+	if !time:
+		for i in what: setProperty(i,what[i],object)
+		return
 	var tween = createTween(object,what,time,easing)
 	tween.finished.connect(_tween_completed.bind(tag),CONNECT_ONE_SHOT)
 	if !tag: return tween
@@ -911,20 +925,20 @@ static func startTweenNoCheck(tag: String,object: Object, what: Dictionary,time:
 	tweensCreated[tag] = tween
 	return tween
 
-##Createa a Tween Method, similar to [Tween.tween_method]
-static func createTweenMethod(from: Variant, to: Variant, time, ease: String, method: Callable):
+##Create a Tween Method, similar to [Tween.tween_method]
+static func createTweenMethod(from: Variant, to: Variant, time: Variant, ease: String, method: Callable):
 	var tween = TweenService.createTweenMethod(method,from,to,time,ease)
 	tween.bind_node = game
 	return tween
 
 ##Create a Tween Interpolation, see more about in [method TweenService.createTween]
-static func createTween(object: Object, what: Dictionary,time: Variant, easing: String = ''):
+static func createTween(object: Object, what: Dictionary,time: Variant, easing: StringName = &''):
 	var tween = TweenService.createTween(object,what,time,easing)
 	if object is Node: tween.bind_node = object
 	return tween
 
 ##Similar to [method Tween.tween_method].
-static func startTweenMethod(tag: String, from: Variant, to: Variant, time, ease: String, method: Callable) -> TweenerMethod:
+static func startTweenMethod(tag: String, from: Variant, to: Variant, time: Variant, ease: String, method: Callable) -> TweenerMethod:
 	var tween = createTweenMethod(from,to,time,ease,method)
 	if !tag: return tween
 	cancelTween(tag)
@@ -942,28 +956,25 @@ static func _tween_completed(tag: String):
 ##Example of Code:[codeblock]
 ##var shader_material: ShaderMaterial = Paths.loadShader('ChromaticAbberration')
 ##setShaderFloat(shader_material,'strength',0.005)
-##doShaderTween(shader_material,'strength',0.0,0.2,'linear','chrom_tag')
+##doShaderTween(shader_material,'strength',0.0,0.2,&'','chrom_tag')
 ##
 ##initShader('ChromaticAbberation','chrom')
 ##setShaderFloat('chrom','strength',0.01)
-##doShaderTween('chrom','strength',0.0,0.2,'linear','chrom_tag')[/codeblock]
-static func doShaderTween(shader: Variant, parameter: StringName, value: Variant, time: float, ease: StringName = 'linear', tag: StringName = '') -> TweenerObject:
+##doShaderTween('chrom','strength',0.0,0.2,&'','chrom_tag')[/codeblock]
+static func doShaderTween(shader: Variant, parameter: StringName, value: Variant, time: float, ease: StringName = &'', tag: StringName = '') -> TweenerObject:
 	var material = _find_shader_material(shader)
-	
 	if !material: return
-
-	if value is String: value = float(value)
-	if !tag and shader is String:
-		tag = 'shader'+shader+parameter
-
-	var tween = TweenService.tween_shader(material,parameter,value,float(time),ease)
+	
+	if !tag and shader is String: tag = 'shader'+shader+parameter
+	
+	var tween = TweenService.tween_shader(material,parameter,float(value),float(time),ease)
 	tween.bind_node = game
 	if tag:
 		cancelTween(tag)
 		tweensCreated[tag] = tween
 	return tween
 
-static func doShadersTween(shaders: Array, parameter: StringName, value: float, time: float, ease: StringName = 'linear') -> Array[Tween]:
+static func doShadersTween(shaders: Array, parameter: StringName, value: float, time: float, ease: StringName = &'') -> Array[Tween]:
 	var tweens: Array[Tween] = []
 	for i in shaders: tweens.append(doShaderTween(i,parameter,value,time,ease))
 	return tweens
@@ -980,8 +991,8 @@ static func isTweenRunning(tag: String) -> bool:
 	return tag in tweensCreated
 
 ##Creates a TweenZoom for cameras.
-static func doTweenZoom(tag: String,object: Variant, toZoom, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	return startTween(tag,object,{'zoom': float(toZoom)},float(time),tweenEase)
+static func doTweenZoom(tag: String,object: Variant, toZoom, time = 1.0, easing: StringName = &'') -> TweenerObject:
+	return startTween(tag,object,{&'zoom': float(toZoom)},float(time),easing)
 
 ##Create a Tween changing the x value, can be usefull not just for positions, but for anothers variables too, the same for the different tweens.
 ##Example: [codeblock]
@@ -989,54 +1000,54 @@ static func doTweenZoom(tag: String,object: Variant, toZoom, time = 1.0, tweenEa
 ##doTweenX('tween','boyfriend.offset',2) #Make a tween of the boyfriend offset.
 ##[/codeblock]
 ##See also [method doTweenY] and [method doTweenAngle].
-static func doTweenX(tag: String,object: Variant, to: Variant, time: float = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	return startTween(tag,object,{'x': float(to)},float(time),tweenEase)
+static func doTweenX(tag: String,object: Variant, to: Variant, time: float = 1.0, easing: StringName = &'') -> TweenerObject:
+	return startTween(tag,object,{&'x': float(to)},float(time),easing)
 
 ##Creates a Tween for the y value. See also [method doTweenX] and [method doTweenAngle].
-static func doTweenY(tag: String,object: Variant, to: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	return startTween(tag,object,{'y': float(to)},float(time),tweenEase)
+static func doTweenY(tag: String,object: Variant, to: Variant, time = 1.0, easing: StringName = &'') -> TweenerObject:
+	return startTween(tag,object,{&'y': float(to)},float(time),easing)
 
 ##Creates a Tween for the alpha of a [Node]. See also [method doTweenColor].
-static func doTweenAlpha(tag: String, object: Variant, to: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	return startTween(tag,object,{'modulate:a': float(to)},float(time),tweenEase)
+static func doTweenAlpha(tag: String, object: Variant, to: Variant, time = 1.0, easing: StringName = &'') -> TweenerObject:
+	return startTween(tag,object,{ModulateAlpha: float(to)},float(time),easing)
 	
 ##Creates a Tween for the color of a [Node]. See also [method doTweenAlpha].
-static func doTweenColor(tag: String, object: Variant,color: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerMethod:
+static func doTweenColor(tag: String, object: Variant,color: Variant, time = 1.0, easing: StringName = &'') -> TweenerMethod:
 	object = _find_object(object) as CanvasItem
 	if !object: return null
-	return startTweenMethod(tag,object.modulate,_get_color(color),float(time),tweenEase,func(col):
+	return startTweenMethod(tag,object.modulate,_get_color(color),float(time),easing,func(col):
 		object.modulate = Color(col.r,col.b,col.g,object.modulate.a)
 	)
 ##Creates a Tween for the rotation of a [Node]. See also [method doTweenX] and [method doTweenY].
-static func doTweenAngle(tag: String, object: Variant, to: Variant, time = 1.0, tweenEase: String = 'linear') -> TweenerObject:
-	return startTween(tag,object,{'angle': float(to)},time,tweenEase)
+static func doTweenAngle(tag: String, object: Variant, to: Variant, time = 1.0, easing: StringName = &'') -> TweenerObject:
+	return startTween(tag,object,{&'angle': float(to)},time,easing)
 #endregion
 
 
 #region Note Tween Methods
 ##Creates a Tween for the rotation of a Note. See also [method noteTweenY] and [method noteTweenAngle].
-static func noteTweenX(tag: String,noteID: Variant = 0,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
-	return startNoteTween(tag,noteID,{'x': float(target)},float(time),tweenEase)
+static func noteTweenX(tag: String,noteID: Variant = 0,target = 0.0,time = 1.0,easing: StringName = &'') -> TweenerObject:
+	return startNoteTween(tag,noteID,{&'x': float(target)},float(time),easing)
 
 ##Creates a Tween for the rotation of a Note. See also [method noteTweenX] and [method noteTweenAngle].
-static func noteTweenY(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
-	return startNoteTween(tag,noteID,{'y': float(target)},float(time),tweenEase)
+static func noteTweenY(tag: String,noteID,target = 0.0,time = 1.0,easing: StringName = &'') -> TweenerObject:
+	return startNoteTween(tag,noteID,{&'y': float(target)},float(time),easing)
 
 ##Creates a Tween for the rotation of a Note. See also [method noteTweenColor].
-static func noteTweenAlpha(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
-	return startNoteTween(tag,noteID,{'modulate:a': float(target)},float(time),tweenEase)
+static func noteTweenAlpha(tag: String,noteID,target = 0.0,time = 1.0,easing: StringName = &'') -> TweenerObject:
+	return startNoteTween(tag,noteID,{ModulateAlpha: float(target)},float(time),easing)
 
 ##Creates a Tween for the rotation of a Note. See also [method noteTweenY] and [method noteTweenAngle].
-static func noteTweenAngle(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
-	return startNoteTween(tag,noteID,{'angle': float(target)},float(time),tweenEase)
+static func noteTweenAngle(tag: String,noteID,target = 0.0,time = 1.0,easing: StringName = &'') -> TweenerObject:
+	return startNoteTween(tag,noteID,{&'angle': float(target)},float(time),easing)
 
 ##Creates a Tween for the rotation of a Note. See also [method noteTweenY] and [method noteTweenAngle].
-static func noteTweenDirection(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
-	return startNoteTween(tag,noteID,{'direction': float(target)},float(time),tweenEase)
+static func noteTweenDirection(tag: String,noteID,target = 0.0,time = 1.0,easing: StringName = &'') -> TweenerObject:
+	return startNoteTween(tag,noteID,{&'direction': float(target)},float(time),easing)
 
 ##Creates a Tween for the color of a Note. See also [method noteTweenAlpha].
-static func noteTweenColor(tag: String,noteID,target = 0.0,time = 1.0,tweenEase: String = 'linear') -> TweenerObject:
-	return startNoteTween(tag,noteID,{'modulate': float(target)},float(time),tweenEase)
+static func noteTweenColor(tag: String,noteID,target = 0.0,time = 1.0,easing: StringName = &'') -> TweenerObject:
+	return startNoteTween(tag,noteID,{&'modulate': float(target)},float(time),easing)
 
 static func startNoteTween(tag: String, noteID, values: Dictionary, time, ease: String) -> TweenerObject:
 	return startTween(
@@ -1102,8 +1113,11 @@ static func initShader(shader: String, tag: String = '', obrigatory: bool = fals
 static func addShaderCamera(camera: Variant, shader: Variant) -> void:
 	if !shader: return
 	if shader is String: shader = _find_shader_material(shader); if !shader: return
+	
 	if shader is ShaderMaterial:
-		if camera is Array: for i in camera: var cam = getCamera(i); if cam: cam.addFilter(shader); return
+		if camera is Array: 
+			for i in camera: var cam = getCamera(i); if cam: cam.addFilter(shader); 
+			return
 		if camera is String: camera = getCamera(camera)
 		if !camera: return
 		camera.addFilter(shader)

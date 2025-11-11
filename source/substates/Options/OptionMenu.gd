@@ -34,13 +34,13 @@ func loadInterators():
 		
 		var text_n = FunkinText.new()
 		text_n.scale = Vector2(0.8,0.8)
-		var obj = data.get('object')
+		var obj = data.get(&'object')
 		var value_type: int = TYPE_NIL
 		var value = null
 		
 	
-		if data.has('getter'): 
-			var params = data.get('getter_params')
+		if data.has(&'getter'): 
+			var params = data.get(&'getter_params')
 			if params: value = data.getter.callv(params)
 			else: value = data.getter.call()
 		elif obj: value = obj.get(data.property)
@@ -94,7 +94,7 @@ static func createOptionInterator(option_data: Dictionary, value: Variant, at: F
 	#Set Current Value
 	if object is TextRange: object.set_index_from_key(value)
 	else: object.value = value
-	object.name = 'value'
+	object.name = &'value'
 	
 	if at: 
 		var target = Vector2(at.width+pos.x,pos.y)

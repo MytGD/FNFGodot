@@ -63,7 +63,7 @@ func _ready():
 	bg.centered = false
 	add_child(bg)
 	
-	treeSwap.name = 'treeSwap'
+	treeSwap.name = &'treeSwap'
 	treeSwap.timeout.connect(func():
 		stop_blink()
 		set_process_input(false)
@@ -90,7 +90,7 @@ func _create_version():
 	version.position.y = ScreenUtils.screenHeight-50
 
 func loadModeSelectOptions():
-	option_parent.name = 'Options'
+	option_parent.name = &'Options'
 	
 	
 	var menu_data = getMenuBaseData()

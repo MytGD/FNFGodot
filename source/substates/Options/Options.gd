@@ -6,74 +6,81 @@ var cur_visual: Node
 
 var visuals: Dictionary = _get_visuals()
 var options: Array[Dictionary] = [
-	{'name': 'Gameplay Options', 'menu': [
+	{&'name': 'Gameplay Options', &'menu': [
 		{
-			'name': 'middlescroll', 'visual': "Strums",
-			'object': ClientPrefs.data, 'property': 'middlescroll', 'setter': set_middlescroll,
-			'description': 'Enabling this, the notes will be centered.'
+			&'name': 'middlescroll', &'visual': "Strums",
+			&'object': ClientPrefs.data, &'property': &'middlescroll', 
+			&'setter': set_middlescroll,
+			&'description': 'Enabling this, the notes will be centered.'
 		},
 		{
-			'name': 'downscroll','visual': "Strums",
-			'object': ClientPrefs.data, 'property': 'downscroll', 'setter': set_downscroll,
-			'description': 'Enabling this, the notes will come from the top of the screen.'
+			&'name': 'downscroll',
+			&'visual': "Strums",
+			&'object': ClientPrefs.data, &'property': &'downscroll', &'setter': set_downscroll,
+			&'description': 'Enabling this, the notes will come from the top of the screen.'
 		},
 		{
-			'name': 'play as opponent','visual': "Strums",
-			'object': ClientPrefs.data, 'property': 'playAsOpponent', 'setter': set_play_as_opponent,
-			'description': 'Enabling this, you will play as the opponent.'
+			&'name': 'play as opponent','visual': "Strums",
+			&'object': ClientPrefs.data, 'property': &'playAsOpponent', 'setter': set_play_as_opponent,
+			&'description': 'Enabling this, you will play as the opponent.'
 		},
 		{
-			'name': 'Botplay','visual': "Strums",
-			'object': ClientPrefs.data, 'property': 'botplay',
-			'description': 'Botplay, just that.'
+			&'name': 'Botplay',&'visual': "Strums",
+			&'object': ClientPrefs.data, &'property': 'botplay',
+			&'description': &'Botplay, just that.'
 		},
 	]},
-	{'name': 'Visual Options', 'menu': [
+	{&'name': 'Visual Options', &'menu': [
 		{
-			'name': 'Low Quality', 
-			'object': ClientPrefs.data, 
-			'property': 'lowQuality',
-			'description': 'Removes some sprites and effects, improvising performance.'
+			&'name': 'Low Quality', 
+			&'object': ClientPrefs.data, 
+			&'property': &'lowQuality',
+			&'description': 'Removes some sprites and effects, improvising performance.'
 		},
 		{
-			'name': 'Vsync',
-			'options': {
+			&'name': 'Vsync',
+			&'options': {
 				DisplayServer.VSYNC_DISABLED: 'Disabled',
 				DisplayServer.VSYNC_ENABLED: 'Enabled'
 			},
-			'setter': set_vsycn_mode,
-			'getter': DisplayServer.window_get_vsync_mode,
-			'description': "Fix some screen tearing when in full screen mode. To reduce input lag, increase fps."
+			&'setter': set_vsycn_mode,
+			&'getter': DisplayServer.window_get_vsync_mode,
+			&'description': "Fix some screen tearing when in full screen mode. To reduce input lag, increase fps."
 		},
 		{
-			'name': 'Window Mode',
-			'options': {
+			&'name': 'Window Mode',
+			&'options': {
 				DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN: 'FullScreen',
 				DisplayServer.WINDOW_MODE_WINDOWED: 'Windowed'
 			},
-			'getter': DisplayServer.window_get_mode,
-			'setter': set_window_mode,
-			'description': "Window Mode."
+			&'getter': DisplayServer.window_get_mode,
+			&'setter': set_window_mode,
+			&'description': "Window Mode."
 		},
 		{
-			'name': "Time Bar Style",
-			'options': {
+			&'name': "Time Bar Style",
+			&'options': {
 				TimeLabel.Styles.DISABLED: "Disabled",
 				TimeLabel.Styles.SONG_NAME: "Song Name",
 				TimeLabel.Styles.TIME_LEFT: "Time Left",
 				TimeLabel.Styles.POSITION: "Song Position",
 			},
-			'object': ClientPrefs.data,
-			'property': 'timeBarType'
+			&'object': ClientPrefs.data,
+			&'property': &'timeBarType'
 		},
 		{
-			'name': 'FPS',
-			'object': Engine, 
-			'min': 60,
-			'max': 240,
-			'getter': Engine.get.bind('max_fps'),
-			'setter': set_max_fps,
-			'description': 'The max fps the game can arrive.'
+			&'name': 'FPS',
+			&'object': Engine, 
+			&'min': 60,
+			&'max': 240,
+			&'getter': Engine.get.bind(&'max_fps'),
+			&'setter': set_max_fps,
+			&'description': 'The max fps the game can arrive.'
+		},
+		{
+			&'name': "Splashes Enabled",
+			&'object': ClientPrefs.data,
+			&'property': &'splashesEnabled'
 		},
 	]
 	}
@@ -97,7 +104,7 @@ func _ready() -> void:
 	
 	#Load Options
 	cur_menu = createMenuOptions(options,'default')
-	description_text.name = 'Description'
+	description_text.name = &'Description'
 	description_text.text = '<No Description>'
 	description_text.size = Vector2(ScreenUtils.screenWidth,30)
 	description_text.position.y = ScreenUtils.screenHeight-description_text.size.y
@@ -125,7 +132,7 @@ func _get_visuals() -> Dictionary:
 
 func createMenuOptions(option_data: Array, tag: String):
 	if menus_created.has(tag): return menus_created[tag]
-	
+
 	var node = OptionMenu.new()
 	node.data = option_data
 	node.loadInterators()
@@ -142,7 +149,7 @@ func backMenu():
 #region Options Visual
 func _on_option_selected(menu: OptionMenu):
 	var data = menu.cur_data
-	show_visual(data.get('visual',''))
+	show_visual(data.get(&'visual',&''))
 	description_text.text = data.get('description','<No Description>')
 
 func show_visual(visual_name: String):
@@ -161,13 +168,13 @@ func _input(event: InputEvent) -> void:
 			KEY_ENTER:
 				var cur_option_data = cur_menu.cur_data
 				if !cur_option_data: return
-				if cur_option_data.has('menu'):
+				if cur_option_data.has(&'menu'):
 					prev_menus.append(cur_menu)
 					cur_menu = createMenuOptions(cur_option_data.menu,cur_option_data.name)
 				else:
 					var obj = _get_object_selected()
 					var value: Variant
-					match cur_option_data.get('type',0):
+					match cur_option_data.get(&'type',0):
 						TYPE_BOOL: value = !obj.value
 						_: return
 					obj.value = value
@@ -175,23 +182,22 @@ func _input(event: InputEvent) -> void:
 			KEY_LEFT:
 				var obj = _get_object_selected()
 				if obj is OptionMenu.NumberRange: 
-					obj.value -= obj.step
+					obj.sub_value()
 					_call_setter(obj.value)
 				elif obj is OptionMenu.TextRange: 
 					obj.value -= 1
 					_call_setter(obj.key_value)
-				
 			KEY_RIGHT:
 				var obj = _get_object_selected()
 				if obj is OptionMenu.NumberRange:
-					obj.value += obj.step
+					obj.add_value()
 					_call_setter(obj.value)
 				elif obj is OptionMenu.TextRange: 
 					obj.value += 1
 					_call_setter(obj.key_value)
 
 func _call_setter(value: Variant) -> bool:
-	var setter = cur_menu.cur_data.get('setter')
+	var setter = cur_menu.cur_data.get(&'setter')
 	if setter: setter.call(value); return true
 	cur_menu.cur_data.object[cur_menu.cur_data.property] = value
 	return false

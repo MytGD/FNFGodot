@@ -47,7 +47,7 @@ var inGameOver: bool = false
 var camZooming: bool = false##If [code]true[/code], the camera make a beat effect every [member bumpStrumBeat] beats and the zoom will back automatically.
 
 #region Scripts
-var curStage: StringName = ''
+var curStage: StringName
 var stageJson: Dictionary = Stage.getStageBase()
 
 @export_subgroup('Scripts')
@@ -68,8 +68,8 @@ static var _is_first_event_load: bool = true
 @export var countDownEnabled: bool = true
 @export var countSounds = ['introTHREE','introTWO','introONE','introGO']
 @export var countDownImages = ['','ready','set','go']
-var _countdown_started: bool = false
-var skipCountdown: bool = false
+var _countdown_started: bool
+var skipCountdown: bool
 
 #region Gui
 @export_group("Hud Elements")
@@ -88,6 +88,7 @@ const Icon := preload("res://source/objects/UI/Icon.gd")
 var iconP1: Icon = Icon.new()
 var iconP2: Icon = Icon.new()
 var icons: Array[Icon] = [iconP1,iconP2]
+var _icons_cos_sin: Vector2 = Vector2(1,0)
 var scoreTxt: Label
 #endregion
 
@@ -122,10 +123,10 @@ func _ready():
 	
 	FunkinGD.game = self
 	
-	camHUD.name = 'camHUD'
+	camHUD.name = &'camHUD'
 	camHUD.bg.modulate.a = 0.0
 	
-	camOther.name = 'camOther'
+	camOther.name = &'camOther'
 	camOther.bg.modulate.a = 0.0
 	
 	
@@ -144,10 +145,10 @@ func _ready():
 		
 		healthBar.draw.connect(updateIconsPivot)
 		
-		iconP1.name = 'iconP1'
+		iconP1.name = &'iconP1'
 		iconP1.scale_lerp = true
 		
-		iconP2.name = 'iconP2'
+		iconP2.name = &'iconP2'
 		iconP2.scale_lerp = true
 		
 		iconP1.flipX = true
@@ -165,17 +166,17 @@ func _ready():
 			'Score: 0 | Misses: 0 | Accurancy: 0%(N/A)',
 			ScreenUtils.screenWidth,0,ScreenUtils.screenHeight - 50.0
 		)
-		scoreTxt.name = 'scoreTxt'
+		scoreTxt.name = &'scoreTxt'
 		if isPixelStage: FunkinGD.setTextFont(scoreTxt,'pixel.otf')
 			
 		uiGroup.add(scoreTxt)
 		
-		healthBar.name = 'healthBar'
+		healthBar.name = &'healthBar'
 		
 		#Time Bar
 		if !hideTimeBar:
 			timeBar = Bar.new('timeBar')
-			timeBar.name = 'timeBar'
+			timeBar.name = &'timeBar'
 			timeBar.position = Vector2(ScreenUtils.screenCenter.x - timeBar.bg.pivot_offset.x,5)
 			
 			timeTxt = TimeLabel.new()
@@ -269,9 +270,16 @@ func _update_icon_pivot(icon: Icon,angle: float):
 	if !angle:
 		icon.pivot_offset = Vector2(0,pivot.y) if icon.flipX else Vector2(pivot.x*2.0,pivot.y)
 		return
-	var _cos = cos(angle)
-	var _sin = sin(angle)
-	icon.pivot_offset = Vector2(lerpf(pivot.x,0,_cos),lerpf(pivot.y,0,_sin)) if icon.flipX else Vector2(lerpf(0,pivot.x*2.0,_cos),lerpf(pivot.y,pivot.y*2.0,_sin))
+	if icon.flipX: 
+		icon.pivot_offset = Vector2(
+			lerpf(pivot.x,pivot.x*2.0,_icons_cos_sin.x),
+			lerpf(pivot.y,0,_icons_cos_sin.y)
+		)
+	else: 
+		icon.pivot_offset = Vector2(
+			lerpf(pivot.x,0.0,_icons_cos_sin.x),
+			lerpf(pivot.y,pivot.y*2.0,_icons_cos_sin.y)
+		)
 #endregion
 
 #endregion
@@ -596,20 +604,18 @@ func reloadPlayState():
 	)
 
 #region Modding Methods
-func chartEditor():
-	var chart = ChartEditorScene.instantiate()
-	Global.swapTree(chart,true)
-	pauseSong(false)
+func chartEditor(): Global.swapTree(ChartEditorScene,true); pauseSong(false)
 
 func characterEditor():
-	var editor = CharacterEditor.instantiate()
-	editor.back_to = get_script()
-	Global.swapTree(editor,true)
+	Global.doTransition().finished.connect(func():
+		var editor = CharacterEditor.instantiate()
+		editor.back_to = get_script()
+		Global.swapTree(editor,false),CONNECT_ONE_SHOT
+	)
 	pauseSong(false)
 #endregion
 
 #region Video Methods
-
 func startVideo(path: Variant, isCutscene: bool = true) -> FunkinVideo:
 	var video_player = FunkinVideo.new()
 	video_player.load_stream(path)
@@ -759,7 +765,11 @@ func set_health(value: float) -> void:
 ##Set HealthBar angle(in degrees). See also [method @GlobalScope.rad_to_deg]
 func setHealthBarAngle(angle: float):
 	healthBar.rotation_degrees = angle
+	_update_icons_cos_sin()
 	updateIconsPivot()
+
+func _update_icons_cos_sin() -> void:
+	_icons_cos_sin = Vector2(cos(healthBar.rotation),sin(healthBar.rotation))
 #endregion
 
 #region Setters

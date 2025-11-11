@@ -263,7 +263,7 @@ func _ready():
 	chess_events.loadChess(16,1)
 	
 	chess_events.modulate = Color.DARK_GRAY
-	chess_events.name = 'ChessEvents'
+	chess_events.name = &'ChessEvents'
 	
 	var eventIcon = Sprite2D.new()
 	eventIcon.texture = Paths.texture('eventArrow')
@@ -280,10 +280,10 @@ func _ready():
 			color_rect.size = Vector2(BLOCK_SIZE.x*keyCount,1.0)
 			updateBeatLinePosition(color_rect,beat)
 			color_rect.color = Color(0.8,0,0)
-			color_rect.name = 'Beat'+String.num_int64(beat)
+			color_rect.name = &'Beat'+String.num_int64(beat)
 			i.add_child(color_rect)
 			
-	chess_opponent.name = 'ChessOpponent'
+	chess_opponent.name = &'ChessOpponent'
 	chess_opponent.position.x += CHESS_REAL_SIZE.x*2
 	
 	iconP2._position = Vector2(chess_opponent.position.x + CHESS_REAL_SIZE.x*(keyCount/3.0),-10)
@@ -292,7 +292,7 @@ func _ready():
 	#Player Chess
 	
 
-	chess_player.name = 'ChessPlayer'
+	chess_player.name = &'ChessPlayer'
 	chess_player.position.x = CHESS_REAL_SIZE.x*(keyCount+5)
 	
 	iconP1._position = Vector2(chess_player.position.x + CHESS_REAL_SIZE.x*(keyCount/3.0),-10)
@@ -300,7 +300,7 @@ func _ready():
 	
 	line_rect.position.x = chess_events.position.x
 	line_rect.z_index = 1
-	line_rect.name = 'Line Note'
+	line_rect.name = &'Line Note'
 	
 	chess_control.add_child(line_rect)
 	
@@ -925,7 +925,7 @@ func addEvent(event_data: Array) -> EventChart:
 		event.position.y = getNotePositionY(event.strumTime)
 		
 		chess_control.add_child(event)
-		event.name = 'Event'
+		event.name = &'Event'
 	
 	event.json_data = event_data
 	_events_created.append(event)

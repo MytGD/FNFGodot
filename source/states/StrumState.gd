@@ -2,15 +2,17 @@ extends Node
 
 @export_category('Notes')
 const Song = preload("res://source/backend/Song.gd")
-const NoteSplash: GDScript = preload("res://source/objects/Notes/NoteSplash.gd")
-const Note: GDScript = preload("res://source/objects/Notes/Note.gd")
-const EventNote: GDScript = preload("res://source/objects/Notes/EventNote.gd")
-const NoteSustain: GDScript = preload("res://source/objects/Notes/NoteSustain.gd")
 
-const NoteHit: GDScript = preload("res://source/objects/Notes/NoteHit.gd")
-const StrumNote: GDScript = preload('res://source/objects/Notes/StrumNote.gd')
+const NoteStyleData = preload("uid://by78myum2dx8h")
+const NoteSplash = preload("uid://cct1klvoc2ebg")
+const Note = preload("uid://deen57blmmd13")
+const EventNote = preload("uid://dqymf0mowy0dt")
+const NoteSustain = preload("uid://bhagylovx7ods")
 
-const Combo: GDScript = preload('res://source/objects/UI/Combo.gd')
+const NoteHit = preload("uid://dx85xmyb5icvh")
+const StrumNote = preload("uid://coipwnceltckt")
+
+const Combo = preload("uid://dmvm4us4t2iqg")
 const ComboStrings: PackedStringArray = ['sick','good','bad','shit']
 const ComboNumbers: PackedStringArray = ['0','1','2','3','4','5','6','7','8','9']
 const StrumOffset: float = 112.0
@@ -53,7 +55,6 @@ var keyCount: int = 4: ##The amount of notes that will be used, default is [b]4[
 		hitNotes.resize(value)
 		defaultStrumPos.resize(length)
 		defaultStrumAlpha.resize(length)
-		grpNoteHoldSplashes.resize(length)
 		
 var mustHitSection: bool ##When the focus is on the opponent.
 var gfSection: bool ##When the focus is on the girlfriend.
@@ -92,7 +93,7 @@ var _splashes_loaded: Dictionary = {}
 var splashesEnabled: bool = ClientPrefs.data.splashesEnabled and ClientPrefs.data.splashAlpha > 0
 var opponentSplashes: bool = splashesEnabled and ClientPrefs.data.opponentSplashes
 var grpNoteSplashes: SpriteGroup = SpriteGroup.new() ##Note Splashes Group.
-var grpNoteHoldSplashes: Array[NoteSplash] ##Note Hold Splashes Group.
+var grpNoteHoldSplashes: Dictionary[int,NoteSplash] ##Note Hold Splashes Group.
 
 static var isPixelStage: bool
 @export var arrowStyle: String = 'funkin'
@@ -153,7 +154,7 @@ var vocals: AudioStreamPlayer:
 signal hit_note
 func _init(json_file: StringName = &'', song_difficulty: StringName = &''):
 	add_child(uiGroup)
-	uiGroup.name = 'uiGroup'
+	uiGroup.name = &'uiGroup'
 	
 	
 	song_json_file = json_file.get_file()
@@ -165,13 +166,13 @@ func _init(json_file: StringName = &'', song_difficulty: StringName = &''):
 	uiGroup.add(notes)
 	uiGroup.add(grpNoteSplashes)
 	
-	grpNoteSplashes.name = 'grpNoteSplashes'
+	grpNoteSplashes.name = &'grpNoteSplashes'
 	
-	opponentStrums.name = 'opponentStrums'
-	playerStrums.name = 'playerStrums'
-	strumLineNotes.name = 'strumLineNotes'
+	opponentStrums.name = &'opponentStrums'
+	playerStrums.name = &'playerStrums'
+	strumLineNotes.name = &'strumLineNotes'
 	
-	notes.name = 'notes'
+	notes.name = &'notes'
 
 func _ready():
 	loadSong()
@@ -352,8 +353,11 @@ func updateStrumsPosition():
 		strumPos += strum_off*i
 		defaultStrumPos[strumIndex].x = strumPos
 	updateStrumsY()
-func updateStrumsY():
-	var strumY = ScreenUtils.screenHeight - 150.0 if downScroll else 50.0
+
+func getDefaultStrumY(downscroll: bool = downScroll) -> float: return ScreenUtils.screenHeight - 150.0 if downscroll else 50.0
+
+func updateStrumsY() -> void:
+	var strumY = getDefaultStrumY()
 	var index = 0
 	while index < defaultStrumPos.size(): defaultStrumPos[index].y = strumY; index += 1
 	
@@ -511,6 +515,7 @@ func updateNote(note: Note):
 
 func preHitNote(note: Note):
 	if !note: return
+	if !note.isSustainNote: note.updateRating()
 	note.wasHit = true
 	note.judgementTime = _songPos
 
@@ -520,7 +525,7 @@ func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase]
 	var mustPress: bool = note.mustPress
 	var playerNote: bool = mustPress != playAsOpponent
 	var strumAnim: StringName = &'confirm'
-	
+	var strum: StrumNote = note.strumNote
 	if playerNote:
 		if !note.isSustainNote: addScoreFromNote(note)
 		else: 
@@ -528,16 +533,15 @@ func hitNote(note: Note) -> void: ##Called when the hits a [NoteBase]
 			songScore += 10
 			if note.isEndSustain: strumAnim = &'press'
 	else:  
-		if note.isEndSustain: _disableHoldSplash(getStrumDirection(note.noteData,mustPress))
+		if note.isEndSustain: _disableHoldSplash(strum.get_instance_id())
 	
-	if note.strumConfirm: _strum_confirm(note,strumAnim)
+	if note.strumConfirm: _strum_confirm(strum,note,strumAnim)
 	_on_hit_note(note)
 	
 	if splashAllowed(note): createSplash(note)
 	note.killNote()
 
-func _strum_confirm(note: Note, confirmAnim: StringName = &"confirm"):
-	var strum = note.strumNote
+func _strum_confirm(strum: StrumNote,note: Note, confirmAnim: StringName = &"confirm"):
 	if !strum: return
 	
 	if strum.mustPress: strum.animation.play(confirmAnim,true); return
@@ -587,7 +591,6 @@ func _disable_note_sustains(note: Note) -> void:
 
 #region Splash Methods
 func createSplash(note) -> NoteSplash: ##Create Splash
-	
 	var strum: StrumNote = note.strumNote
 	if !strum or !strum.visible: return
 	
@@ -621,9 +624,8 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 	splash.followStrum()
 	match splash_type:
 		NoteSplash.SplashType.HOLD_COVER:
-			var direction = getStrumDirection(strum.data,note.mustPress)
-			_disableHoldSplash(direction)
-			grpNoteHoldSplashes[direction] = splash
+			_disableHoldSplash(strum.get_instance_id())
+			grpNoteHoldSplashes[strum.get_instance_id()] = splash
 			
 			splash.animation.setAnimDataValue(
 				'splash-hold',
@@ -633,27 +635,20 @@ func createSplash(note) -> NoteSplash: ##Create Splash
 			
 			splash.animation.play(&'splash',true)
 			return splash
-		NoteSplash.SplashType.HOLD_COVER_END: _disableHoldSplash(getStrumDirection(strum.data,note.mustPress))
-	
+		NoteSplash.SplashType.HOLD_COVER_END: _disableHoldSplash(strum.get_instance_id())
 	splash.animation.play_random(true)
-	
 	return splash
 
-func getStrumDirection(direction: int, mustPress: bool = false) -> int:
-	return (direction + keyCount) if mustPress else direction
 
 func _disableHoldSplash(id: int = 0) -> void:
-	var splash = grpNoteHoldSplashes[id]
+	var splash = grpNoteHoldSplashes.get(id)
 	if !splash: return
 	splash.visible = false
 	grpNoteHoldSplashes[id] = null
 
-func _createNewSplash(style: String, type: String, prefix: StringName, splash_type: NoteSplash.SplashType) -> NoteSplash:
+func _createNewSplash(style: StringName, type: StringName, prefix: StringName, splash_type: NoteSplash.SplashType) -> NoteSplash:
 	var splash = NoteSplash.new()
-	splash.style = style
-	splash.splashType = splash_type
-	
-	if !splash.loadSplash(type,prefix): return
+	if !splash.loadSplash(style,splash_type,prefix): return
 	
 	_saveSplashType(style,type,prefix)
 	_splashes_loaded[style][type][prefix].append(splash)
@@ -666,12 +661,9 @@ func _createNewSplash(style: String, type: String, prefix: StringName, splash_ty
 
 func _saveSplashType(style: StringName, type: String, prefix: String = '') -> bool:
 	var added: bool = false 
-	if !_splashes_loaded.has(style):
-		_splashes_loaded[style] = {}
-		added = true
-	if type and !_splashes_loaded[style].has(type):
-		_splashes_loaded[style][type] = {}
-		added = true
+	if !_splashes_loaded.has(style): _splashes_loaded[style] = {}; added = true
+	
+	if type and !_splashes_loaded[style].has(type):_splashes_loaded[style][type] = {}; added = true
 	if prefix and !_splashes_loaded[style][type].has(prefix):
 		_splashes_loaded[style][type][prefix] = Array([],TYPE_OBJECT,'Node2D',NoteSplash)
 		added = true
@@ -682,10 +674,9 @@ func _getSplashAvaliable(style: StringName, type: String, prefix: String, splash
 	for s in _splashes_loaded[style][type][prefix]: if !s.visible and s.splashType == splash_type: return s
 	return
 	
-func splashAllowed(note: Note) -> bool:
-	return splashesEnabled and !note.splashDisabled and note.ratingMod <= 1 and \
-			(note.strumNote and note.mustPress != playAsOpponent or opponentSplashes or \
-			note.isSustainNote and not note.isEndSustain)
+func splashAllowed(n: Note) -> bool:
+	return !n.splashDisabled and splashesEnabled and n.ratingMod <= 1 and\
+			(n.isSustainNote and !n.isEndSustain or (n.mustPress != playAsOpponent or opponentSplashes))
 
 #endregion
 
@@ -730,7 +721,7 @@ func createCombo(rating: String) -> Combo: ##Create the Combo Image
 	
 	var comboSprite = _comboPreloads[rating].duplicate()
 	uiGroup.add(comboSprite)
-	comboSprite.name = 'Combo'
+	comboSprite.name = &'Combo'
 	comboSprite.position = ScreenUtils.screenSize/2.0 - Vector2(ClientPrefs.data.comboOffset[0],ClientPrefs.data.comboOffset[1])
 	return comboSprite
 
@@ -769,7 +760,6 @@ func _set_botplay(is_botplay: bool) -> void:
 	botplay = is_botplay
 	if !is_botplay: updateStrumsMustPress()
 	for i in strumLineNotes.members: i.mustPress = false
-	
 
 func updateStrumsMustPress() -> void:
 	var strums = strumLineNotes.members
@@ -781,8 +771,7 @@ func updateStrumsMustPress() -> void:
 		if index < keyCount: strums[index].mustPress = !playAsOpponent
 		else: strums[index].mustPress = playAsOpponent
 		index += 1
-		
-	
+
 
 #region Setters
 func set_song_speed(value):
@@ -812,24 +801,26 @@ func _set_middlescroll(value):
 
 func clear() -> void: 
 	clearSongNotes() #Replaced in PlayStateBase
-	for i in grpNoteHoldSplashes: if i: i.queue_free()
-	grpNoteHoldSplashes.fill(null)
-	
-	for i in grpNoteSplashes.members: if i: i.queue_free()
-	grpNoteSplashes.members.clear()
-	
-	_splashes_loaded.clear()
+	clear_splashes()
 	unspawnNotes.clear()
+	
+	NoteStyleData.styles_loaded.clear()
+	
 	inModchartEditor = false
 	isPixelStage = false
 	
-
+func clear_splashes():
+	for file in _splashes_loaded.values(): for style in file.values(): for prefix in style.values(): for splashes in prefix: splashes.queue_free()
+	grpNoteHoldSplashes.clear()
+	grpNoteSplashes.members.clear()
+	_splashes_loaded.clear()
+	
 ##Load Notes from the Song.[br][br]
 ##[b]Note:[/b] This function have to be call [u]when [member SONG] and [member keyCount] is already setted.[/u]
 static func getNotesFromData(songData: Dictionary = {}) -> Array[Note]:
 	var _notes: Array[Note] = []
-	var notesData: Array = songData.get('notes',[])
-	if !notesData: return []
+	var notesData = songData.get('notes')
+	if !notesData: return _notes
 	
 	var _bpm: int = songData.get('bpm',0.0)
 	var keyCount: int = songData.get('keyCount',4)
@@ -843,7 +834,7 @@ static func getNotesFromData(songData: Dictionary = {}) -> Array[Note]:
 			stepCrochet = Conductor.get_step_crochet(_bpm)
 			
 		var isAltSection: bool = section.get("altAnim",false)
-
+		
 		for noteSection in section.sectionNotes:
 			var note: NoteHit = createNoteFromData(noteSection,section,keyCount)
 			if !_insert_note_to_array(note,_notes): continue
@@ -851,8 +842,8 @@ static func getNotesFromData(songData: Dictionary = {}) -> Array[Note]:
 			if isAltSection: note.animSuffix = '-alt'
 			if note.noteType: types_founded.append(note.noteType)
 			
-			var susLength = noteSection[2] if noteSection.size() >= 3 else null
-			if !susLength: continue 
+			var susLength = float(noteSection[2]) if noteSection.size() >= 3 else 0.0
+			if susLength <= stepCrochet: continue 
 			for i in _create_note_sustains(note,susLength,stepCrochet): _insert_note_to_array(i,_notes)
 	
 	var type_unique: PackedStringArray
@@ -876,23 +867,26 @@ static func _create_note_sustains(note: Note, length: float, stepCrochet: float)
 	var susNotes: Array[NoteSustain] = note.sustainParents
 	var time: float = note.strumTime
 	var index: int = 0
-	var susCount: int = ceili(length/stepCrochet)
+	var susCount: int = int(length/stepCrochet)
 	while index <= susCount:
 		var step = stepCrochet*index
-		var sus_length = minf(stepCrochet, length - step)
-		var sus = createSustainFromNote(note,sus_length,index == susCount)
+		var is_end: bool = index == susCount
+		var sus = createSustainFromNote(note,is_end)
 		sus.strumTime = time
-		sus.splashDisabled = true
 		susNotes.append(sus)
-		time += sus_length
 		index += 1
+		if !is_end: 
+			var sus_length = minf(stepCrochet, length - step)
+			sus.sustainLength = sus_length
+			time += sus_length
+		
 	
 	susNotes[0].splashDisabled = false
+	
 	susNotes.back().splashDisabled = false
 	note.sustainLength = length
 	return susNotes
 
-	
 static func createNoteFromData(data: Array, sectionData: Dictionary, keyCount: int = 4) -> NoteHit:
 	var noteData = int(data[1])
 	if noteData < 0: return
@@ -919,11 +913,12 @@ const noteSusVars: Array = [
 	&'noAnimation',
 	&'isPixelNote',
 ]
-static func createSustainFromNote(note: Note,length: float, isEnd: bool = false) -> NoteSustain:
-	var sus: NoteSustain = NoteSustain.new(note.noteData,length)
+static func createSustainFromNote(note: Note,isEnd: bool = false) -> NoteSustain:
+	var sus: NoteSustain = NoteSustain.new(note.noteData)
 	sus.splashStyle = ''
 	sus.noteParent = note
 	sus.isEndSustain = isEnd
+	sus.splashDisabled = true
 	
 	for noteVars in noteSusVars: sus[noteVars] = note[noteVars]
 	sus.hitHealth /= 2.0

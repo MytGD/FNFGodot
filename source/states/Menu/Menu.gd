@@ -50,7 +50,7 @@ func _ready():
 	logoBomping.animation.addAnimByPrefix('logo','logo bumpin')
 	logoBomping.visible = false
 	logoBomping._position = Vector2(bpm_data.get('titlex',-150),bpm_data.get('titley',-100))
-	logoBomping.name = 'logoBomping'
+	logoBomping.name = &'logoBomping'
 	
 	gfBeating.image.texture = Paths.texture('gfDanceTitle')
 	gfBeating.animation.addAnimByPrefix('danceLeft','gfDance',24,false,range(15))
@@ -58,7 +58,7 @@ func _ready():
 	gfBeating.visible = false
 	
 	gfBeating._position = Vector2(bpm_data.get('gfx',600),bpm_data.get('gfy',40))
-	gfBeating.name = 'GfBeating'
+	gfBeating.name = &'GfBeating'
 	bpm = bpm_data.get('bpm',102)
 	
 	pressStart.image.texture = Paths.texture('titleEnter')
@@ -66,7 +66,7 @@ func _ready():
 	pressStart.animation.addAnimByPrefix('pressed','ENTER PRESSED',24,true)
 	pressStart.visible = false
 	pressStart._position = Vector2(bpm_data.get('startx',100),bpm_data.get('starty',ScreenUtils.screenHeight - 150))
-	pressStart.name = 'pressStart'
+	pressStart.name = &'pressStart'
 	
 	Global.onSwapTree.connect(queue_free,CONNECT_ONE_SHOT)
 	if not playIntroText: changeState(1)

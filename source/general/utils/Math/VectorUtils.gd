@@ -6,15 +6,15 @@ const vectors: Dictionary = {
 	TYPE_VECTOR3: true,
 	TYPE_VECTOR3I: true,
 	TYPE_VECTOR4: true,
-	TYPE_VECTOR4I: true
+	TYPE_VECTOR4I: true,
+	TYPE_COLOR: true
 }
-const vectors_index: PackedStringArray = ['x','y','z','w']
-
+const vectors_index: Array = [&'x',&'y',&'z',&'w']
 static func get_vector_size(type: Variant.Type) -> int:
 	match type:
 		TYPE_VECTOR2,TYPE_VECTOR2I: return 2
 		TYPE_VECTOR3,TYPE_VECTOR3I: return 3
-		TYPE_VECTOR4,TYPE_VECTOR4I: return 4
+		TYPE_VECTOR4,TYPE_VECTOR4I,TYPE_COLOR: return 4
 		_: return 0
 
 static func is_vector(variable) -> bool: return typeof(variable) in vectors

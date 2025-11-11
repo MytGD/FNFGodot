@@ -7,9 +7,8 @@ extends "res://source/objects/Notes/NoteBase.gd"
 const NoteSplash = preload("res://source/objects/Notes/NoteSplash.gd")
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 
-const _rating_string: PackedStringArray = ['marvellous','sick','good','bad','shit']
-
-const _ratings_length: int = 4 #The same as _rating_string.size()
+const _rating_string: Array = [&'marvellous',&'sick',&'good',&'bad',&'shit']
+const _ratings_length: int = 4 #_rating_string.size()
 
 
 #endregion
@@ -115,9 +114,9 @@ var ratingDisabled: bool ##Disable Rating. If [code]true[/code], the rating will
 
 
 func _enter_tree() -> void: 
-	if strumNote: 
-		strumNote.mult_speed_changed.connect(_update_note_speed)
-		_update_note_speed()
+	if !strumNote: return
+	strumNote.mult_speed_changed.connect(_update_note_speed)
+	_update_note_speed()
 
 func _exit_tree() -> void: if strumNote: strumNote.mult_speed_changed.disconnect(_update_note_speed)
 

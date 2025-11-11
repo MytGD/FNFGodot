@@ -1,0 +1,187 @@
+{
+	"antialiasing": true,
+	"arrowSkin": "noteSkins/NOTE_assets",
+	"badOffset": 150.0,
+	"botplay": false,
+	"camZooms": true,
+	"comboOffset": [
+		700.0,
+		-250.0,
+		-500.0,
+		-200.0
+	],
+	"comboStacking": true,
+	"downscroll": false,
+	"fixImageBorders": false,
+	"flashingLights": true,
+	"fps": 240.0,
+	"goodOffset": 130.0,
+	"hideHud": false,
+	"lowQuality": false,
+	"middlescroll": false,
+	"miraculousOffset": 25.0,
+	"miraculousRating": false,
+	"modsEnabled": {
+		"Doki Doki Takeover": true,
+		"Eteled": true,
+		"Fnif3": true,
+		"Funkin.Avi": true,
+		"Godsent Gaslit": true,
+		"Gummibar": true,
+		"Impostor V4": true,
+		"Incident 012f": true,
+		"Indie Cross": true,
+		"Last Determined": true,
+		"MadVan": true,
+		"Mario Madness V2 - Lua Port": true,
+		"Mods": true,
+		"Not Finished": true,
+		"Ok Friday": true,
+		"Psych Mods Compatible": true,
+		"Sonic.exe - Unresponsive": true,
+		"Sonic.exe 2.5": true,
+		"StarlightMayhem": true,
+		"Super Funkin' Galaxy Demo v2.1.0": true,
+		"System Overload": true,
+		"Unknown Suffering - AlexStep8": true,
+		"VSCHARA": true,
+		"Voiid Chronicles": true,
+		"Vs QT - Mods Folder": true,
+		"Vs QT Rewired": true,
+		"Vs Wednesday's Infidelity - Mods Folder": true,
+		"Wii Space": true,
+		"YOURSELF": true,
+		"base_mod": true,
+		"kapi port": true,
+		"soff": true,
+		"vs-omori": true
+	},
+	"modsOrder": [],
+	"notHitSustainWhenMiss": false,
+	"noteSkin": "Default",
+	"note_keys": {
+		"1": [
+			[
+				68.0,
+				4194319.0
+			]
+		],
+		"2": [
+			[
+				70.0,
+				4194322.0
+			],
+			[
+				74.0,
+				4194320.0
+			]
+		],
+		"3": [
+			[
+				68.0,
+				4194319.0
+			],
+			[
+				32.0,
+				4194322.0
+			],
+			[
+				75.0,
+				4194321.0
+			]
+		],
+		"4": [
+			[
+				68.0,
+				4194319.0
+			],
+			[
+				70.0,
+				4194322.0
+			],
+			[
+				74.0,
+				4194320.0
+			],
+			[
+				75.0,
+				4194321.0
+			]
+		],
+		"5": [
+			[
+				68.0,
+				4194319.0
+			],
+			[
+				70.0,
+				4194322.0
+			],
+			[
+				32.0
+			],
+			[
+				74.0,
+				4194320.0
+			],
+			[
+				75.0,
+				4194321.0
+			]
+		],
+		"6": [
+			[
+				83.0
+			],
+			[
+				68.0
+			],
+			[
+				70.0
+			],
+			[
+				74.0
+			],
+			[
+				75.0
+			],
+			[
+				76.0
+			]
+		],
+		"7": [
+			[
+				83.0
+			],
+			[
+				68.0
+			],
+			[
+				70.0
+			],
+			[
+				32.0
+			],
+			[
+				74.0
+			],
+			[
+				75.0
+			],
+			[
+				76.0
+			]
+		]
+	},
+	"opponentSplashes": false,
+	"playAsOpponent": false,
+	"shadersEnabled": true,
+	"sickOffset": 45.0,
+	"songOffset": 0.0,
+	"splashAlpha": 0.8,
+	"splashSkin": "noteSplashes/noteSplashes",
+	"splashesEnabled": true,
+	"timeBarType": 0.0,
+	"vsync_mode": 0.0,
+	"window_mode": 0.0
+}

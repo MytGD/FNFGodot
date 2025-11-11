@@ -55,7 +55,7 @@ func reloadNote() -> void: ##Reload the Note animation and his texture.
 	setGraphicScale(Vector2(noteScale,noteScale))
 
 #region Setters
-func setStyleName(_name: String) -> void:  styleName = _name; _update_style_data()
+func setStyleName(_name: String) -> void: styleName = _name; _update_style_data()
 
 func setNoteData(_data: int) -> void: 
 	noteData = _data; 

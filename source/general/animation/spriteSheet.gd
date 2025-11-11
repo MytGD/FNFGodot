@@ -34,7 +34,7 @@ func _init():
 		graphic = NinePatchRect.new()
 	use_parent_material = true
 	graphic.use_parent_material = true
-	graphic.name = 'Texture'
+	graphic.name = &'Texture'
 	
 	graphic.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_TILE
 	graphic.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_TILE

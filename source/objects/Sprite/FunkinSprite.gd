@@ -5,55 +5,57 @@ const Graphic = preload("res://source/objects/Sprite/Graphic.gd")
 @export var x: float: set = set_x,get = get_x
 @export var y: float: set = set_y,get = get_y
 
-var _position: Vector2: set = set_position
+var _position: Vector2 = Vector2.ZERO: set = set_position
 
 #region Camera Vars
 var camera: Node: set = set_camera
 var _camera_is_canvas: bool = false
 #endregion
 
-var groups: Array[SpriteGroup] = []
+var groups: Array[SpriteGroup]
 
 
 @export var pivot_offset: Vector2: set = set_pivot_offset
-var _real_pivot_offset: Vector2
+
 
 #region Offset
 @export_category("Offset")
-@export var offset: Vector2 = Vector2.ZERO: set = set_offset
+@export var offset: Vector2: set = set_offset
 ##If [code]true[/code], the animation offset will follow the sprite flips.[br][br]
 ##[b]Example[/b]: if the sprite has flipped horizontally, the [param offset.x] will be inverted horizontally(x)
-@export var offset_follow_flip: bool = false 
-@export var offset_follow_scale: bool = false ##If [code]true[/code], the animation offset will be multiplied by the sprite scale when set.
-@export var offset_follow_rotation: bool = true ##If [code]true[/code], the animation offset will follow the rotation.
-var _real_offset: Vector2 = Vector2.ZERO
+@export var offset_follow_flip: bool
+@export var offset_follow_scale: bool ##If [code]true[/code], the animation offset will be multiplied by the sprite scale when set.
+@export var offset_follow_rotation: bool ##If [code]true[/code], the animation offset will follow the rotation.
 
-var _animOffsets: Dictionary[String,Vector2] = {}
-var _graphic_scale: Vector2 = Vector2.ZERO: set = set_graphic_scale
-var _graphic_offset: Vector2 = Vector2.ZERO: set = set_graphic_offset
+
+var _animOffsets: Dictionary[String,Vector2]
+var _graphic_scale: Vector2: set = set_graphic_scale
+var _graphic_offset: Vector2: set = set_graphic_offset
 var midpoint_scale: Vector2 = Vector2.ONE
 #endregion
 
 #region Scroll Factor
 @export var scrollFactor: Vector2 = Vector2.ONE: set = set_scroll_factor
+var _scroll_offset: Vector2: set = _set_scroll_offset
 var _real_scroll_factor: Vector2
-var _scroll_offset: Vector2
 var _needs_factor_update: bool
 #endregion
 
 var parent: Node
 
 var _last_scale: Vector2
-var _last_rotation: float = 0.0
+var _last_rotation: float
 
 #region Velocity Vars
 @export_category("Velocity")
 @export var acceleration: Vector2 = Vector2.ZERO: set = set_aceleration ##This will accelerate the velocity from the value setted.
 @export var velocity: Vector2 = Vector2.ZERO: set = set_velocity ##Will add velocity from the position, making the sprite move.
-var _accelerating: bool = false
+var _accelerating: bool
 @export var maxVelocity: Vector2 = Vector2(999999,99999) ##The limit of the velocity, set [Vector2](-1,-1) to unlimited.
 #endregion
 
+var _real_offset: Vector2 = Vector2.ZERO: set = set_real_offset
+var _real_pivot_offset: Vector2 = Vector2.ZERO: set = set_real_pivot_offset
 
 #region Images/Animation Properties
 ##The Node that will be animated. [br]
@@ -84,32 +86,36 @@ var imagePath: String: get = get_image_path ##The [b]absolute[/b] Path from the 
 
 #endregion
 
+
 #region Native Methods
 func _init(is_animated: bool = false,texture: Variant = null):
 	if is_animated: _create_animation()
-	image.name = 'Sprite'
+	image.name = &'Sprite'
 	set_notify_local_transform(true)
 	_on_image_changed()
 	set_texture(texture)
 	add_child(image)
 
-func _ready() -> void: set_notify_local_transform(true); 
 
 func _process(delta: float) -> void:
 	if _needs_factor_update: _update_scroll_factor()
 	if _accelerating: _add_velocity(delta)
 	if animation: animation.curAnim.process_frame(delta)
 
+
+func _check_transform() -> void:
+	if _last_rotation == rotation and _last_scale == scale: return
+	_last_rotation = rotation
+	_last_scale = scale
+	_update_pivot()
+	_update_real_offset()
+
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_PARENTED: parent = get_parent(); _check_scroll_factor()
 		NOTIFICATION_UNPARENTED: parent = null; _needs_factor_update = false
-		NOTIFICATION_LOCAL_TRANSFORM_CHANGED:
-			if _last_rotation == rotation and _last_scale == scale: return;
-			_last_rotation = rotation
-			_last_scale = scale
-			_update_pivot()
-			_update_real_offset()
+		NOTIFICATION_ENTER_TREE: _check_transform(); _update_position()
+		NOTIFICATION_LOCAL_TRANSFORM_CHANGED: _check_transform()
 #endregion
 
 #region Animation Methods
@@ -164,31 +170,26 @@ func set_offset_from_anim(anim: String) -> void:
 
 #region Velocity Methods
 func _check_velocity() -> void: _accelerating = acceleration != Vector2.ZERO or velocity != Vector2.ZERO
-
-func _add_velocity(delta: float) -> void:
-	velocity += acceleration * delta
-	_position += velocity.clamp(-maxVelocity,maxVelocity) * delta
+func _add_velocity(delta: float) -> void: velocity += acceleration * delta; _position += velocity.clamp(-maxVelocity,maxVelocity) * delta
 #endregion
 
 #region Setters
+@warning_ignore("native_method_override")
+func set_position(_pos: Vector2) -> void: position += _pos - _position; _position = _pos;
+func set_position_xy(_x: float, _y: float) -> void: _position = Vector2(_x,_y);
+func set_x(_x: float) -> void: _position.x = _x;
+func set_y(_y: float) -> void: _position.y = _y;
 
-func set_position_xy(_x: float, _y:float): _position = Vector2(_x,_y);
-func set_position(_pos: Vector2): _position = _pos; _update_position()
+func set_velocity(vel: Vector2) -> void: velocity = vel; _check_velocity() 
+func set_aceleration(acc: Vector2) -> void: acceleration = acc; _check_velocity()
+func set_offset(_off: Vector2) -> void: offset = _off; _update_real_offset(); 
+func set_scroll_factor(factor: Vector2) -> void: scrollFactor = factor; _real_scroll_factor = Vector2.ONE - factor; _check_scroll_factor()
 
-func set_x(_x: float): _position.x = _x 
-func set_y(_y: float): _position.y = _y
+func set_real_pivot_offset(pivo: Vector2) -> void: position -= pivo - _real_pivot_offset; _real_pivot_offset = pivo;
+func _set_scroll_offset(_pos: Vector2) -> void: position += _pos - _scroll_offset; _scroll_offset = _pos;
+func set_real_offset(off: Vector2) -> void: position -= off - _real_offset; _real_offset = off
 
-func set_velocity(vel: Vector2): velocity = vel; _check_velocity() 
-func set_aceleration(acc: Vector2): acceleration = acc; _check_velocity()
-func set_offset(_off: Vector2): 
-	offset = _off; 
-	var _last_off = _real_offset
-	_update_real_offset(); 
-	position -= _real_offset - _last_off
-
-func set_scroll_factor(factor: Vector2):scrollFactor = factor; _real_scroll_factor = Vector2.ONE - factor; _check_scroll_factor()
 func set_pivot_offset(value: Vector2) -> void: pivot_offset = value; _update_pivot()
-
 func set_camera(_cam: Node):
 	if camera == _cam: return
 	if camera and _camera_is_canvas: camera.remove.call(self)
@@ -196,7 +197,7 @@ func set_camera(_cam: Node):
 	if !_cam: camera = null; _camera_is_canvas = false; return
 	
 	_camera_is_canvas = _cam is CameraCanvas
-	if !_camera_is_canvas and _cam.get('position') == null: camera = null; return
+	if !_camera_is_canvas and _cam.get(&'position') == null: camera = null; return
 	
 	camera = _cam
 	
@@ -208,7 +209,10 @@ func set_camera(_cam: Node):
 #region Getters
 func get_x() -> float: return _position.x
 func get_y() -> float: return _position.y
+
+@warning_ignore("native_method_override")
 func get_position() -> Vector2: return _position
+
 func get_offset() -> Vector2: return offset
 func _get_real_position() -> Vector2: return _position - _real_offset - _real_pivot_offset + _scroll_offset - _graphic_offset
 func getMidpoint() -> Vector2:return _position + _scroll_offset + pivot_offset ##Get the [u]center[/u] position of the sprite in the scene.
@@ -225,7 +229,7 @@ func flip_v(flip: bool = flipY) -> void: flipY = flip; _update_image_flip()
 func set_alpha(_alpha: float): modulate.a = _alpha
 func set_width(_width: float): image.region_rect.size.x = _width
 func set_height(_height: float): image.region_rect.size.y = _height
-func set_graphic_offset(off: Vector2): _graphic_offset = off; _update_position()
+func set_graphic_offset(off: Vector2): position -= off - _graphic_offset; _graphic_offset = off;
 func set_graphic_scale(_scale: Vector2): _graphic_scale = _scale; _update_graphic_offset()
 func set_texture(tex: Variant):
 	if !tex: image.texture = null; return;
@@ -257,27 +261,29 @@ func get_image_path() -> String: return image.texture.resource_name if image.tex
 
 #region Scroll Factor
 func _check_scroll_factor() -> void: _needs_factor_update = scrollFactor != Vector2.ONE
+
 func _update_scroll_factor() -> void:
-	var pos: Vector2 = camera.scroll if camera else parent.get('position')
+	var pos: Vector2 = camera.scroll if camera else parent.get(&'position')
 	if !pos: _scroll_offset = Vector2.ZERO; return
 	_scroll_offset = pos * _real_scroll_factor
-	_update_position()
 #endregion
 
 func _update_position() -> void: position = _get_real_position()
 
 func _update_graphic_offset() -> void: _graphic_offset = image.pivot_offset*_graphic_scale
 
-func _update_pivot():
-	_real_pivot_offset = pivot_offset*scale
-	if rotation: _real_pivot_offset = _real_pivot_offset.rotated(rotation)
-	_real_pivot_offset = _real_pivot_offset - pivot_offset
+func _update_pivot() -> void:
+	var pivo = pivot_offset
+	pivo = pivo*scale
+	if rotation: pivo = pivo.rotated(rotation)
+	_real_pivot_offset = pivo - pivot_offset
 
 func _update_real_offset() -> void:
-	_real_offset = offset
-	if offset_follow_scale: _real_offset *= scale
-	if offset_follow_flip: _real_offset *= image.scale
-	if offset_follow_rotation: _real_offset = _real_offset.rotated(rotation)
+	var off = offset
+	if offset_follow_scale: off *= scale
+	if offset_follow_flip: off *= image.scale
+	if offset_follow_rotation: off = off.rotated(rotation)
+	_real_offset = off
 
 func _on_texture_changed() -> void:
 	if !image.texture: 
@@ -296,7 +302,7 @@ func _on_image_changed() -> void:
 	image.texture_changed.connect(_on_texture_changed)
 	_update_image_flip()
 	_update_animation_image()
-	
+
 func _update_image_flip() -> void:
 	image.scale = Vector2(-1 if flipX else 1, -1 if flipY else 1)
 	if image is Graphic: image._update_offset()
@@ -317,7 +323,6 @@ func screenCenter(type: StringName = 'xy') -> void: ##Move the sprite to the cen
 		'xy': position = midScreen - (pivot_offset*scale)
 		'x': x = midScreen.x - (pivot_offset.x * scale.x)
 		'y': y = midScreen.y - (pivot_offset.y * scale.y)
-
 
 func _property_get_revert(property: StringName) -> Variant:
 	match property:

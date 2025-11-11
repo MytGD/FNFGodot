@@ -3,8 +3,6 @@ static var eventsFounded: PackedStringArray
 
 static func convert_events(events: Array) -> Array:
 	var new_events: Array = []
-	
-	
 	for event_data in events:
 		var events_array: Array = [event_data[0],[]]
 		for event in event_data[1]:
@@ -44,9 +42,9 @@ static func loadEvents(chart: Array = []) -> Array[Dictionary]:
 			var event = data[0]
 			events.append(
 				{
-					'strumTime': i[0],
-					'event': event,
-					'variables': data[1]
+					&'strumTime': i[0],
+					&'event': event,
+					&'variables': data[1]
 				}
 			)
 			if not event in eventsFounded: eventsFounded.append(event)
@@ -61,13 +59,13 @@ static var event_variables: Dictionary = {}
 static var easing_types: PackedStringArray = []
 
 const default_variables = {
-	'value1': {
-		'type': TYPE_STRING,
-		'default_value': ''
+	&'value1': {
+		&'type': TYPE_STRING,
+		&'default_value': ''
 	},
-	'value2': {
-		'type': TYPE_STRING,
-		'default_value': ''
+	&'value2': {
+		&'type': TYPE_STRING,
+		&'default_value': ''
 	}
 }
 
@@ -76,7 +74,7 @@ static func _get_transitions():
 	for i in TweenService.transitions:
 		i = StringUtils.first_letter_upper(i)
 		trans.append("#"+i)
-		if i == 'Linear': trans.append("Linear"); continue
+		if i == &'': trans.append("Linear"); continue
 		for e in TweenService.easings: trans.append(i+e)
 	return trans
 ##Return the variables of the a custom_event using "@vars" in his text.[br]

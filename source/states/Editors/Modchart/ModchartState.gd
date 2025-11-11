@@ -17,7 +17,7 @@ enum KEY_TYPE{
 	MEDIA
 }
 const BaseData = {
-	'keys': [[0.0,1.0,1.0,'linear','out']], #[time,final_val,duration,transition,easing,init_val]
+	'keys': [[0.0,1.0,1.0,&'','out']], #[time,final_val,duration,transition,easing,init_val]
 	'type': TYPE_NIL,
 	'index': 0
 }

@@ -6,7 +6,7 @@ signal finished
 func _ready():
 	name = 'Transition'
 	sprite = Sprite2D.new()
-	sprite.name = 'gradiant'
+	sprite.name = &'gradiant'
 	sprite.texture = GradientTexture2D.new()
 	_update_size()
 	sprite.centered = false

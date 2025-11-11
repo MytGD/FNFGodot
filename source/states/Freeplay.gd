@@ -69,7 +69,7 @@ func _ready():
 	#var bg = Sprite2D.new()
 	#bg.centered = false
 	#bg.texture = Paths.texture('menuBG')
-	#bg.name = 'bg'
+	#bg.name = &'bg'
 	#bg.modulate = Color.GRAY
 	#add_child(bg)
 	

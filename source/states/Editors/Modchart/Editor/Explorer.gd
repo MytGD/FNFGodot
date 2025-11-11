@@ -75,7 +75,7 @@ class ButtonExplorer extends Control:
 	
 	var explorer: Explorer
 	func _init() -> void:
-		minize_button.name = 'Minize Button'
+		minize_button.name = &'Minize Button'
 		minize_button.text = '>'
 		minize_button.pivot_offset = Vector2(8,12)
 		minize_button.scale = Vector2(0.8,0.8)
@@ -122,7 +122,7 @@ class ButtonExplorer extends Control:
 		container.add_child(node)
 	func _create_container() -> void:
 		container =  VBoxContainer.new()
-		container.name = 'Container'
+		container.name = &'Container'
 		add_child(container)
 		container.position = Vector2(nodes_offset.x,23)
 		container.minimum_size_changed.connect(update_size)

@@ -23,11 +23,11 @@ const GameOverSubstate := preload("res://source/substates/GameOverSubstate.gd")
 
 func _ready():
 	add_child(camGame)
-	camGame.name = 'camGame'
+	camGame.name = &'camGame'
 	
-	boyfriendGroup.name = 'boyfriendGroup'
-	dadGroup.name = 'dadGroup'
-	gfGroup.name = 'gfGroup'
+	boyfriendGroup.name = &'boyfriendGroup'
+	dadGroup.name = &'dadGroup'
+	gfGroup.name = &'gfGroup'
 	
 	Stage.charactersGroup = {
 		'bf': boyfriendGroup,

@@ -7,44 +7,32 @@ class_name SpriteGroup
 ##[url=https://gamebanana.com/mods/309789]Psych Engine[/url], 
 ##being easing to understand the code.
 
-@export var members: Array = [] ##The members that this group contains.
+@export var members: Array ##The members that this group contains.
 
-var x: float = 0: ##position x
+var x: float: ##position x
 	set(value):
-		if x == value:
-			return
-		
+		if x == value: return
 		var sub = value-x
-		for member in members:
-			_add_member_position(member,sub,0)
+		for member in members: _add_member_position(member,sub,0)
 		x = value
-		
-		
 
-var y: float = 0.0: ##position y
+
+var y: float: ##position y
 	set(value):
-		if value == y:
-			return
-		
+		if value == y:return
 		var sub = value-y
-		for member in members:
-			_add_member_position(member,0,sub)
+		for member in members:_add_member_position(member,0,sub)
 		y = value
 
 ##The [Node] that this group will inherit.
 var camera: Node:
 	set(cam):
-		if camera == cam:
-			return
-		if camera:
-			camera.remove_child(self)
+		if camera == cam: return
+		if camera: camera.remove_child(self)
 		camera = cam
-		if !cam:
-			return
-		if cam is CameraCanvas:
-			cam.add(self)
-		else:
-			cam.add_child(self)
+		if !cam: return
+		if cam is CameraCanvas: cam.add(self)
+		else: cam.add_child(self)
 		_parent_camera = cam
 	
 var _parent_camera: Node:
@@ -61,30 +49,20 @@ var scrollFactor: Vector2 = Vector2.ONE
 ##Add a [Node] to this group. 
 ##If [code]insertOnGame[/code], the node will be added to tree if the group is added.
 func add(node: Node,insertOnGame: bool = true) -> void:
-	if !node:
-		return
-	if not node in members:
-		members.append(node)
-		_add_member_position(node,x,y)
-	if not insertOnGame:
-		return
-	
+	if !node: return
+	if not node in members: members.append(node);# _add_member_position(node,x,y)
+	if not insertOnGame: return
 	_add_obj_to_camera(node)
 
 func _add_obj_to_camera(node: Node) -> void:
-	if !node:
-		return
-	if _parent_camera:
-		node.set("camera",_parent_camera)
-	if node.get_parent():
-		node.reparent(self,false)
-	else:
-		add_child(node)
+	if !node: return
+	if _parent_camera: node.set("camera",_parent_camera)
+	if node.get_parent(): node.reparent(self,false)
+	else: add_child(node)
 
 ##Insert a [Node] in a specific order. 
 func insert(at: int, node: Node) -> void:
-	if !node:
-		return
+	if !node: return
 	_add_obj_to_camera(node)
 	at = clamp(at,0,members.size())
 	members.insert(at,node)
@@ -110,9 +88,9 @@ func remove_at(index: int) -> void:
 	if node is Node and node.is_inside_tree(): node.reparent(get_parent(),false)
 
 ##Queues all members of this group. See also [method Node.queue_free].
-func queue_free_members():
+func queue_free_members() -> void:
 	for i in members: i.queue_free()
 	members.clear()
+
 func _add_member_position(member: Node,_x: float = x, _y: float = y) -> void:
-	if member is FunkinSprite: member._position += Vector2(_x,_y)
-	elif member is Node2D or member is Control: member.position += Vector2(_x,_y)
+	if member is Node2D or member is Control: member.set_position(member.get_position() + Vector2(_x,_y))
