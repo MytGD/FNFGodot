@@ -410,17 +410,15 @@ func noteMiss(note, character: Variant = null) -> void:
 func _load_song_scripts():
 	if loadScripts:
 		print('Loading Scripts from Scripts Folder')
-		for i in Paths.getFilesAt('scripts',true,'.gd'): 
-			FunkinGD.addScript(i)
+		for i in Paths.getFilesAt('scripts',false,'.gd'): FunkinGD.addScript('scripts/'+i)
 	
 	if loadStageScript:
 		print('Loading Stage Script')
 		FunkinGD.addScript('stages/'+curStage+'.gd')
 	
-	print(Song.folder)
 	if loadSongScript and Song.folder:
 		print('Loading Song Folder Script')
-		for i in Paths.getFilesAt(Song.folder,true,'.gd'): FunkinGD.addScript(i)
+		for i in Paths.getFilesAt(Song.folder,false,'.gd'): FunkinGD.addScript(Song.folder+'/'+i)
 
 
 func triggerEvent(event: StringName,variables: Variant) -> void:

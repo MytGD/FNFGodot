@@ -363,8 +363,8 @@ static func _get_new_viewport() -> SubViewport:
 	view.own_world_3d = true
 	return view
 
-func _draw() -> void:
-	RenderingServer.canvas_item_set_clip(get_canvas_item(),true)
+func _draw() -> void: RenderingServer.canvas_item_set_clip(get_canvas_item(),true)
+
 @warning_ignore("missing_tool")
 class FlashSprite:
 	extends SolidSprite

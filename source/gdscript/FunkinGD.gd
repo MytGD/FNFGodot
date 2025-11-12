@@ -1403,12 +1403,14 @@ static func insertScript(script: Object, path: String = '') -> bool:
 	scriptsCreated[path] = script
 	arguments[script.get_instance_id()] = args
 	
+	
 	for func_name in args:
 		if !func_name in method_list: method_list[func_name] = [script]
 		else: method_list[func_name].append(script)
 	
+	
 	if args.has(&'onCreate'): script.onCreate()
-	if args.has(&'onCreatePost') and game and game.get(&'stateLoaded'): script.onCreatePost()
+	if args.has(&'onCreatePost') and game and game.get(&'stateLoaded'):script.onCreatePost(); 
 	
 	return true
 
@@ -1436,8 +1438,8 @@ static func addScript(path: String) -> Object:
 	if !script: return
 	
 	var resource = script.new()
-	resource.set('scriptPath',path)
-	resource.set('scriptMod',Paths.getModFolder(path))
+	resource.set(&'scriptPath',path)
+	resource.set(&'scriptMod',Paths.getModFolder(path))
 	if insertScript(resource,path): return resource
 	return null
 
@@ -1497,6 +1499,7 @@ static func callScript(script: Variant,function: StringName = '', parameters: Va
 ##Calls a function for every script created.
 static func callOnScripts(function: StringName, parameters: Variant = null) -> Variant:
 	var func_args = method_list.get(function)
+	
 	if !func_args: return
 	for i in func_args: callScriptNoCheck(i,function,parameters)
 	return
@@ -1512,18 +1515,14 @@ static func callOnScriptsWithReturn(function: StringName, parameters: Variant = 
 	return returns
 	
 static func callScriptNoCheck(script: Object, function: StringName, parameters: Variant):
-	var script_id = script.get_instance_id()
-	
-	var args = arguments.get(script_id)
+	var args = arguments.get(script.get_instance_id())
 	if !args or !args.has(function): return
-	
-	
 	args = args[function]
+	
 	
 	if !args: return script.call(function)
 	
-	if args.size() == 1: 
-		return script.call(function,parameters[0] if ArrayUtils.is_array(parameters) else parameters)
+	if args.size() == 1: return script.call(function,parameters[0] if ArrayUtils.is_array(parameters) else parameters)
 	return script.callv(function,_sign_parameters(args,parameters)) 
 
 static func _sign_parameters(args: Array,parameters: Variant) -> Array:
@@ -1535,7 +1534,7 @@ static func _sign_parameters(args: Array,parameters: Variant) -> Array:
 	var index: int = 1
 	while index < args.size(): 
 		var i = args[index]
-		if i.has('default'): break
+		if i.has(&'default'): break
 		parameters.append(MathUtils.get_new_value(i.type));
 		index += 1
 	 
@@ -1550,7 +1549,7 @@ static func _sign_parameters_array(args: Array, parameters: Array) -> Array:
 		index +=1
 		var i = args[index]
 		if append:
-			if i.has('default'): break
+			if i.has(&'default'): break
 			parameters.append(MathUtils.get_new_value(i.type))
 		else: 
 			append = index == parameters.size()-1
