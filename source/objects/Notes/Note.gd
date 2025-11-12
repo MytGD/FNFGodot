@@ -157,6 +157,8 @@ func resetNote() -> void: ##Reset Note values when spawned.
 	_is_processing = true
 	missed = false
 	offset = Vector2.ZERO
+	noteGroup = null
+	material = null
 
 func killNote() -> void: ##Delete the note from the scene.
 	_is_processing = false

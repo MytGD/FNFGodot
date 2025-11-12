@@ -156,12 +156,6 @@ shift={
 
 pointing/emulate_touch_from_mouse=true
 
-[layer_names]
-
-2d_render/layer_1="game"
-2d_render/layer_2="hud"
-2d_render/layer_3="other"
-
 [physics]
 
 2d/run_on_separate_thread=true

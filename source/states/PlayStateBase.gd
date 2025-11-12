@@ -417,6 +417,7 @@ func _load_song_scripts():
 		print('Loading Stage Script')
 		FunkinGD.addScript('stages/'+curStage+'.gd')
 	
+	print(Song.folder)
 	if loadSongScript and Song.folder:
 		print('Loading Song Folder Script')
 		for i in Paths.getFilesAt(Song.folder,true,'.gd'): FunkinGD.addScript(i)

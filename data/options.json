@@ -174,7 +174,7 @@
 		]
 	},
 	"opponentSplashes": false,
-	"playAsOpponent": true,
+	"playAsOpponent": false,
 	"shadersEnabled": true,
 	"sickOffset": 45.0,
 	"songOffset": 0.0,

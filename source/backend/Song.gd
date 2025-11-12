@@ -37,18 +37,17 @@ static func loadJson(json_name: String, _difficulty: String = '') -> Dictionary:
 	if song_dir: song_dir = song_dir.get(_difficulty)
 	
 	if song_dir:
-		folder = song_dir.get('folder',folder)
+		var custom_folder = song_dir.get('folder',folder)
 		json_name = song_dir.get('json',json_name)
 		audioSuffix = song_dir.get('audioSuffix','')
-		audioFolder = folder
-		json_path = Paths.data(json_name,'',folder)
+		audioFolder = custom_folder
+		json_path = Paths.data(json_name,'',custom_folder)
 	else:
 		audioSuffix = ''
-		if !folder: folder = json_name.get_base_dir()
-		
 		json_path = Paths.data(json_name,_difficulty)
-		folder = Paths.getPath(json_path,false).get_base_dir()
-		audioFolder = folder.get_slice('/',folder.get_slice_count('/')-1)
+		
+	folder = Paths.getPath(json_path,false).get_base_dir()
+	audioFolder = folder.get_slice('/',folder.get_slice_count('/')-1)
 	
 	json = _loadData(json_path,_difficulty)
 	

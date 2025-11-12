@@ -51,8 +51,6 @@ var remove: Callable = scroll_camera.remove_child
 #endregion
 
 func _init() -> void:
-	clip_children = CanvasItem.CLIP_CHILDREN_ONLY
-	
 	bg.modulate = Color.TRANSPARENT
 	bg.name = &'bg'
 	width = ScreenUtils.screenWidth
@@ -67,8 +65,11 @@ func _init() -> void:
 		if node.get_index() < _first_index: _first_index -= 1
 	)
 	
-	_update_camera_size()
+	
 	add_child(flashSprite)
+
+func _ready() -> void:
+	_update_camera_size.call_deferred()
 
 #region Size Methods
 func _update_camera_size():
@@ -77,7 +78,7 @@ func _update_camera_size():
 	bg.scale = size
 	if viewport: viewport.size = size
 	pivot_offset = size/2.0
-	queue_redraw()
+	_update_rect_visible()
 
 func _update_viewport_size():
 	for i in _viewports_created: i.size = Vector2.ONE * ScreenUtils.screenWidth/get_viewport().size.xj
@@ -166,8 +167,6 @@ func create_viewport() -> void:
 	viewport.own_world_3d = true
 	add_child(viewport)
 	_update_transform()
-	
-	clip_children = CanvasItem.CLIP_CHILDREN_DISABLED
 	queue_redraw()
 	
 	_last_viewport_added = viewport
@@ -195,8 +194,6 @@ func remove_viewport() -> void:
 	
 	viewport.queue_free()
 	viewport = null
-	
-	clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 	queue_redraw()
 	_update_transform()
 
@@ -273,6 +270,9 @@ func _insert_object_to_camera(node: Node):
 #region Transform
 func _process(delta: float) -> void: if _is_shaking: _updateShake(delta)
 
+func _update_rect_visible():
+	RenderingServer.canvas_item_set_custom_rect(get_canvas_item(),true,Rect2(0,0,width,height))
+	
 func _update_transform() -> void:
 	_update_angle()
 	_update_zoom()
@@ -305,10 +305,6 @@ func _update_scroll_transform():
 	_real_scroll_position = _scroll_position - _scroll_pivot_offset + _shake_pos
 	if viewport: viewport.canvas_transform.origin = _real_scroll_position
 	else: scroll_camera.position = _real_scroll_position
-
-func _draw() -> void: 
-	if clip_children != CLIP_CHILDREN_DISABLED: 
-		draw_rect(Rect2(Vector2.ZERO,Vector2(width,height)),Color.WHITE)
 #endregion
 
 #region Setters
@@ -367,6 +363,8 @@ static func _get_new_viewport() -> SubViewport:
 	view.own_world_3d = true
 	return view
 
+func _draw() -> void:
+	RenderingServer.canvas_item_set_clip(get_canvas_item(),true)
 @warning_ignore("missing_tool")
 class FlashSprite:
 	extends SolidSprite
