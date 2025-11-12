@@ -717,7 +717,7 @@ func loadStage(stage: StringName, loadScript: bool = loadStageScript):
 #endregion
 
 #region Combo Methods
-func createCombo(rating: String) -> Combo:
+func createCombo(rating: StringName) -> Combo:
 	var combo = super.createCombo(rating)
 	if combo: FunkinGD.callOnScripts(&'onComboCreated',[combo,rating])
 	return combo

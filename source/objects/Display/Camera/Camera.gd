@@ -163,6 +163,7 @@ func removeFilters(): ##Remove every shader created in this camera.
 func create_viewport() -> void:
 	if viewport: return
 	viewport = _get_new_viewport()
+	viewport.own_world_3d = true
 	add_child(viewport)
 	_update_transform()
 	
@@ -363,7 +364,7 @@ static func _get_new_viewport() -> SubViewport:
 	view.disable_3d = true
 	view.gui_snap_controls_to_pixels = false
 	view.size = ScreenUtils.screenSize
-	#view.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	view.own_world_3d = true
 	return view
 
 @warning_ignore("missing_tool")

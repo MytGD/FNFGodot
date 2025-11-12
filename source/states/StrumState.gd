@@ -14,7 +14,6 @@ const StrumNote = preload("uid://coipwnceltckt")
 
 const Combo = preload("uid://dmvm4us4t2iqg")
 const ComboStrings: PackedStringArray = ['sick','good','bad','shit']
-const ComboNumbers: PackedStringArray = ['0','1','2','3','4','5','6','7','8','9']
 const StrumOffset: float = 112.0
 
 static var COMBO_PIXEL_SCALE: Vector2 = Vector2(6,6)
@@ -141,6 +140,7 @@ var noteScore: int = 350 ##Hit's Score.
 @export var showComboNum: bool = true##If false, the combo will not be showed.
 
 var _comboPreloads: Dictionary
+var _comboPixelsPreload: Dictionary
 
 ##Android System
 var touch_state
@@ -191,6 +191,7 @@ func precache_images():
 	if ClientPrefs.data.comboStacking: _precache_combo()
 
 func _precache_combo():
+	var range_nums = range(10)
 	for i in ComboStrings:
 		var comboTex: Texture2D = Paths.texture(i)
 		if !comboTex: continue
@@ -199,9 +200,9 @@ func _precache_combo():
 		#combo.size = comboTex.get_size()
 		combo.scale = COMBO_SCALE
 		_comboPreloads[i] = combo
-
-	for i in ComboNumbers:
-		var number_tex = Paths.texture('num'+i)
+	
+	for i in range_nums:
+		var number_tex = Paths.texture('num'+String.num_int64(i))
 		if !number_tex: continue
 		var number = Combo.new()
 		number.scale = COMBO_SCALE
@@ -217,19 +218,18 @@ func _precache_combo():
 		#combo_pixel.size = pixel_tex.get_size()
 		combo_pixel.scale = COMBO_PIXEL_SCALE
 		combo_pixel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		_comboPreloads[i+'_pixel'] = combo_pixel
+		_comboPixelsPreload[i] = combo_pixel
 		
 	#Pixel Numbers
-	for i in ComboNumbers:
-		var pixel_tex = Paths.texture('pixelUI/num'+i+'-pixel')
+	for i in range_nums:
+		var pixel_tex = Paths.texture('pixelUI/num'+str(i)+'-pixel')
 		if !pixel_tex: continue
 		
 		var number_pixel = Combo.new()
 		number_pixel.texture = pixel_tex
-		#number_pixel.size = pixel_tex.get_size()
 		number_pixel.scale = COMBO_PIXEL_SCALE
 		number_pixel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		_comboPreloads[i+'_pixel'] = number_pixel
+		_comboPixelsPreload[i] = number_pixel
 	
 #region Song Methods
 func loadSong(data: String = song_json_file, songDifficulty: String = difficulty):
@@ -715,34 +715,35 @@ func updateScore() -> void:
 	elif sicks: ratingFC = '(SFC)'
 	else: ratingFC = '(N/A)'
 
-func createCombo(rating: String) -> Combo: ##Create the Combo Image
-	if isPixelStage and not rating.ends_with('_pixel'): rating += '_pixel'
-	if !_comboPreloads.has(rating): return
-	
-	var comboSprite = _comboPreloads[rating].duplicate()
+func createCombo(rating: StringName) -> Combo: ##Create the Combo Image
+	var dict = _comboPixelsPreload if isPixelStage else _comboPreloads
+	var comboSprite = dict.get(rating)
+	if !comboSprite: return
+	comboSprite = comboSprite.duplicate()
 	uiGroup.add(comboSprite)
 	comboSprite.name = &'Combo'
 	comboSprite.position = ScreenUtils.screenSize/2.0 - Vector2(ClientPrefs.data.comboOffset[0],ClientPrefs.data.comboOffset[1])
 	return comboSprite
 
 func createNumbers(number: int = combo): ##Create the Numbers combo
-	var stringCombo = String.num_int64(number)
-	var stringLength = maxi(3,stringCombo.length())
-	while stringCombo.length() < stringLength: stringCombo = '0'+stringCombo
+	var digits: PackedInt32Array
+	var digit: int = 1
+	while digit < number:
+		digits.append(int(number / digit) % 10)
+		digit *= 10
 	
+	while digits.size() < 3: digits.append(0)
 	var index: int = 0
-	for i in stringCombo:
-		i = i+'_pixel' if isPixelStage else i
-		if not i in _comboPreloads: continue
+	var dict = _comboPixelsPreload if isPixelStage else _comboPreloads
+	for i in digits:
+		if !i in dict: continue
 		
 		var comboNumber = _comboPreloads[i].duplicate()
 		comboNumber.position = ScreenUtils.screenSize/2.0 - Vector2(
-			ClientPrefs.data.comboOffset[2] + 5.0 - 50.0*index,
+			ClientPrefs.data.comboOffset[2]+ 60.0*index,
 			ClientPrefs.data.comboOffset[3]
 		)
-		comboNumber.name = i
 		uiGroup.add(comboNumber)
-		
 		index += 1
 #endregion
 

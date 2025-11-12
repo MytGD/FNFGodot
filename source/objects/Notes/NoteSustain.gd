@@ -86,10 +86,9 @@ func updateSustain():
 	
 	image.region_rect.position.y = _y_atlas + fill_abs
 	image.region_rect.size.y = maxf(0.0,_height - fill_abs)
-	
+	if distance <= -absf(_height*2.5): kill(); _is_processing = false
 	real_distance = 0.0
 	
-	if distance <= -_height*1.45: kill(); _is_processing = false
 
 func _update_note_speed() -> void:
 	super._update_note_speed()

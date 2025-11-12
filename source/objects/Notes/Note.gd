@@ -183,7 +183,7 @@ func setNoteSpeed(_speed: float) -> void:
 	noteSpeed = _speed
 	_update_note_speed()
 
-func setNoteData(data: int): noteData = data; splashPrefix = directions[data]
+func setNoteData(data: int): super.setNoteData(data); splashPrefix = directions[data]
 func setEndSustain(is_end: bool) -> void: isEndSustain = is_end
 
 func setDistance(dist: float) -> void: distance = dist; _update_distance()
