@@ -1,62 +1,55 @@
-##A script to help with Event Notes.
-static var eventsFounded: PackedStringArray
 
-static func convert_events(events: Array) -> Array:
-	var new_events: Array = []
-	for event_data in events:
-		var events_array: Array = [event_data[0],[]]
-		for event in event_data[1]:
-			var event_name = event[0]
-			var vars = event[1]
-			var properties = get_event_variables(event_name)
-			
-			if !vars is Dictionary:
-				var keys = properties.keys()
-				vars = {keys[0]: vars}
-				if keys.size() > 1 and ArrayUtils.array_has_index(event,2): vars[keys[1]] = event[2]
-			
-			for i in properties:
-				var default_value = properties[i].default_value
-				if vars.has(i): vars[i] = convert_event_type(vars[i],properties[i].type,default_value)
-				else: vars[i] = default_value
-			
-			events_array[1].append([event_name,vars])
-		new_events.append(events_array)
+##A script to help with Event Notes.
+static func _get_events_data(events: Array) -> Array[Dictionary]:
+	var new_events: Array[Dictionary] = []
+	var event_base = _get_event_base()
+	for data in events:
+		if data is Array: new_events.append_array(_convert_event_to_new(data))
+		else:
+			var event_variables = get_event_variables(data.e)
+			data.merge(event_base,false); 
+			for i in event_variables: if !data.v.has(i): data.v[i] = event_variables[i].default_value
+			new_events.append(data)
 	return new_events
 
-static func convert_event_type(value: Variant, type: Variant.Type, default_value: Variant = null):
+static func _convert_event_to_new(data: Array) -> Array[Dictionary]:
+	var new_events: Array[Dictionary]
+	for i in data[1]: 
+		var event = _get_event_base()
+		var event_name: StringName = i[0]
+		var variables = get_event_variables(event_name)
+		var vars_keys = variables.keys()
+		
+		event.t = data[0]
+		event.e = event_name
+		
+		var first_val = vars_keys[0]
+		for v in variables: event.v[v] = variables[v].default_value
+		
+		
+		event.v[first_val] = _convert_event_value_type(i[1],variables[first_val].type,event.v[first_val])
+		if i.size() > 2: 
+			var second_val = vars_keys[1]
+			event.v[second_val] = _convert_event_value_type(i[2],variables[second_val].type,event.v[second_val])
+		new_events.append(event)
+	return new_events
+
+static func _convert_event_value_type(value: Variant, type: Variant.Type, default_value: Variant = null):
 	if value == null: return MathUtils.get_new_value(type)
 	var value_type = typeof(value)
 	match type:
 		TYPE_NIL: return value
-		TYPE_FLOAT,TYPE_INT:
-			if value_type == TYPE_STRING and !value and default_value: return default_value
+		TYPE_FLOAT,TYPE_INT: if value_type == TYPE_STRING and !value and default_value: return default_value
 	return type_convert(value,type)
-	
+
 static func loadEvents(chart: Array = []) -> Array[Dictionary]:
-	eventsFounded.clear()
-	var events: Array[Dictionary] = []
-	var event_data = convert_events(chart)
-	for i in event_data:
-		for data in i[1]:
-			var event = data[0]
-			events.append(
-				{
-					&'strumTime': i[0],
-					&'event': event,
-					&'variables': data[1]
-				}
-			)
-			if not event in eventsFounded: eventsFounded.append(event)
-			
-	events.sort_custom(func(a,b):
-		return a.strumTime < b.strumTime
-	)
+	var events = _get_events_data(chart)
+	events.sort_custom(func(a,b):return a.t < b.t)
 	return events
 
 #region Chart Methods
-static var event_variables: Dictionary = {}
-static var easing_types: PackedStringArray = []
+static var event_variables: Dictionary
+static var easing_types: PackedStringArray
 
 const default_variables = {
 	&'value1': {
@@ -69,23 +62,33 @@ const default_variables = {
 	}
 }
 
+
+static func _get_event_base() -> Dictionary[StringName,Variant]:
+	return {
+		&'t': 0.0, #Time
+		&'v': {}, #Variables
+		&'e': &'', #Event
+		&'trigger_when_opponent': true,
+		&'trigger_when_player': true
+	}
 static func _get_transitions():
-	var trans: PackedStringArray = []
+	var trans: PackedStringArray
 	for i in TweenService.transitions:
 		i = StringUtils.first_letter_upper(i)
 		trans.append("#"+i)
 		if i == &'': trans.append("Linear"); continue
 		for e in TweenService.easings: trans.append(i+e)
 	return trans
+
 ##Return the variables of the a custom_event using "@vars" in his text.[br]
 ##The function returns a [Dictionary] that contains an [Array] with its type and its default value.[br][br]
 ##[b]Example:[/b] [code]{"value1": [TYPE_STRING,''], "value2": [TYPE_FLOAT,0.0]}[/code]
-static func get_event_variables(event_name: String) -> Dictionary:
+static func get_event_variables(event_name: StringName) -> Dictionary:
 	if event_name in event_variables: return event_variables[event_name]
 	var event_data = Paths.loadJson('custom_events/'+event_name+'.json')
-	if !event_data or !event_data.has('variables'): return default_variables
+	if !event_data or !event_data.has(&'variables'): return default_variables
 	
-	var variables: Dictionary = {}
+	var variables: Dictionary
 	for i in event_data.variables: variables[i] = _get_value_data(event_data.variables[i])
 	event_variables[event_name] = variables
 	return variables

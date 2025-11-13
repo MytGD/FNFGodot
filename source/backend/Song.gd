@@ -1,6 +1,7 @@
 extends Object
 ##A Chart Song Class.
 
+const EventNoteUtils = preload("uid://dqymf0mowy0dt")
 ##Contains the location of the json files.[br]
 ##[code]{"song name": 
 ##{"difficulty": {"folder": "folder_name","json": "json name", "audio_suffix": "suffix tag"}}
@@ -99,7 +100,7 @@ static func fixChart(json: Dictionary):
 	return json
 
 static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, difficulty: String = '') -> Dictionary:
-	var oldJson = getChartBase()
+	var newJson = getChartBase()
 	var json_bpm = 0.0
 	var bpms = []
 	
@@ -122,24 +123,24 @@ static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, di
 	
 	var playData = songData.get('playData',{})
 	if playData.has('characters'): characters.merge(playData.get('characters',{}),true)
-	oldJson.stage = playData.get('stage','mainStage')
+	newJson.stage = playData.get('stage','mainStage')
 	
-	oldJson.player1 = characters.player
-	oldJson.gfVersion = characters.girlfriend
-	oldJson.player2 = characters.opponent
-	oldJson.songSuffix = characters.get('instrumental','')
+	newJson.player1 = characters.player
+	newJson.gfVersion = characters.girlfriend
+	newJson.player2 = characters.opponent
+	newJson.songSuffix = characters.get('instrumental','')
 	
 	var vocal = characters.get('playerVocals')
-	if vocal: oldJson.playerVocals = vocal[0]
+	if vocal: newJson.playerVocals = vocal[0]
 	
 	vocal = characters.get('opponentVocals')
-	if vocal: oldJson.opponentVocals = vocal[0]
+	if vocal: newJson.opponentVocals = vocal[0]
 	
-	oldJson.opponentVoice = characters.get('opponentVocals',oldJson.player1)
-	oldJson.speed = chart.get('scrollSpeed',{}).get(difficulty.to_lower(),2.0)
+	newJson.opponentVoice = characters.get('opponentVocals',newJson.player1)
+	newJson.speed = chart.get('scrollSpeed',{}).get(difficulty.to_lower(),2.0)
 	
-	oldJson.song = songData.get('songName','')
-	oldJson.bpm = json_bpm
+	newJson.song = songData.get('songName','')
+	newJson.bpm = json_bpm
 	
 	for notes in chart.notes.get(difficulty.to_lower(),[]):
 		var strumTime = notes.get('t',0)
@@ -155,41 +156,22 @@ static func _convert_new_to_old(chart: Dictionary, songData: Dictionary = {}, di
 			bpmIndex += 1
 		
 		#Create Sections
-		while section >= oldJson.notes.size():
+		while section >= newJson.notes.size():
 			var new_section = getSectionBase()
 			new_section.mustHitSection = true
 			new_section.sectionTime = curSectionTime
 			
 			curSectionTime += sectionStep
-			oldJson.notes.append(new_section)
+			newJson.notes.append(new_section)
 		
-		var last_section = oldJson.notes[section]
+		var last_section = newJson.notes[section]
 		var note_data = [strumTime,notes.get('d',0),notes.get('l',0.0)]
-		if notes.has('k'):
-			note_data.append(notes.k)
+		if notes.has('k'): note_data.append(notes.k)
 		last_section.sectionNotes.append(note_data)
-		
-	if chart.get('events'):
-		for events in chart.events:
-			var length = oldJson.events.size()-2
-			
-			#Detect if the event time is the same
-			if length >= oldJson.events.size() and oldJson.events[length][0] == events.get('t',0):
-				oldJson.events[length][1].append([events.get('e'),events.get('v')])
-				continue
-			
-			oldJson.events.append([
-				events.t,
-				[
-					[
-						events.get('e',''),
-						events.get('v',{})
-					]
-				]
-			])
-
-	return oldJson
 	
+	if chart.get(&'events'): newJson.events = EventNoteUtils.loadEvents(chart.events)
+	return newJson
+
 static func sort_song_notes(song_notes: Array) -> void:
 	for i in song_notes:
 		if !i.sectionNotes: continue
@@ -224,7 +206,6 @@ static func getChartBase(bpm: float = 0) -> Dictionary: ##Returns a base [Dictio
 		'needsVoices': true,
 		'keyCount': 4,
 	}
-
 
 static func _clear():
 	songs_dir.clear()

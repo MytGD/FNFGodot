@@ -7,7 +7,7 @@ const ModulateAlpha = NodePath('modulate:a') #Used in doTweenAlpha
 const Song = preload("uid://cerxbopol4l1g")
 const Bar = preload("uid://cesg7bsxvgdcm")
 
-const EventNote = preload("uid://dqymf0mowy0dt")
+const EventNoteUtils = preload("uid://dqymf0mowy0dt")
 const Note = preload("uid://deen57blmmd13")
 const NoteHit = preload("uid://dx85xmyb5icvh")
 const StrumNote = preload("uid://coipwnceltckt")
@@ -1621,7 +1621,7 @@ func close() -> void: removeScript(self)
 static func triggerEvent(event: StringName,variables: Variant = '', value2: Variant = ''):
 	if !variables is StringName: game.triggerEvent(event,variables)
 	
-	var default: Dictionary = EventNote.get_event_variables(event)
+	var default: Dictionary = EventNoteUtils.get_event_variables(event)
 	var event_keys = default.keys()
 	var parameters: Dictionary = {}
 	
@@ -1629,13 +1629,13 @@ static func triggerEvent(event: StringName,variables: Variant = '', value2: Vari
 	
 	if variables:
 		var first_key = event_keys[0]
-		parameters[first_key] = EventNote.convert_event_type(
+		parameters[first_key] = EventNoteUtils._convert_event_value_type(
 				variables,
 				default[first_key].type
 			)
 	
 	if value2 and event_keys.size() > 1:
-		parameters[event_keys[1]] = EventNote.convert_event_type(
+		parameters[event_keys[1]] = EventNoteUtils._convert_event_value_type(
 			value2,
 			default[event_keys[1]].type
 		)

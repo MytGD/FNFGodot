@@ -17,7 +17,7 @@ const Note_Chart = preload("res://source/states/Editors/ChartEditor/NoteChart.gd
 
 const StrumNote = preload("res://source/objects/Notes/StrumNote.gd")
 
-const EventNote = preload("res://source/objects/Notes/EventNote.gd")
+const EventNoteUtils = preload("res://source/objects/Notes/EventNoteUtils.gd")
 const EventChart = preload("res://source/states/Editors/ChartEditor/Event.gd")
 
 const Waveform = preload("res://source/states/Editors/ChartEditor/Waveform.gd")
@@ -981,7 +981,7 @@ func eraseEvents(remove_from_json: bool = true):
 
 	_events_created.clear()
 func createEventVariables(event_name: String, variables: Dictionary = {}):
-	var default_values = EventNote.get_event_variables(event_name)
+	var default_values = EventNoteUtils.get_event_variables(event_name)
 	var pos = Vector2(0,0)
 	for i in event_variable_container.get_children():
 		event_variable_container.remove_child(i)
@@ -1108,7 +1108,7 @@ func setEvent(event_name: String):
 	if event_selected and event_selected.event_selected_name != event_name: event_selected.replaceEvent(event_name)
 	if event_name == events_menu.text: return
 	events_menu.text = event_name
-	event_description.text = EventNote.get_event_description(event_name)
+	event_description.text = EventNoteUtils.get_event_description(event_name)
 	createEventVariables(event_name)
 	
 func selectEvent(event: EventChart = event_selected) -> void:

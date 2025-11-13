@@ -6,7 +6,7 @@ const Song = preload("res://source/backend/Song.gd")
 const NoteStyleData = preload("uid://by78myum2dx8h")
 const NoteSplash = preload("uid://cct1klvoc2ebg")
 const Note = preload("uid://deen57blmmd13")
-const EventNote = preload("uid://dqymf0mowy0dt")
+const EventNoteUtils = preload("uid://dqymf0mowy0dt")
 const NoteSustain = preload("uid://bhagylovx7ods")
 
 const NoteHit = preload("uid://dx85xmyb5icvh")

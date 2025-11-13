@@ -1197,14 +1197,26 @@ size = Vector2i(1280, 720)
 
 [node name="PlayState" type="Node" parent="SubViewport"]
 script = ExtResource("2_2kx6s")
+singAnimations = null
+bumpStrumBeat = null
 canExitSong = false
+canPause = null
 createPauseMenu = false
 canGameOver = false
 loadScripts = false
+loadStageScript = null
 loadSongScript = false
+loadEvents = null
+generateEvents = null
 countDownEnabled = false
+countSounds = null
+countDownImages = null
 song_folder = "test"
 song_json_file = "test"
+difficulty = null
+arrowStyle = null
+splashStyle = null
+splashHoldStyle = null
 botplay = false
 showCombo = false
 showRating = false

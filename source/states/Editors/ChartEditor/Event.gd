@@ -1,5 +1,5 @@
 extends Sprite2D
-const EventNote = preload("res://source/objects/Notes/EventNote.gd")
+const EventNoteUtils = preload("res://source/objects/Notes/EventNoteUtils.gd")
 
 var events: Array = []
 
@@ -52,7 +52,7 @@ func selectEvent(index: int = event_index):
 	event_selected = ArrayUtils.get_array_index(events,index,['',{}])
 
 func addEvent(event_name: String = '', variables: Dictionary = {},at: int = -1) -> Array:
-	var event_default_vars = EventNote.get_event_variables(event_name)
+	var event_default_vars = EventNoteUtils.get_event_variables(event_name)
 	var event_vars = {}
 	var event_data = [event_name,event_vars]
 	

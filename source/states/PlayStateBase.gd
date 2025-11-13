@@ -340,7 +340,7 @@ func loadNotes():
 	if events_json:
 		if events_json.get('song') is Dictionary: events_json = events_json.song
 		events_to_load.append_array(events_json.get('events',[]))
-	eventNotes = EventNote.loadEvents(events_to_load)
+	eventNotes = EventNoteUtils.loadEvents(events_to_load)
 	_is_first_event_load = true
 	
 func reloadNote(note: Note):
@@ -369,9 +369,11 @@ func updateNotes() -> void: #Function from StrumState
 	if !generateEvents: return
 	while eventIndex < eventNotes.size():
 		var event = eventNotes[eventIndex]
-		if event.strumTime > _songPos: break
-		triggerEvent(event.event,event.variables)
+		if event.t > _songPos: break
 		eventIndex += 1
+		if event.trigger_when_opponent and playAsOpponent or event.trigger_when_player and !playAsOpponent: 
+			triggerEvent(event.e,event.v)
+		
 
 func preHitNote(note: Note, character: Variant = null):
 	if !note: return
@@ -472,16 +474,16 @@ func loadSongObjects() -> void:
 		DiscordRPC.refresh()
 	
 func loadEventsScripts():
-	for i in EventNote.eventsFounded: FunkinGD.addScript('custom_events/'+i+'.gd')
-	for i in Paths.getFilesAtAbsolute(Paths.exePath+'/assets/custom_events',false,['gd'],true):
-		FunkinGD.addScript('custom_events/'+i)
-	
+	for i in Paths.getFilesAtAbsolute(Paths.exePath+'/assets/custom_events',false,['gd'],true): FunkinGD.addScript('custom_events/'+i)
 	for event in eventNotes: 
-		FunkinGD.callOnScripts(&'onLoadEvent',[event.event,event.variables,event.strumTime])
-		FunkinGD.callScript('custom_events/'+event.event,&'onLoadThisEvent',[event.variables,event.strumTime])
+		var event_path ='custom_events/'+event.e
+		FunkinGD.addScript(event_path)
+		
+		FunkinGD.callOnScripts(&'onLoadEvent',[event.e,event.v,event.t])
+		FunkinGD.callScript(event_path,&'onLoadThisEvent',[event.v,event.t])
 		if _is_first_event_load:
-			FunkinGD.callOnScripts(&'onInitEvent',[event.event,event.variables,event.strumTime])
-			FunkinGD.callScript('custom_events/'+event.event,&'onInitLocalEvent',[event.variables,event.strumTime])
+			FunkinGD.callOnScripts(&'onInitEvent',[event.e,event.v,event.t])
+			FunkinGD.callScript(event_path,&'onInitLocalEvent',[event.v,event.t])
 	
 func startSong():
 	super.startSong()
@@ -740,8 +742,7 @@ func clear() -> void:
 	
 	_is_first_event_load = true
 	eventNotes.clear()
-	EventNote.eventsFounded.clear()
-	EventNote.event_variables.clear()
+	EventNoteUtils.event_variables.clear()
 	
 	camHUD.removeFilters(); camOther.removeFilters()
 #endregion
