@@ -124,7 +124,7 @@ func _exit_tree() -> void: if strumNote: strumNote.mult_speed_changed.disconnect
 func _init(data: int = 0) -> void:
 	noteData = data
 	_update_note_speed()
-	super._init(true)
+	super._init()
 
 func updateNote() -> void:
 	distance = (strumTime - Conductor.songPositionDelayed)

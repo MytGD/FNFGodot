@@ -31,3 +31,10 @@ static func convertKeysToStringNames(dict: Dictionary, recursive: bool = false) 
 			key = StringName(key)
 			dict.erase(i)
 			dict[key] = val
+
+static func getDictsTyped(dict: Dictionary, key_type: Variant.Type = TYPE_NIL, value_type: Variant.Type = TYPE_NIL) -> Dictionary:
+	return Dictionary(
+		dict,
+		key_type,&'',null,
+		value_type,&'',null
+	)

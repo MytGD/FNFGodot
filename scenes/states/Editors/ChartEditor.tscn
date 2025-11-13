@@ -43,7 +43,7 @@ offset_left = 737.0
 offset_top = 257.0
 offset_right = 1279.0
 offset_bottom = 721.0
-current_tab = 2
+current_tab = 1
 clip_tabs = false
 tab_focus_mode = 0
 
@@ -207,7 +207,6 @@ focus_mode = 0
 text = "Flip Opponent Notes"
 
 [node name="Note" type="Panel" parent="TabContainer"]
-visible = false
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
 metadata/_tab_index = 1
@@ -276,7 +275,20 @@ offset_right = 213.0
 offset_bottom = 216.0
 focus_mode = 0
 
+[node name="DynamicFileMenuButton" type="MenuButton" parent="TabContainer/Note"]
+layout_mode = 0
+offset_left = 113.0
+offset_top = 264.0
+offset_right = 206.0
+offset_bottom = 292.0
+text = "funkin"
+flat = false
+script = ExtResource("3_nkmqi")
+dir_to_look = "data/notestyles"
+metadata/_custom_type_script = "uid://cvvli26q7wviq"
+
 [node name="Event" type="Panel" parent="TabContainer"]
+visible = false
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
 metadata/_tab_index = 2
@@ -724,6 +736,8 @@ offset_bottom = 87.0
 text = "X : Zoom In
 
 Z : Zoom Out"
+
+[node name="PopupMenu" type="PopupMenu" parent="."]
 
 [connection signal="toggled" from="TabContainer/Section/HitSection" to="." method="_on_hit_section_toggled"]
 [connection signal="button_down" from="TabContainer/Section/Erase Section" to="." method="eraseSection"]

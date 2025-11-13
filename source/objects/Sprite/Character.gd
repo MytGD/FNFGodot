@@ -5,7 +5,7 @@ extends FunkinSprite
 const NoteHit = preload("uid://dx85xmyb5icvh")
 const Song = preload("uid://cerxbopol4l1g")
 
-@export var curCharacter: StringName = '': set = loadCharacter ##The name of the character json.
+@export var curCharacter: StringName: set = loadCharacter ##The name of the character json.
 
 ##how many beats should pass before the character dances again.[br][br]For example: 
 ##If it's [code]2[/code], 
@@ -27,7 +27,7 @@ var _real_hold_limit: float = singDuration
 var holdTimer: float ##The time the character is in singing animation.
 var heyTimer: float ##The time the character is in the "Hey" animation.
 #endregion
-var _images: Dictionary[StringName,Texture2D] = {}
+var _images: Dictionary[StringName,Texture2D]
 
 
 #region Animation Variables
@@ -47,35 +47,37 @@ var hasMissAnimations: bool ##If the character have any miss animation, used to 
 ##character.idleSuffix = '-alt2'
 ##character.dance() #Will play "idle-alt2"
 ##[/codeblock]
-var idleSuffix: String = ''
+var idleSuffix: String
 
 var _flipped_sing_anims: bool
 #endregion
 
 #region Data Variables
-var healthIcon: String = '' ##The Character Icon
+var healthIcon: String ##The Character Icon
 var healthBarColors: Color = Color.WHITE ##The color of the character bar.
 
 var isPlayer: bool: set = set_is_player ##If is a player character.
 var isGF: bool ##If this is a "[u]GF[/u]" character.
 
-var positionArray: Vector2 = Vector2.ZERO ##The character position offset.
-var cameraPosition: Vector2 = Vector2.ZERO ##The camera position offset.
+var positionArray: Vector2 ##The character position offset.
+var cameraPosition: Vector2 ##The camera position offset.
 
 var json: Dictionary = getCharacterBaseData() ##The character json. See also [method loadCharacter]
 var jsonScale: float = 1. ##The Character Scale from his json.
 #endregion
 
-var origin_offset: Vector2 = Vector2.ZERO
+var origin_offset: Vector2
 signal on_load_character(new_character: StringName, old_character: StringName)
 
-func _init(character:String = '', player: bool = false):
-	name = 'Character'
+func _init(character: String = &'', player: bool = false):
+	
 	autoDance = not isPlayer
 	super._init(true)
 	
 	animation.auto_loop = true
-	if character: loadCharacter(character)
+	if character: 
+		name = character
+		loadCharacter(character)
 	
 	isPlayer = player
 	animation.animation_finished.connect(
@@ -87,8 +89,7 @@ func _ready() -> void: Conductor.bpm_changes.connect(updateBPM)
 
 func _enter_tree() -> void: updateBPM()
 
-const dance_anim: PackedStringArray = ['danceLeft','danceRight']
-
+const dance_anim: Array = [&'danceLeft',&'danceRight']
 func updateBPM(): ##Update the character frequency.
 	holdLimit = (Conductor.stepCrochet * (0.0011 / Conductor.music_pitch))
 	for dances in dance_anim:
@@ -98,16 +99,16 @@ func updateBPM(): ##Update the character frequency.
 		animData.speed_scale = clamp(anim_length/(Conductor.crochet/700.0),1.0,3.0)
 
 #region Character Data
-##Load Character. Returns a [Dictionary] with the json found data.
-func loadCharacter(char_name: StringName) -> Dictionary:
+
+func loadCharacter(char_name: StringName) -> Dictionary: ##Load Character. Returns a [Dictionary] with the json found data.
 	if char_name and char_name == curCharacter: return json
-	var new_json = Paths.character(char_name); 
-	if not new_json: char_name = 'bf'; new_json = Paths.character('bf')
+	var new_json: Dictionary = Paths.character(char_name); 
+	if not new_json: char_name = &'bf'; new_json = Paths.character('bf')
 	
 	if !new_json:
 		_clear()
 		on_load_character.emit(char_name,curCharacter)
-		curCharacter = ''
+		curCharacter = &''
 		return new_json
 	
 	loadCharacterFromJson(new_json)
@@ -116,7 +117,7 @@ func loadCharacter(char_name: StringName) -> Dictionary:
 	name = char_name
 	return json
 
-func loadCharacterFromJson(new_json: Dictionary):
+func loadCharacterFromJson(new_json: Dictionary[StringName,Variant]):
 	_clear()
 	json.merge(new_json,true)
 	
@@ -138,16 +139,16 @@ func loadData():
 	healthIcon = json.healthIcon.id
 	imageFile = json.assetPath
 	antialiasing = !json.isPixel
-	positionArray = VectorUtils.array_to_vec(json.get('offsets',[0,0]))
-	cameraPosition = VectorUtils.array_to_vec(json.get('camera_position',[0,0]))
-	jsonScale = json.get('scale',1.0)
-	offset_follow_flip = json.get('offset_follow_flip',true)
-	offset_follow_scale = json.get('offset_follow_scale',true)
-	origin_offset = VectorUtils.array_to_vec(json.get('origin_offset',[0,0]))
+	positionArray = VectorUtils.array_to_vec(json.offsets)
+	cameraPosition = VectorUtils.array_to_vec(json.camera_position)
+	jsonScale = json.scale
+	offset_follow_flip = json.offset_follow_flip
+	offset_follow_scale = json.offset_follow_scale
+	origin_offset = VectorUtils.array_to_vec(json.origin_offset)
 
 	scale = Vector2(jsonScale,jsonScale)
-	danceAfterHold = json.get('danceAfterHold',true)
-	danceOnAnimEnd = json.get('danceOnAnimEnd',false)
+	danceAfterHold = json.danceAfterHold
+	danceOnAnimEnd = json.danceOnAnimEnd
 
 func getCameraPosition() -> Vector2: 
 	var cam_offset = cameraPosition
@@ -175,12 +176,12 @@ func reloadAnims():
 	animation.animations_use_textures = false
 	
 	for anims in json.animations:
-		var animName: String = anims.name
+		var animName: StringName = anims.name
 		if _flipped_sing_anims:
 			if animName.begins_with('singLEFT'): animName = 'singRIGHT'+animName.right(-8)
 			elif animName.begins_with('singRIGHT'): animName = 'singLEFT'+animName.right(-9)
 		
-		if !has_dance_anim: has_dance_anim = (animName == 'danceLeft' or animName == 'danceRight')
+		if !has_dance_anim: has_dance_anim = (animName == &'danceLeft' or animName == &'danceRight')
 		
 		if !hasMissAnimations: hasMissAnimations = animName.ends_with('miss')
 		
@@ -188,11 +189,11 @@ func reloadAnims():
 		addCharacterAnimation(
 			animName,
 			{
-				'prefix': anims.prefix,
-				'fps': anims.get('fps',24.0),
-				'looped': anims.get('looped',false),
-				'indices': anims.get('frameIndices',[]),
-				'asset': anims.get('assetPath',json.assetPath)
+				&'prefix': anims.prefix,
+				&'fps': anims.get('fps',24.0),
+				&'looped': anims.get('looped',false),
+				&'indices': anims.get('frameIndices',[]),
+				&'asset': anims.get('assetPath',json.assetPath)
 			}
 		)
 		addAnimOffset(animName,anims.offsets)
@@ -212,19 +213,19 @@ func flip_sing_animations() -> void:
 	_flipped_sing_anims = !_flipped_sing_anims
 	animation.update_anim()
 
-func addCharacterAnimation(animName: StringName,anim_data: Dictionary):
-	var tex = anim_data.get('asset','')
+func addCharacterAnimation(animName: StringName,anim_data: Dictionary[StringName,Variant]):
+	var tex = anim_data.get(&'asset',&'')
 	if tex is String: tex = addCharacterImage(tex); anim_data.asset = tex
 	
 	if tex: _add_animation_from_data(animName,anim_data,tex)
 	else: for i in _images.values(): if _add_animation_from_data(animName,anim_data,i): break
 	return anim_data
 
-func _add_animation_from_data(animName: String,animData: Dictionary, asset: Texture) -> Dictionary:
-	var prefix = animData.get('prefix')
+func _add_animation_from_data(animName: String,animData: Dictionary[StringName,Variant], asset: Texture) -> Dictionary:
+	var prefix = animData.get(&'prefix')
 	if !prefix: return {}
 	
-	var indices = animData.get('indices')
+	var indices = animData.get(&'indices')
 	var asset_file = AnimationService.findAnimFile(asset.resource_name)
 	var anim_frames: Array = animation.getFramesFromPrefix(animData.prefix,indices,asset_file)
 	
@@ -289,34 +290,36 @@ func _clear() -> void:
 	json.assign(getCharacterBaseData())
 
 #region Static Methods
-static func _convert_psych_to_original(json: Dictionary):
-	var new_json = getCharacterBaseData()
+static func _convert_psych_to_original(json: Dictionary) -> Dictionary[StringName,Variant]:
+	var new_json: Dictionary[StringName,Variant] = getCharacterBaseData()
 	
-	var anims = json.get('animations')
-	json.erase('animations')
+	var anims: Array = json.get(&'animations')
+	json.erase(&'animations')
 	for i in anims:
 		var anim = getAnimBaseData()
 		
+		DictionaryUtils.convertKeysToStringNames(i)
 		DictionaryUtils.merge_existing(anim,i)
-		if i.has('indices'): anim.frameIndices = i.indices
-		if i.has('loop'): anim.looped = i.loop
-		if i.has('anim'):  anim.name = i.anim; if i.has('name'): anim.prefix = i.name
+		if i.has(&'indices'): anim.frameIndices = i.indices
+		if i.has(&'loop'): anim.looped = i.loop
+		if i.has(&'anim'):  anim.name = i.anim; if i.has(&'name'): anim.prefix = i.name
 		
-		anim.offsets = PackedFloat32Array(i.get('offsets',[0,0]))
-		anim.fps = i.get('fps',24.0)
-		
+		anim.offsets = PackedFloat32Array(i.get(&'offsets',[0,0]))
+		anim.fps = i.get(&'fps',24.0)
 		new_json.animations.append(anim)
 	
-	new_json.offsets = json.get('position',[0,0])
-	new_json.flipX = json.get('flip_x',false)
-	new_json.healthbar_colors = json.get("healthbar_colors",[255,255,255])
-	new_json.assetPath = json.get('image','')
-	new_json.singTime = json.get('sing_duration',4.0)*2.0
-	new_json.isPixel = json.get('no_antialiasing',false)
-	new_json.healthIcon.id = json.get('healthicon','icon-face')
-	new_json.healthIcon.isPixel = new_json.healthIcon.id.ends_with('-pixel')
-	new_json.camera_position = json.get('camera_position',[0,0])
-	new_json.scale = json.get('scale',1.0)
+	new_json.offsets = json.get(&'position',[0,0])
+	new_json.flipX = json.get(&'flip_x',false)
+	new_json.healthbar_colors = json.get(&"healthbar_colors",PackedByteArray([255,255,255]))
+	new_json.assetPath = json.get(&'image','')
+	new_json.singTime = json.get(&'sing_duration',4.0)*2.0
+	new_json.isPixel = json.get(&'no_antialiasing',false)
+	
+	var icon = json.get(&'healthicon',&'icon-face')
+	new_json.healthIcon.id = StringName(icon)
+	new_json.healthIcon.isPixel = icon.ends_with('-pixel')
+	new_json.camera_position = json.get(&'camera_position',[0,0])
+	new_json.scale = json.get(&'scale',1.0)
 	
 	DictionaryUtils.merge_existing(new_json,json)
 	return new_json
@@ -327,28 +330,28 @@ func _property_get_revert(property: StringName) -> Variant: #Used in ModchartEdi
 		'scale': return Vector2(jsonScale,jsonScale)
 	return super._property_get_revert(property)
 	
-static func getCharacterBaseData() -> Dictionary: ##Returns a base to character data.
+static func getCharacterBaseData() -> Dictionary[StringName,Variant]: ##Returns a base to character data.
 	return {
-		"animations": [],
-		"isPixel": false,
-		"offsets": [0,0],
-		"camera_position": [0,0],
-		"assetPath": "",
-		"healthbar_colors": [255,255,255],
-		"healthIcon": {
-			"id": "icon-face",
-			"isPixel": false,
-			'canScale': false
+		&"animations": [],
+		&"isPixel": false,
+		&"offsets": [0,0],
+		&"camera_position": [0,0],
+		&"assetPath": "",
+		&"healthbar_colors": [255,255,255],
+		&"healthIcon": {
+			&"id": "icon-face",
+			&"isPixel": false,
+			&'canScale': false
 		},
-		"flipX": false,
-		"singTime": 4.0,
-		"scale": 1,
-		"origin_offset": [0,0],
-		"offset_follow_flip": false,
-		'offset_follow_scale': false,
-		'sing_follow_flip': false,
-		'danceAfterHold': true,
-		'danceOnAnimEnd': false,
+		&"flipX": false,
+		&"singTime": 4.0,
+		&"scale": 1,
+		&"origin_offset": [0,0],
+		&"offset_follow_flip": false,
+		&'offset_follow_scale': false,
+		&'sing_follow_flip': false,
+		&'danceAfterHold': true,
+		&'danceOnAnimEnd': false,
 	}
 
 static func getCharactersList(return_jsons: bool = false) -> Variant:
@@ -358,15 +361,15 @@ static func getCharactersList(return_jsons: bool = false) -> Variant:
 		directory[i.get_file().left(-5)] = Paths.loadJson(i)
 	return directory
 	
-static func getAnimBaseData(): ##Returns a base for the character animation data.
+static func getAnimBaseData() -> Dictionary[StringName,Variant]: ##Returns a base for the character animation data.
 	return {
-		'name': '',
-		'prefix': '',
-		'fps': 24,
-		'loop_frame': 0,
-		'looped': false,
-		'frameIndices': [],
-		'offsets': [0,0],
-		'assetPath': ''
+		&'name': &'',
+		&'prefix': &'',
+		&'fps': 24,
+		&'loop_frame': 0,
+		&'looped': false,
+		&'frameIndices': PackedFloat32Array(),
+		&'offsets': [0,0],
+		&'assetPath': ''
 	}
 #endregion

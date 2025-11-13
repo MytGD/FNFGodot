@@ -1,5 +1,5 @@
 @tool
-extends Label
+class_name FoldableContent extends Label
 
 @export var edit_text: String: set = set_edit_text 
 @onready var line_edit: LineEdit = $LineEdit

@@ -4,8 +4,8 @@ const AnimationService = preload("res://source/general/animation/AnimationServic
 const game_name: String = "Friday Night Funkin'"
 
 #region Device
-static var curDevice: String = OS.get_name()
-static var is_on_mobile: bool = curDevice == 'Android' or curDevice == 'iOs'
+static var curDevice: StringName = OS.get_name()
+static var is_on_mobile: bool = curDevice == &'Android' or curDevice == &'iOs'
 static var is_system_case_sensitive: bool = curDevice in ['macOS','Linux',"FreeBSD", "NetBSD", "OpenBSD", "BSD"]
 #endregion
 
@@ -539,10 +539,10 @@ static func _detect_mods() -> void:
 	for mods in DirAccess.get_directories_at(exePath+'/mods'):
 		if commomFolders.has(mods): continue
 		var modpack = {
-			"runsGlobally": false,
-			"name": mods,
-			"restart": false,
-			"description": "nothing"
+			&"runsGlobally": false,
+			&"name": mods,
+			&"restart": false,
+			&"description": "nothing"
 		}
 		
 		#Check if the mod have "pack.json" data
@@ -574,18 +574,14 @@ static func getRunningMods(location: bool = false) -> PackedStringArray:
 	else: for mod in modsFounded: if isModRunning(mod): mods.append(mod)
 	return mods
 
-static func isModRunning(mod_name: String) -> bool:
-	return mod_name == curMod \
-			or mods_enabled.get(mod_name,false)\
-			and modsFounded[mod_name].runsGlobally
+static func isModRunning(mod_name: String) -> bool: 
+	return mod_name == curMod or mods_enabled.get(mod_name,false) and modsFounded[mod_name].runsGlobally
 
 static func isModEnabled(mod_name) -> bool: return mod_name == curMod or mods_enabled.get(mod_name,false)
 
 static func getModsEnabled(location: bool = false) -> PackedStringArray:
 	var mods: PackedStringArray = []
-	for mod in modsFounded:
-		if isModEnabled(mod):
-			mods.append(mod if not location else exePath+'/mods/'+mod+'/')
+	for mod in modsFounded: if isModEnabled(mod): mods.append(mod if not location else exePath+'/mods/'+mod+'/')
 	return mods
 #endregion
 
@@ -593,16 +589,15 @@ static func getModsEnabled(location: bool = false) -> PackedStringArray:
 ##Returns the json file from [param path].[br]
 ##Obs: If [param duplicate], this will returns a duplicated json, 
 ##making it possible to modify without damaging the original json
-static func loadJson(path: String,) -> Dictionary:
+static func loadJson(path: String) -> Dictionary:
 	if not path.ends_with('.json'): path += '.json'
 	var json = jsonsLoaded.get(path)
-	if json == null: json = loadJsonNoCache(path); jsonsLoaded[path] = json
+	if !json: json = loadJsonNoCache(path); jsonsLoaded[path] = json
 	return json
 
 static func loadJsonNoCache(path: String) -> Dictionary:
 	var absolute_path = detectFileFolder(path)
-	if not absolute_path: return {}
-	return _load_json_absolute(absolute_path)
+	return _load_json_absolute(absolute_path) if absolute_path else {}
 
 static func _load_json_absolute(absolute_path: String) -> Dictionary:
 	var json = JSON.parse_string(FileAccess.get_file_as_string(absolute_path))
@@ -610,19 +605,10 @@ static func _load_json_absolute(absolute_path: String) -> Dictionary:
 #endregion
 
 #region Data Methods
-static func character(path: String) -> Dictionary:
+static func character(path: String) -> Dictionary[StringName,Variant]:
 	var file = characterPath(path)
 	if !file: return {}
 	
-	var json = loadJsonNoCache(file)
-	var needs_to_convert = json.has('image')
-	if needs_to_convert: json.merge(Character._convert_psych_to_original(json),true)
-	else: json.merge(Character.getCharacterBaseData(),false)
+	var json = DictionaryUtils.getDictsTyped(loadJsonNoCache(file),TYPE_STRING_NAME)
+	json.merge(Character._convert_psych_to_original(json),true)
 	return json
-
-static func _get_prefix_style_data(data: Dictionary, prefix: String):
-	pass
-static func noteStyle(style: String, type: String, prefix: String) -> Dictionary:
-	var data = Paths.loadJson('data/notestyles/'+style+'.json')
-	return data
-	

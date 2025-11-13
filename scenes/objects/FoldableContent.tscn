@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://cwhbhlul33kud"]
+
+[ext_resource type="Script" uid="uid://ch4a15ckusnj4" path="res://source/general/FoldableContent/FoldableContent.gd" id="1_5kjxl"]
+[ext_resource type="StyleBox" uid="uid://go6q2nvp2mu1" path="res://source/general/FoldableContent/FoldableStyleBox.tres" id="1_bcu6b"]
+
+[node name="Panel" type="Panel"]
+self_modulate = Color(0.74509805, 0.74509805, 0.74509805, 1)
+custom_minimum_size = Vector2(166, 20)
+offset_right = 25.0
+offset_bottom = 20.0
+theme_override_styles/panel = ExtResource("1_bcu6b")
+script = ExtResource("1_5kjxl")
+text = "asdwaskdjaskdls"
+horizontal_aligmnent = 0
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 21.0
+offset_top = 20.0
+offset_right = 61.0
+offset_bottom = 60.0

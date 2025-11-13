@@ -6,27 +6,27 @@ const AnimClass = preload("res://source/general/animation/AnimationService.gd")
 
 static var back_to: Variant
 
-var charactersFound: PackedStringArray = []
+var charactersFound: PackedStringArray
 var characterData: Dictionary = Character.getCharacterBaseData()
-var animData: Dictionary = Character.getAnimBaseData()
+var animData: Dictionary[StringName,Variant] = Character.getAnimBaseData()
 
-var isMovingCamera: bool = false
+var isMovingCamera: bool
 
-static var curCharacter: String
+static var curCharacter: StringName
 
 var character_node: Character = Character.new()
 
 var character_ghost: Character
 
 var cur_anim: StringName: set = selectAnim
-var cur_offset: Vector2 = Vector2.ZERO:
+var cur_offset: Vector2:
 	set(value):
 		cur_offset = value
 		animation_offset[0].set_value_no_signal(value.x)
 		animation_offset[1].set_value_no_signal(value.y)
 		character_node.set_offset_from_anim(cur_anim)
 
-var cur_indices: String = ''
+var cur_indices: String
 var cur_scale: float = 1.0:
 	set(value):
 		cur_scale = value
@@ -41,8 +41,8 @@ var cur_looped: bool = false
 var charJson: Dictionary
 
 
-var cur_image: StringName = '': set = setCharacterImage
-const singAnimations = ['singLEFT','singDOWN','singUP','singRIGHT']
+var cur_image: StringName: set = setCharacterImage
+const singAnimations = [&'singLEFT',&'singDOWN',&'singUP',&'singRIGHT']
 const keys = [KEY_D,KEY_F,KEY_J,KEY_K]
 var _last_save_folder = Paths.exePath+'/'
 
@@ -50,32 +50,32 @@ var _last_save_folder = Paths.exePath+'/'
 @onready var icon = Icon.new()
 
 @onready var characterList := $CharacterData/CharacterList
-@onready var animationList := $"TabContainer/Animation Data/Container/Label/AnimationList"
+@onready var animationList := $"TabContainer/Animation Data/Container/Animation Manager/Data/AnimationList"
 @onready var animationGhost := $"CharacterData/AnimationGhost"
-@onready var prefixList := $"TabContainer/Animation Data/Container/Label/PrefixList"
+@onready var prefixList := $"TabContainer/Animation Data/Container/Current Animation/Data/PrefixList"
 @onready var prefixListPop: PopupMenu = prefixList.get_popup()
 
 #Animation Data
-@onready var animation_asset := $"TabContainer/Animation Data/Container/Label/AssetPath"
+@onready var animation_asset := $"TabContainer/Animation Data/Container/Current Animation/Data/AssetPath"
 
 @onready var animation_offset = [
-	$"TabContainer/Animation Data/Container/Label/anim_offset_x",
-	$"TabContainer/Animation Data/Container/Label/anim_offset_y"
+	$"TabContainer/Animation Data/Container/Current Animation/Data/anim_offset_x",
+	$"TabContainer/Animation Data/Container/Current Animation/Data/anim_offset_y"
 ]
 @onready var new_character_tab = $"CharacterData/New Character Tab"
 @onready var new_character_image := $"CharacterData/New Character Tab/Panel/Image"
 @onready var new_character_animation_type := $"CharacterData/New Character Tab/Panel/AnimationType"
 @onready var new_character_name = $"CharacterData/New Character Tab/Panel/CharacterName"
 
-@onready var animation_prefix := $"TabContainer/Animation Data/Container/Label/Prefix"
-@onready var animation_indices := $"TabContainer/Animation Data/Container/Label/Indices"
-@onready var animation_loop := $"TabContainer/Animation Data/Container/Label/Looped"
-@onready var animation_fps := $"TabContainer/Animation Data/Container/Label/FrameRate"
-@onready var animation_insert_name := $"TabContainer/Animation Data/Container/Label/Insert Animation Name"
+@onready var animation_prefix := $"TabContainer/Animation Data/Container/Current Animation/Data/Prefix"
+@onready var animation_indices := $"TabContainer/Animation Data/Container/Current Animation/Data/Indices"
+@onready var animation_loop := $"TabContainer/Animation Data/Container/Current Animation/Data/Looped"
+@onready var animation_fps := $"TabContainer/Animation Data/Container/Current Animation/Data/FrameRate"
+@onready var animation_insert_name := $"TabContainer/Animation Data/Container/Animation Manager/Data/Insert Animation Name"
 
-@onready var animation_follow_flip := $"TabContainer/Animation Data/Container/Label/Offset Follow Flip"
-@onready var animation_follow_scale := $"TabContainer/Animation Data/Container/Label/Offset Follow Scale"
-@onready var animation_sing_follow_flip := $"TabContainer/Animation Data/Container/Label/Sing Animation Follow Flip"
+@onready var animation_follow_flip := $"TabContainer/Animation Data/Container/Offsets/Data/Offset Follow Flip"
+@onready var animation_follow_scale := $"TabContainer/Animation Data/Container/Offsets/Data/Offset Follow Scale"
+@onready var animation_sing_follow_flip := $"TabContainer/Animation Data/Container/Sing_Dance/Data/Sing Animation Follow Flip"
 
 @onready var animationGhostPop: PopupMenu = animationGhost.get_popup()
 @onready var animationListPop: PopupMenu = animationList.get_popup()
@@ -85,23 +85,32 @@ var camera_zoom: float = 1.0
 var camera_y_limit = -300
 
 #Json Data
-@onready var json_scale := $"TabContainer/Json Data/scale"
+@onready var json_scale := $"TabContainer/Json Data/Container/Image/Data/scale"
 @onready var playable_character := $"CharacterData/Playable Character"
 @onready var gf_character := $"CharacterData/GF Character"
-@onready var json_flip := $"TabContainer/Json Data/FlipX"
-@onready var json_antialiasing := $"TabContainer/Json Data/antialiasing"
-@onready var json_image_file := $"TabContainer/Json Data/image_file"
+@onready var json_flip := $"TabContainer/Json Data/Container/Image/Data/FlipX"
+@onready var json_antialiasing := $"TabContainer/Json Data/Container/Image/Data/antialiasing"
+@onready var json_image_file := $"TabContainer/Json Data/Container/Image/Data/image_file"
 
-@onready var json_position = [$"TabContainer/Json Data/position_x",$"TabContainer/Json Data/position_y"]
-@onready var json_origin_offset = [$"TabContainer/Json Data/Origin X",$"TabContainer/Json Data/Origin Y"]
+@onready var json_position = [
+	$"TabContainer/Json Data/Container/Offstes/Data/position_x",
+	$"TabContainer/Json Data/Container/Offstes/Data/position_y"
+]
+@onready var json_origin_offset = [
+	$"TabContainer/Json Data/Container/Offstes/Data/Origin X",
+	$"TabContainer/Json Data/Container/Offstes/Data/Origin Y"
+]
 
 #Gameplay Options
-@onready var gameplay_healtbar_color := $"TabContainer/Json Data/HealthBar/HealthColor"
+@onready var gameplay_healtbar_color := $"TabContainer/Json Data/Container/HealthBar/HealthBar/HealthColor"
 
-@onready var gameplay_camera = [$"TabContainer/Json Data/Camera X", $"TabContainer/Json Data/Camera Y"]
-@onready var gameplay_icon := $"TabContainer/Json Data/HealthBar/HealthIcon"
-@onready var gameplay_is_pixel_icon := $"TabContainer/Json Data/isPixelIcon"
-@onready var gameplay_can_scale_icon := $"TabContainer/Json Data/scaleIcon"
+@onready var gameplay_camera = [
+	$"TabContainer/Json Data/Container/Offstes/Data/Camera X", 
+	$"TabContainer/Json Data/Container/Offstes/Data/Camera Y"
+]
+@onready var gameplay_icon := $"TabContainer/Json Data/Container/HealthBar/HealthBar/HealthIcon"
+@onready var gameplay_is_pixel_icon := $"TabContainer/Json Data/Container/HealthBar/HealthBar/isPixelIcon"
+@onready var gameplay_can_scale_icon := $"TabContainer/Json Data/Container/HealthBar/HealthBar/scaleIcon"
 
 func _ready():
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -137,13 +146,14 @@ func _ready():
 	characterPop.min_size = Vector2(250,0)
 	
 	prefixListPop.index_pressed.connect(
-		func(i):setAnimationPrefix(prefixListPop.get_item_text(i))
-		)
+		func(i): 
+			animation_prefix.text = prefixListPop.get_item_text(i); animation_prefix.text_submitted.emit(animation_prefix.text)
+	)
 	
 	$BG_Image.texture = Paths.texture('editors/character_editor/bg')
 	$BG/Ground.texture =  Paths.texture('editors/character_editor/ground')
 	camera_y_limit = $BG/Ground.texture.get_size().y*$BG/Ground.scale.y + 300
-	
+
 
 func exit():
 	if !back_to: return
@@ -171,16 +181,14 @@ func loadCharacter(json: StringName, isPlayer: bool = json.begins_with('bf')) ->
 func insertCharToEditor(char):
 	char.danceAfterHold = false
 	char.animation.auto_loop = false
+	char.on_load_character.connect(func(_old,_new):char.danceAfterHold = false;char.danceOnAnimEnd = false)
 	camera.add_child(char)
 	
 #region Animatiom Methods
 func selectAnim(anim_name: String):
 	cur_anim = anim_name
 	character_node.animation.play(cur_anim)
-	for i in charJson.animations:
-		if !i.name == anim_name: continue
-		animData = i
-		break
+	for i in charJson.animations: if i.name == anim_name: animData = i; break
 	animationList.text = cur_anim
 	
 	animation_insert_name.placeholder_text = cur_anim
@@ -195,15 +203,15 @@ func addCharacterAnimation(anim):
 	animationListPop.add_item(anim)
 	animationGhostPop.add_item(anim)
 	cur_anim = anim
-	
+
+func set_anim_data_value(value: Variant, property: StringName): animData[property] = value
+func set_character_animation_value(value: Variant, property: StringName): character_node.animation.curAnim[property] = value; 
+func set_json_value(value: Variant, property: StringName): charJson[property] = value
+func set_character_value(value: Variant, property: StringName): character_node[property] = value;
+
 func add_anim_offset():
 	if character_node: 
 		character_node.addAnimOffset(cur_anim,cur_offset.x,cur_offset.y)
-	
-func setAnimationPrefix(new_text: String) -> void:
-	animData.prefix = new_text
-	animation_prefix.text = new_text
-	reloadCharacterAnim()
 
 func get_animation_indices_str(indices = animData.get('frameIndices',[])):
 	var string = ''
@@ -211,6 +219,7 @@ func get_animation_indices_str(indices = animData.get('frameIndices',[])):
 	return string.left(-2)	
 
 func updateAnimData():
+	print(animData)
 	animationList.text = cur_anim
 	cur_offset = character_node._animOffsets.get(cur_anim,Vector2.ZERO)
 	cur_indices = get_animation_indices_str()
@@ -218,7 +227,7 @@ func updateAnimData():
 	animation_prefix.text = animData.get('prefix','')
 	animation_indices.text = cur_indices
 	animation_indices.placeholder_text = get_animation_indices_str(range(character_node.animation.curAnim.maxFrames))
-	animation_fps.set_value_no_signal(animData.get('fps',24.0))
+	animation_fps.set_value_no_signal(animData.get(&'fps',24.0))
 	animation_loop.button_pressed = cur_looped
 
 func updatePrefixList():
@@ -226,8 +235,7 @@ func updatePrefixList():
 	if !character_node._images: return
 	
 	if character_node._images.size() == 1:
-		for i in AnimClass.getPrefixList(character_node.animation._animFile): 
-			prefixListPop.add_item(i)
+		for i in AnimClass.getPrefixList(character_node.animation._animFile): prefixListPop.add_item(i)
 	else:
 		for i in character_node._images.values():
 			var prefix_list = AnimClass.getPrefixList(AnimClass.findAnimFile(i.resource_name))
@@ -239,15 +247,17 @@ func updateCharacterData():
 	character_node._position = Vector2(640,0) + character_node.positionArray
 	curCharacter = character_node.curCharacter
 	character_node.isPlayer = curCharacter.begins_with('bf')
+	character_node.isGF = curCharacter.begins_with('gf')
 	characterList.text = curCharacter
 	animation_asset.placeholder_text = charJson.assetPath
-	playable_character.set_pressed_no_signal(character_node.name.begins_with('bf'))
-	gf_character.set_pressed_no_signal(character_node.name.begins_with('gf'))
+	playable_character.set_pressed_no_signal(character_node.isPlayer)
+	gf_character.set_pressed_no_signal(character_node.isGF)
 	updatePrefixList()
 	updateDataInfo()
 	updateAnimationList()
 	cur_anim = character_node.animation.current_animation
 	_last_save_folder = Paths.characterPath(curCharacter).get_base_dir()
+	
 func updateDataInfo():
 	icon.reloadIconFromCharacterJson(charJson)
 	
@@ -287,7 +297,7 @@ func updateBarColor(): bar.set_colors(character_node.healthBarColors)
 func updateCameraPosition():
 	$BG/Marker_Camera.position = character_node.getCameraPosition()
 	$BG/Marker_Origin.position = character_node.getMidpoint()
-	
+
 func zoomBg(add: float):
 	camera_zoom = clamp(camera_zoom+add,0.45,2)
 	camera.scale = Vector2(camera_zoom,camera_zoom)
@@ -296,22 +306,19 @@ func zoomBg(add: float):
 func updateBgPosition():
 	camera.scale = camera.scale.clamp(Vector2(0.45,0.45),Vector2(2,2))
 	camera.position.y = clampf(camera.position.y,-700,700)
-	
+
 func reloadCharacterAnim():
 	character_node.addCharacterAnimation(
 		cur_anim,
 		{
-			'prefix': animation_prefix.text,
-			'fps': cur_frame_rate,
-			'looped': character_node.animation.curAnim.looped,
-			'indices': cur_indices
+			&'prefix': animation_prefix.text,
+			&'fps': cur_frame_rate,
+			&'looped': character_node.animation.curAnim.looped,
+			&'indices': cur_indices
 		}
 	)
 
-func replayCharAnim():
-	if character_node: character_node.animation.play(cur_anim,true)
-
-
+func replayCharAnim(): character_node.animation.play(cur_anim,true)
 
 func _input(event):
 	if isMovingCamera and event is InputEventMouseMotion and event.button_mask == 1:
@@ -324,7 +331,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			for i in range(keys.size()):
 				if event.keycode == keys[i]:
 					character_node.animation.play(singAnimations[i],true)
-					character_node.holdTimer = 0.0
 					return
 			
 			match event.keycode:
@@ -343,8 +349,7 @@ func _unhandled_input(event):
 	match event.button_index:
 		5: zoomBg(-0.05)
 		4: zoomBg(0.05)
-				
-				
+
 func updateAnimationList():
 	animationListPop.clear()
 	animationGhostPop.clear()
@@ -352,7 +357,7 @@ func updateAnimationList():
 	for i in charJson.animations:
 		animationListPop.add_item(i.name)
 		animationGhostPop.add_item(i.name)
-	
+
 #region Animation Signals
 func _on_anim_offset_x_value_changed(value: float) -> void:
 	cur_offset.x = value
@@ -365,11 +370,10 @@ func _on_anim_offset_y_value_changed(value: float) -> void:
 	add_anim_offset()
 
 
-func _on_reload_character_button_up() -> void:
-	character_node.loadCharacterFromJson(Paths.character(curCharacter))
-	
+func _on_reload_character_button_up() -> void: character_node.loadCharacterFromJson(Paths.character(curCharacter))
+
 func _on_flip_sing_direction_toggled(toggled_on: bool) -> void:
-	charJson.set('sing_follow_flip',toggled_on)
+	charJson.sing_follow_flip = toggled_on
 	character_node.reloadAnims()
 	character_node.animation.play(cur_anim)
 
@@ -399,29 +403,13 @@ func _on_load_character_from_file_button_up() -> void:
 		character_node.loadCharacter(file.get_file())
 		updateCharacterData()
 	)
-	
-func _on_frame_rate_value_changed(value) -> void:
-	animData.fps = value
-	character_node.animation.curAnim.frameRate = value
-	character_node.animationsArray[cur_anim].fps = value
 
-
-func _on_looped_toggled(toggled_on: bool) -> void:
-	character_node.animationsArray.get(cur_anim).looped = toggled_on
-	replayCharAnim()
-	character_node.animation.curAnim.looped = toggled_on
 
 
 func _on_indices_text_submitted(new_text: String) -> void:
 	cur_indices = new_text
 	animData.frameIndices = character_node.animation.get_indices_by_str(new_text)
 	reloadCharacterAnim()
-
-
-func _on_loop_indices_text_submitted(new_text: String) -> void:
-	cur_indices = new_text
-	animData.loopIndices = character_node.animation.get_indices_by_str(new_text)
-	if cur_looped: reloadCharacterAnim()
 
 func _on_loop_from_value_changed(value: int) -> void:
 	animData.loop_frame = value
@@ -456,7 +444,7 @@ func _on_health_icon_text_submitted(new_text: String) -> void:
 
 func _on_is_pixel_icon_toggled(toggled_on: bool) -> void:
 	charJson.healthIcon.isPixel = toggled_on
-	icon.set_pixel(toggled_on, charJson.healthIcon.canScale)
+	icon.set_pixel(toggled_on, charJson.healthIcon.get(&'canScale',false))
 
 
 func _on_scale_icon_toggled(toggled_on: bool) -> void:
@@ -482,15 +470,17 @@ func _on_remove_animation_button_up() -> void:
 
 #endregion
 
-#region Json Data Signals
 
+#region Character Signals
+
+#endregion
+#region Json Data Signals
 func _on_scale_value_changed(value) -> void:
-	if !character_node: return
 	character_node.scale = Vector2(value,value)
 	character_node.midpoint_scale = character_node.scale
 	charJson.scale = value
 	updateCameraPosition()
-	
+
 func _on_antialiasing_toggled(toggled_on: bool) -> void:
 	charJson.isPixel = !toggled_on
 	character_node.antialiasing = toggled_on
@@ -534,15 +524,6 @@ func _on_camera_x_value_changed(value: float) -> void:
 func _on_camera_y_value_changed(value: float) -> void:
 	charJson.camera_position[1] = value
 	character_node.cameraPosition[1] = value
-	updateCameraPosition()
-
-func _on_playable_character_toggled(toggled_on: bool) -> void:
-	character_node.isPlayer = toggled_on
-	updateCameraPosition()
-	replayCharAnim() 
-
-func _on_gf_character_toggled(toggle_on: bool) -> void:
-	character_node.isGF = toggle_on
 	updateCameraPosition()
 	
 func _on_flip_x_toggled(toggled_on: bool) -> void:

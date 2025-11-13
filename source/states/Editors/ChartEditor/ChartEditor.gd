@@ -256,11 +256,12 @@ func _ready():
 	
 	for i in chess_array:
 		i.scale = CHESS_SCALE
-		i.line_size = BLOCK_SIZE
+		i.rect_size = BLOCK_SIZE
 		chess_control.add_child(i)
 		
 	#region Events
-	chess_events.loadChess(16,1)
+	chess_events.steps = 1
+	chess_events.length = 16
 	
 	chess_events.modulate = Color.DARK_GRAY
 	chess_events.name = &'ChessEvents'
@@ -274,7 +275,8 @@ func _ready():
 	#endregion
 	
 	for i in note_chess:
-		i.loadChess(16,keyCount)
+		i.steps = keyCount
+		i.length = 16
 		for beat in range(1,4):
 			var color_rect: ColorRect = ColorRect.new()
 			color_rect.size = Vector2(BLOCK_SIZE.x*keyCount,1.0)
@@ -818,7 +820,7 @@ func unselectNotes():
 func _update_note_data():
 	if !notes_selected:
 		note_current_strum_time.text = '0.0'
-		note_current_sustain_length.value_text.text = ''
+		note_current_sustain_length.line_edit.text = ''
 		note_current_type.text = ''
 		return
 	

@@ -104,7 +104,7 @@ func setAnimDataValue(animName: String, property: StringName, value: Variant):
 	if !data: return
 	data[property] = value
 
-func update_anim(anim: String = current_animation):
+func update_anim(anim: StringName = current_animation):
 	var animData = animationsArray[anim]
 	if animations_use_textures and animData.asset: image.texture = animData.asset
 	curAnim.frames = animData.frames
@@ -158,10 +158,10 @@ func addAnimation(animName: StringName, frames: Array, fps: float = 24.0, loop: 
 ##if you want to cut vertically).
 func addFrameAnim(animName: StringName, indices: PackedInt32Array = [], fps: float = 24.0, loop: bool = false) -> Dictionary:
 	if !indices or !image or !image.texture: return {}
-	var animData = {
-		'frames': Array([],TYPE_DICTIONARY,'',null),
-		'fps': fps,
-		'looped': loop
+	var animData: Dictionary[StringName,Variant] = {
+		&'frames': Array([],TYPE_DICTIONARY,'',null),
+		&'fps': fps,
+		&'looped': loop
 	}
 	var tex_size = image.texture.get_size() if image.texture else Vector2.ZERO
 	var offset: Vector2 = image.region_rect.size
@@ -179,9 +179,9 @@ func addFrameAnim(animName: StringName, indices: PackedInt32Array = [], fps: flo
 ##Insert [Animation] to [member animations_array]. 
 ##If was no animation playing, the animation inserted will be played automatically.[br][br]
 ##See also [method addAnimation] and [method addFrameAnim].
-func insertAnim(animName: StringName, animData: Dictionary = {}) -> Dictionary:
+func insertAnim(animName: StringName, animData: Dictionary[StringName,Variant] = {}) -> Dictionary:
 	if !animData: return {}
-	if !animData.get('frames'): return animData
+	if !animData.get(&'frames'): return animData
 	animData.merge(getAnimBaseData(),false)
 	
 	if !_midpoint_set: update_midpoint_from_frame(animData.frames[0])

@@ -72,7 +72,7 @@ func reloadStrumNote() -> void: ##Reload Strum Texture Data
 	image.texture = Paths.texture(texture)
 	antialiasing = !isPixelNote
 	
-	if styleData.data: _load_anims_from_prefix()
+	if styleData and styleData.data: _load_anims_from_prefix()
 	else: _load_graphic_anims()
 	setGraphicScale(Vector2(default_scale,default_scale))
 

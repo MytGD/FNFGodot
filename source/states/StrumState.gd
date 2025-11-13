@@ -384,12 +384,13 @@ func _create_strums() -> void:
 		strum.mustPress = playAsOpponent and !botplay
 		strum.modulate.a = defaultStrumAlpha[i]
 		i += 1
-	i = 0
+	i = keyCount
+	var key_count = keyCount*2.0
 	#Player Notes
-	while i < keyCount:
-		var strum = createStrum(i,false,defaultStrumPos[i+keyCount])
+	while i < key_count:
+		var strum = createStrum(i-keyCount,false,defaultStrumPos[i])
 		strum.mustPress = !playAsOpponent and !botplay
-		strum.modulate.a = defaultStrumAlpha[i+keyCount]
+		strum.modulate.a = defaultStrumAlpha[i]
 		i += 1
 func createStrum(i: int, opponent_strum: bool = true, pos: Vector2 = Vector2.ZERO) -> StrumNote:
 	var strum = StrumNote.new(i)
@@ -750,12 +751,14 @@ func createNumbers(number: int = combo): ##Create the Numbers combo
 func destroy(absolute: bool = true): ##Remove the state
 	Conductor.clearSong(exitingSong)
 	
-	Paths.clearLocalFiles()
-	if absolute: clear()
-	else: for note in notes.members: note.kill()
+	if absolute: clear(); queue_free(); return
 	
-	if isModding: NoteSplash.splash_datas.clear()
-	queue_free()
+	Paths.clearLocalFiles()
+	if isModding: 
+		NoteSplash.splash_datas.clear()
+		NoteStyleData.styles_loaded.clear()
+	for note in notes.members: note.kill()
+	
 
 func _set_botplay(is_botplay: bool) -> void:
 	botplay = is_botplay
@@ -769,8 +772,8 @@ func updateStrumsMustPress() -> void:
 	var index: int = 0
 	while index < strums.size():
 		if botplay: strums[index].mustPress = false; continue
-		if index < keyCount: strums[index].mustPress = !playAsOpponent
-		else: strums[index].mustPress = playAsOpponent
+		if index < keyCount: strums[index].mustPress = playAsOpponent
+		else: strums[index].mustPress = !playAsOpponent
 		index += 1
 
 
@@ -806,7 +809,9 @@ func clear() -> void:
 	unspawnNotes.clear()
 	
 	NoteStyleData.styles_loaded.clear()
+	NoteSplash.splash_datas.clear()
 	
+	Paths.clearLocalFiles()
 	inModchartEditor = false
 	isPixelStage = false
 	

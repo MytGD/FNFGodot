@@ -68,8 +68,7 @@ func _init() -> void:
 	
 	add_child(flashSprite)
 
-func _ready() -> void:
-	_update_camera_size.call_deferred()
+func _ready() -> void: _update_camera_size()
 
 #region Size Methods
 func _update_camera_size():

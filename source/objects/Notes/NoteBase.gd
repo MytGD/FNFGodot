@@ -20,6 +20,7 @@ var isPixelNote: bool = false: set = setPixelNote ##Is Pixel Note
 var texture: String: set = setTexture ##Note Texture
 #endregion
 
+func _init(): super._init(true)
 
 func setNoteRect(region: Rect2):
 	image.region_rect = region

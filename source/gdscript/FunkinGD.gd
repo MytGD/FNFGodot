@@ -838,6 +838,7 @@ static func getTextFont(text: Variant) -> FontFile:
 static func _find_font(font: Variant) -> Font:
 	if font is String: return Paths.font(font)
 	return font as Font
+	
 ##Set the Text Alignment
 static func setTextAlignment(tag: Variant, alignmentHorizontal: StringName = 'left', alignmentVertical: StringName = '') -> void:
 	var obj = _find_object(tag)

@@ -30,6 +30,7 @@ func reloadNote() -> void: ##Reload Note Texture
 	
 	var data = styleData.data.get((noteDirection+'End') if isEndSustain else noteDirection)
 	if !data: 
+		noteScale = styleData.get(&'scale',0.7)
 		loadSustainFrame(); 
 		setGraphicScale(Vector2(noteScale,noteScale)); 
 		return
@@ -44,6 +45,7 @@ func reloadNote() -> void: ##Reload Note Texture
 		var region = data.get(&'region')
 		if region: setNoteRect(Rect2(region[0],region[1],region[2],region[3]))
 		else: loadSustainFrame()
+	
 	setGraphicScale(Vector2(noteScale,1.0))
 
 func loadSustainFrame():
@@ -86,7 +88,7 @@ func updateSustain():
 	
 	image.region_rect.position.y = _y_atlas + fill_abs
 	image.region_rect.size.y = maxf(0.0,_height - fill_abs)
-	if distance <= -absf(_height*2.5): kill(); _is_processing = false
+	if distance <= -absf(_height*scale.y): kill(); _is_processing = false
 	real_distance = 0.0
 	
 

@@ -241,19 +241,24 @@ func updateTimeBar() -> void:
 	timeTxt.update()
 
 #region Icon Methods
-func updateIconsImage(state: IconState):
+func updateIconsImage(state: IconState = _healthBar_State):
+	var player_icon = iconP1
+	var opponent_icon = iconP2
+	if playAsOpponent:
+		player_icon = iconP2
+		opponent_icon = iconP1
 	match state:
 		IconState.NORMAL:
-			iconP1.animation.play(&'normal')
-			iconP2.animation.play(&'normal')
+			player_icon.animation.play(&'normal')
+			opponent_icon.animation.play(&'normal')
 		IconState.LOSING:
-			if iconP2.hasWinningIcon: iconP2.animation.play(&'winning')
-			else: iconP2.animation.play(&'normal')
-			iconP1.animation.play(&'losing')
+			if opponent_icon.hasWinningIcon: opponent_icon.animation.play(&'winning')
+			else: opponent_icon.animation.play(&'normal')
+			player_icon.animation.play(&'losing')
 		IconState.WINNING:
-			if iconP1.hasWinningIcon: iconP1.animation.play(&'winning')
-			else: iconP1.animation.play(&'normal')
-			iconP2.animation.play(&'losing')
+			if player_icon.hasWinningIcon: player_icon.animation.play(&'winning')
+			else: player_icon.animation.play(&'normal')
+			opponent_icon.animation.play(&'losing')
 
 
 func updateIconPos(icon: Icon) -> void:
@@ -781,6 +786,7 @@ func _set_hide_hud(hide: bool) -> void:
 
 func _set_play_opponent(isOpponent: bool = playAsOpponent) -> void:
 	healthBar.flip = !isOpponent
+	updateIconsImage()
 	super._set_play_opponent(isOpponent)
 #endregion
 
