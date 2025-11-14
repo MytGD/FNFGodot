@@ -284,8 +284,9 @@ static func songPath(path):
 		if songPath: return songPath
 	return ''
 
-static func data(json: String = '',preffix: String = '',folder: String = '') -> String:
+static func data(json: String = '',prefix: String = '',folder: String = '') -> String:
 	if file_exists(json): return json
+	
 	if json.ends_with(".json"): json = json.left(-5)
 	
 	if !folder: folder = json
@@ -294,38 +295,27 @@ static func data(json: String = '',preffix: String = '',folder: String = '') -> 
 		if folder.begins_with('data/'): folder = folder.right(-5)
 	
 	var json_path = folder+'/'+json
-	var paths_to_lock: PackedStringArray = []
+	var paths_to_lock: PackedStringArray
 	
-	if preffix:
-		if preffix.to_lower() == 'normal':  paths_to_lock.append(json_path+'.json')
-		
-		paths_to_lock.append_array([
-			json_path+'-'+preffix+'.json',
-			json_path+'-chart-'+preffix+'.json'
-		])
-	
+	if prefix:
+		if prefix.to_lower() == 'normal':  paths_to_lock.append(json_path+'.json')
+		paths_to_lock.append_array([json_path+'-'+prefix+'.json',json_path+'-chart-'+prefix+'.json'])
 	else: paths_to_lock.append(json_path+'.json')
 	
 	paths_to_lock.append(json_path+'-chart.json')
 	
+	
 	var contain_space = json_path.contains(' ')
-	var path_found: String = ''
 	
 	for i in paths_to_lock:
-		for d in data_dirs:
-			path_found = detectFileFolder(d+i,!is_system_case_sensitive)
-			if path_found: return path_found
-			
+		var path_found: String
+		for d in data_dirs: path_found = detectFileFolder(d+i,!is_system_case_sensitive); if path_found: return path_found
 		if contain_space:
 			i = i.replace(' ','-')
-			for d in data_dirs:
-				path_found = detectFileFolder(d+i,!is_system_case_sensitive)
-				if path_found: return path_found
+			for d in data_dirs: path_found = detectFileFolder(d+i,!is_system_case_sensitive); if path_found: return path_found
 		
 		i = i.to_lower()
-		for d in data_dirs:
-			path_found = detectFileFolder(d+i)
-			if path_found: return path_found
+		for d in data_dirs: path_found = detectFileFolder(d+i); if path_found: return path_found
 	return ''
 
 static func iconPath(path: String) -> String:

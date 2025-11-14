@@ -126,7 +126,7 @@ func set_song_editor_position(new_pos: float) -> void:
 
 func set_song_position(pos: float):
 	if pos == songPosition: return
-	Conductor.setSongPosition(pos)
+	Conductor.seek(pos)
 	playState.updateNotes()
 	set_song_editor_position(pos)
 #endregion

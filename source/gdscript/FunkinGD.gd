@@ -200,7 +200,6 @@ static func _bpm_changes() -> void:
 	bpm = Conductor.bpm
 	stepCrochet = Conductor.stepCrochet
 	crochet = Conductor.crochet
-	prints(stepCrochet,'changed')
 	
 static func _beat_hit() -> void: curBeat = Conductor.beat; callOnScripts(&'onBeatHit')
 static func _step_hit() -> void: curStep = Conductor.step; callOnScripts(&'onStepHit')
@@ -337,14 +336,15 @@ static func getProperty(property: String, from: Variant = null) -> Variant: ##Ge
 	
 	var index: int = 0
 	var size = split.size()
+	
 	while index < size:
 		from = _get_variable(from,split[index]); 
 		if from == null: return from
 		index += 1
 	return from
 
-static func _find_property_owner(property: String) -> Variant:
-	if game and game.get(property) != null: return game
+static func _find_property_owner(property: StringName) -> Variant:
+	if game and property in game: return game
 	for i in dictionariesToCheck: if i.has(property): return i
 	return null
 	
@@ -357,7 +357,7 @@ static func _find_object(property: Variant) -> Object:
 	var index: int = 0
 	while index < split.size():
 		var variable = _get_variable(object,split[index])
-		if !variable: return null
+		if variable == null: return null
 		elif !is_indexable(variable): break
 		object = variable
 		index += 1
@@ -365,16 +365,14 @@ static func _find_object(property: Variant) -> Object:
 
 static func _find_object_with_split(property: Variant) -> Array:
 	if property is Object: return property
-	
 	var split = get_as_property(property).split('.')
 	var key = split[0]
 	var object = _find_property_owner(key)
-	
 	var size: int = split.size()
 	var index: int = 0
 	while index < size:
 		var variable = _get_variable(object,split[index])
-		if !variable:  return [null, split]
+		if variable == null: return [null, split]
 		elif !is_indexable(variable): break
 		object = variable
 		index += 1
@@ -395,10 +393,8 @@ static func _get_variable(obj: Variant, variable: String) -> Variant:
 		TYPE_DICTIONARY: return obj.get(variable)
 		TYPE_OBJECT: 
 			var value = obj.get(variable)
-			if value == null and variable.find(':'):
-				value = obj.get_indexed(variable)
-			if value == null and variable in alternative_variables:
-				return _get_variable(obj,alternative_variables[variable])
+			if value == null and variable.find(':'): value = obj.get_indexed(variable)
+			if value == null and variable in alternative_variables: return _get_variable(obj,alternative_variables[variable])
 			return value
 		TYPE_COLOR: return obj[variable]
 		_: return null

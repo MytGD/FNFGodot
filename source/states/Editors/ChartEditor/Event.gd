@@ -1,37 +1,18 @@
 extends Sprite2D
 const EventNoteUtils = preload("res://source/objects/Notes/EventNoteUtils.gd")
 
-var events: Array = []
+var events: Array[Dictionary] = []
 
-var strumTime: float = 0.0:
+var strumTime: float:
 	set(value):
-		json_data[0] = value
+		for i in events: i.t = value
 		strumTime = value
 
-var json_data: Array = [strumTime,[]]:
-	set(value):
-		json_data = value
-		events = json_data[1]
-		selectEvent()
-		
-var event_selected: Array = ['',{}]:
+var event_selected: Dictionary:
 	set(value):
 		event_selected = value
-		
-		if value[1] is Dictionary:
-			event_selected_variables = value[1]
-		else:
-			var dictionary = {
-				'value1': value[1],
-				'value2': ''
-			}
-			if value.size() > 2:
-				dictionary.value2 = value[2]
-				value.remove_at(2)
-			value[1] = dictionary
-			event_selected_variables = dictionary
-		
-		event_selected_name = value[0]
+		event_selected_variables = value.v
+		event_selected_name = value.e
 	
 var event_selected_variables: Dictionary
 var event_selected_name: String
@@ -51,9 +32,9 @@ func selectEvent(index: int = event_index):
 	event_index = index
 	event_selected = ArrayUtils.get_array_index(events,index,['',{}])
 
-func addEvent(event_name: String = '', variables: Dictionary = {},at: int = -1) -> Array:
+func addEvent(event_name: StringName = &'', variables: Dictionary = {},at: int = -1) -> Array:
 	var event_default_vars = EventNoteUtils.get_event_variables(event_name)
-	var event_vars = {}
+	var event_vars: Dictionary
 	var event_data = [event_name,event_vars]
 	
 	#Set the default value to event
@@ -65,7 +46,6 @@ func addEvent(event_name: String = '', variables: Dictionary = {},at: int = -1) 
 	else: events.append(event_data)
 	
 	event_selected = event_data
-	update_json()
 	return event_data
 
 func replaceEvent(replace_to: String):
@@ -75,11 +55,6 @@ func replaceEvent(replace_to: String):
 	
 func removeEvent(index: int = event_index) -> Array:
 	var data = events.get(index)
-	if !data:
-		return []
+	if !data: return []
 	events.remove_at(index)
-	update_json()
 	return data
-	
-func update_json():
-	json_data[1] = events

@@ -16,19 +16,16 @@ var sectionCrochet: float
 var songLength: float
 var step: int: set = set_step
 
-var step_float: float: 
-	set(value): step_float = value; step = int(value)
+var step_float: float: set = set_step_float
 
 var beat: int: set = set_beat
 
-var beat_float: float:
-	set(value): beat_float = value; beat = int(value)
+var beat_float: float: set = set_beat_float
 
 var section: int: set = set_section
 
-var section_float: float:
-	set(value): section_float = value; section = int(value)
-		
+var section_float: float: set = set_section_float
+
 var bpmChanges: Array[Dictionary]
 
 var bpm: float: set = set_bpm
@@ -139,9 +136,17 @@ func loadSongsStreamsFromArray(paths_absolute: PackedStringArray):
 		songs[0].bus = 'Visualizer'
 		songLength = songs[0].stream.get_length()*1000.0
 	song_loaded.emit()
-	
+
+
+func sync_voices() -> void:
+	if !songs: return
+	var index: int = 1
+	while index < songs.size():
+		var song = songs[index]
+		if absf(song.get_playback_position() - songPositionSeconds) > 0.01: song.seek(songPositionSeconds)
+
 ##Set the current position of the song in milliseconds.
-func setSongPosition(pos: float) -> void:
+func seek(pos: float) -> void:
 	songPosition = pos
 	songPositionSeconds = pos/1000.0
 	if !songs: return
@@ -163,9 +168,7 @@ func pauseSongs() -> void: for song in songs: song.stop() ##Pause the streams.
 
 func stopSongs(delete: bool = false) -> void: ##Stop the streams.
 	if delete:
-		for song in songs:
-			remove_child(song)
-			song.queue_free()
+		for song in songs: remove_child(song); song.queue_free()
 		songs.clear()
 	else:
 		for song in songs: song.stop()
@@ -173,7 +176,7 @@ func stopSongs(delete: bool = false) -> void: ##Stop the streams.
 		
 func clearSong(absolute: bool = true) -> void: ##Clear all the songs created
 	stopSongs(true)
-	setSongPosition(0.0)
+	seek(0.0)
 	setBpmChangeIndex(-1)
 	if !absolute: return
 	
@@ -182,11 +185,7 @@ func clearSong(absolute: bool = true) -> void: ##Clear all the songs created
 	songJson.clear()
 	Song._clear()
 
-func clear_offsets():
-	section_offset = 0
-	beat_offset = 0
-	step_offset = 0
-	section_beats_offset = 0
+func clear_offsets(): section_offset = 0; beat_offset = 0; step_offset = 0; section_beats_offset = 0
 #endregion
 
 #region Get methods
@@ -194,11 +193,10 @@ func get_step_count() -> int:
 	if !bpmChanges: return int(songLength/get_step_crochet(bpm))
 	var last_change = bpmChanges.back()
 	return int(songLength/get_step_crochet(last_change.bpm) - last_change.step_offset)
-	
+
 static func get_step_crochet(bpm: float) -> float: return 15000.0/bpm #15000.0 = 60000.0/4.0
-	
-static func get_section_crochet(bpm: float, section_beats: float = 4) -> float: 
-	return get_crochet(bpm) * section_beats
+
+static func get_section_crochet(bpm: float, section_beats: float = 4) -> float:  return get_crochet(bpm) * section_beats
 
 func get_section_data(section: int) -> Dictionary:
 	return ArrayUtils.get_array_index(
@@ -240,8 +238,8 @@ func get_step(pos: float, _bpm: float = songDefaultBpm) -> float:
 	if !changes: return pos/get_step_crochet(_bpm)
 	return pos/get_step_crochet(changes.bpm) - changes.step_offset
 
-func get_step_time(step: float, _bpm: float = songDefaultBpm):
-	var changes = get_bpm_changes(step/16.0) #step / 16.0 = one section
+func get_step_time(step: int, _bpm: float = songDefaultBpm):
+	var changes = get_bpm_changes(step/16)
 	if !changes: return step * get_step_crochet(_bpm)
 	return step * get_step_crochet(changes.bpm) - changes.step_offset
 
@@ -252,40 +250,37 @@ func get_step_section(_section: int):
 #endregion
 
 #region Setters
-func set_step(_step: int):
-	if step == _step: return
-	step = _step
-	step_hit.emit()
+func set_step(_step: int) -> void: if step != _step: step = _step; step_hit.emit()
+func set_step_float(_step: float) -> void: step_float = _step; step = int(_step)
 
-func set_section(_section: int):
+func set_section(_section: int) -> void:
 	if section == _section: return
 	bpm_index = _find_current_change_index(section,bpm_index)
 	var step = signi(_section - section)
 	while section != _section: section += step; section_hit.emit()
 	section_hit_once.emit()
 
-func set_beat(_beat: int):
-	if beat == _beat: return
-	beat = _beat
-	beat_hit.emit()
+func set_section_float(_section: float) -> void: section_float = _section; section = int(_section)
 
-func _set_song_position(position: float):
+func set_beat(_beat: int) -> void: if beat != _beat: beat = _beat; beat_hit.emit()
+func set_beat_float(_beat: float) -> void: beat_float = _beat; beat = int(_beat)
+
+func _set_song_position(position: float) -> void:
 	songPosition = position
-	songPositionDelayed = position - ClientPrefs.data.songOffset
 	if !position:
-		songPositionSeconds = 0.0
-		step_float = 0.0
-		beat_float = 0.0
-		section_float = 0.0
-	else:
-		step_float = songPosition / stepCrochet - step_offset
-		beat_float = songPosition / crochet - beat_offset
-		section_float = (songPosition - section_beats_offset) / sectionCrochet - section_offset
-		
-		if is_playing and fixVoicesSync:
-			for song in songs:
-				if song.name == 'Inst': continue
-				if absf(song.get_playback_position() - songPositionSeconds) > 0.01: song.seek(songPositionSeconds)
+		songPositionSeconds = position
+		step_float = position
+		beat_float = position
+		section_float = position
+		songPositionDelayed = ClientPrefs.data.songOffset
+		return
+	
+	songPositionDelayed = position - ClientPrefs.data.songOffset
+	step_float = songPosition / stepCrochet - step_offset
+	beat_float = songPosition / crochet - beat_offset
+	section_float = (songPosition - section_beats_offset) / sectionCrochet - section_offset
+	
+	if is_playing and fixVoicesSync: sync_voices()
 
 func set_bpm(value: float): bpm = value; update_bpm()
 #endregion
@@ -393,7 +388,6 @@ func get_bpm_changes(_section: int = section, at: int = bpm_index) -> Dictionary
 	var index = _find_current_change_index(_section,at)
 	if index == -1: return {} 
 	return bpmChanges[index]
-
 
 func _find_current_change_index(_section: int,at: int = 0) -> int:
 	if !bpmChanges or _section < 0: return -1

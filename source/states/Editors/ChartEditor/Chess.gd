@@ -1,6 +1,7 @@
 @icon("res://icons/Chess.svg")
 @tool
-class_name Chess extends Control
+class_name Chess
+extends Control
 
 @export var primary_color: Color = Color.GRAY: set = set_primary_color
 @export var primary_fill: bool = true: set = set_primary_fill
@@ -13,9 +14,12 @@ class_name Chess extends Control
 @export_range(0,50) var steps: int = 4: set = set_steps
 @export_range(0,50) var length: int = 2: set = set_length
 
+var width: float
+var height: float
 
 var node: Node2D: get = _get_node
 func _init() -> void: resized.connect(_update_size)
+
 func _ready() -> void: 
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_update_size()
@@ -68,7 +72,7 @@ func set_secondary_color(color: Color) -> void:
 	secondary_color = color
 	if is_inside_tree(): queue_redraw()
 
-func _draw_chess():
+func _draw_chess() -> void:
 	var nrid = node.get_canvas_item()
 	if primary_fill:
 		RenderingServer.canvas_item_add_rect(nrid,Rect2(Vector2.ZERO,rect_size),primary_color)
@@ -203,8 +207,11 @@ func _draw_chess():
 		Rect2(Vector2.ZERO,size)
 	)
 	RenderingServer.canvas_item_set_clip(rid,true)
-	RenderingServer.canvas_item_set_default_texture_repeat(rid,RenderingServer.CANVAS_ITEM_TEXTURE_REPEAT_ENABLED)
+	#RenderingServer.canvas_item_set_default_texture_repeat(rid,RenderingServer.CANVAS_ITEM_TEXTURE_REPEAT_ENABLED)
+	
 
-func _draw():
+func _draw() -> void:
 	node.queue_redraw()
+	width = rect_size.x*steps
+	height = rect_size.y*length
 	_draw_chess.call_deferred()

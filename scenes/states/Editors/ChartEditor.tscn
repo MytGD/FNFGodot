@@ -1,53 +1,151 @@
-[gd_scene load_steps=6 format=3 uid="uid://eonsf5cks44n"]
+[gd_scene load_steps=7 format=3 uid="uid://eonsf5cks44n"]
 
-[ext_resource type="Script" uid="uid://cigpxll0rg8br" path="res://source/states/Editors/ChartEditor/ChartEditor.gd" id="1_twph6"]
+[ext_resource type="Script" uid="uid://cyotiath61hou" path="res://source/states/Editors/ChartEditor/ChartEditor.gd" id="1_twph6"]
 [ext_resource type="PackedScene" uid="uid://b1a3jlb7iu130" path="res://scenes/objects/ButtonRange.tscn" id="2_p8wo6"]
 [ext_resource type="Script" uid="uid://cvvli26q7wviq" path="res://source/general/popup/PopupDir.gd" id="3_nkmqi"]
 [ext_resource type="Script" uid="uid://bxu1ahcd17pxh" path="res://source/objects/Sprite/SolidSprite.gd" id="4_4ubu6"]
 
-[sub_resource type="GDScript" id="GDScript_4ubu6"]
-resource_name = "StagePop"
-script/source = "extends MenuButton
+[sub_resource type="GDScript" id="GDScript_y0grv"]
+resource_name = "ChessManager"
+script/source = "extends Node2D
 
+const ChessNotes = preload(\"uid://qtqqk5lrhuyp\")
+const Icon = preload(\"uid://bgqwitowtypkw\")
+
+
+@onready var position_line = $PositionLine
+
+@export var length: int = 16
+@export var steps: int = 4
+
+@onready var charter: Node = $\"..\"
+@onready var icon_player: Icon = Icon.new()
+@onready var icon_opponent: Icon = Icon.new()
+var chess_player: Chess = ChessNotes.new()
+var chess_opponent: Chess = ChessNotes.new()
+var chess_events: Chess = Chess.new()
+
+var chess_nodes: Array[Chess] = [chess_player,chess_opponent,chess_events]
+
+var is_shift_pressed: bool
 func _ready() -> void:
-	var last_mod: String = ''
-	var popup = get_popup()
-	for i in Paths.getFilesAt('stages',true,'.json'):
-		var mod = Paths.getModFolder(i)
-		if !mod: mod = Paths.game_name
-		if last_mod != mod:
-			popup.add_separator(mod)
-			last_mod = mod
-		popup.add_item(i.get_file())
-	popup.min_size.x = max(popup.size.x,Paths.game_name.length()*15)
+	var event_icon = Sprite2D.new()
+	event_icon.texture = Paths.texture('eventArrow')
+	event_icon.position.y = -45
+	event_icon.centered = false
+	event_icon.scale = Vector2(0.25,0.25)
+	add_child(event_icon)
 	
-	if !Engine.is_editor_hint(): set_script(null)
+	chess_events.steps = 1
+	chess_events.length = length
+	add_child(chess_events)
+	
+	chess_player.position.x = chess_player.rect_size.x * steps
+	chess_player.steps = steps
+	chess_player.length = length
+	add_child(chess_player)
+	
+	icon_player.set_position_xy(chess_player.position.x,chess_player.position.y - 15)
+	_load_icon_player()
+	add_child(icon_player)
+	
+	chess_opponent.position.x = chess_opponent.rect_size.x * steps * 2.5
+	chess_opponent.steps = steps
+	chess_opponent.length = length
+	add_child(chess_opponent)
+	
+	icon_opponent.set_position_xy(chess_opponent.position.x,chess_opponent.position.y - 15)
+	_load_icon_opponent()
+	add_child(icon_opponent)
+	
+	_update_position_line_size()
+	
+	move_child(position_line,-1)
+	Conductor.beat_hit.connect(_icon_beat)
+	
+func _update_position_line_size(): position_line.size.x = chess_opponent.position.x + steps*chess_opponent.rect_size.x
+
+func _update_chess_pos() -> void: 
+	var pos = -fmod(Conductor.step_float,length)
+	for i in chess_nodes: i.position.y = pos*i.rect_size.y
+
+func _process(d: float) -> void:
+	var _l = 10*d 
+	icon_player.scale = icon_player.scale.lerp(icon_player.default_scale,_l)
+	icon_opponent.scale = icon_opponent.scale.lerp(icon_opponent.default_scale,_l)
+	if Conductor.is_playing: _update_chess_pos()
+
+#region Icons
+func _load_icon_opponent():icon_opponent.reloadIconFromCharacterJson(charter.player1Data)
+func _load_icon_player(): icon_player.reloadIconFromCharacterJson(charter.player2Data)
+
+func _icon_beat():
+	icon_player.scale += icon_player.beat_value
+	icon_opponent.scale += icon_opponent.beat_value
+#endregion
+
+#region Notes
+func createNote(time: float, direction: int, mustPress: bool):
+	pass
+#endregion
+
+func getMousePosRounded(_position: Vector2, size: Vector2) -> Vector2: return (_position/size).floor() * size
+
+func _chess_input(event: InputEvent, chess: Chess, mustPress: bool):
+	if event is InputEventMouseButton:
+		var pos = event.position if is_shift_pressed else getMousePosRounded(event.position,chess.rect_size)
+		
+func _input(event: InputEvent):
+	if event is InputEventKey:
+		if event.keycode == KEY_SHIFT: is_shift_pressed = event.pressed
+"
+
+[sub_resource type="GDScript" id="GDScript_qvgc3"]
+resource_name = "SongInfo"
+script/source = "extends Label
+
+func _ready() -> void: _update_info()
+func _update_info():
+	text = 'Song Position: '+String.num(Conductor.songPositionSeconds,1)+\\
+	'\\nSection: '+String.num(Conductor.section_float,1)+'\\nSteps: '+String.num(Conductor.step_float,1)+\\
+	'\\nBeats: '+String.num(Conductor.beat_float,1)
+func _process(_d) -> void:
+	if Conductor.is_playing: _update_info()
 "
 
 [node name="Charter" type="Node"]
 script = ExtResource("1_twph6")
-song_json = &"test"
+songName = "test"
 
 [node name="ChessControl" type="Node2D" parent="."]
+position = Vector2(0, 150)
+scale = Vector2(1.5, 1.5)
+script = SubResource("GDScript_y0grv")
 
 [node name="MouseRect" type="Node2D" parent="ChessControl"]
 modulate = Color(1, 1, 1, 0)
 position = Vector2(22, 120)
-scale = Vector2(30, 30)
 script = ExtResource("4_4ubu6")
+size = Vector2(30, 30)
+metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
+
+[node name="PositionLine" type="Node2D" parent="ChessControl"]
+script = ExtResource("4_4ubu6")
+size = Vector2(10, 3)
 metadata/_custom_type_script = "uid://bxu1ahcd17pxh"
 
 [node name="TabContainer" type="TabContainer" parent="."]
 self_modulate = Color(1, 1, 1, 0.470588)
+clip_contents = true
 offset_left = 737.0
 offset_top = 257.0
 offset_right = 1279.0
 offset_bottom = 721.0
-current_tab = 1
+current_tab = 3
 clip_tabs = false
 tab_focus_mode = 0
 
-[node name="Section" type="Panel" parent="TabContainer"]
+[node name="Section" type="Control" parent="TabContainer"]
 visible = false
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
@@ -206,7 +304,8 @@ offset_bottom = 336.0
 focus_mode = 0
 text = "Flip Opponent Notes"
 
-[node name="Note" type="Panel" parent="TabContainer"]
+[node name="Note" type="Control" parent="TabContainer"]
+visible = false
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
 metadata/_tab_index = 1
@@ -275,11 +374,11 @@ offset_right = 213.0
 offset_bottom = 216.0
 focus_mode = 0
 
-[node name="DynamicFileMenuButton" type="MenuButton" parent="TabContainer/Note"]
+[node name="NoteStyle" type="MenuButton" parent="TabContainer/Note"]
 layout_mode = 0
 offset_left = 113.0
 offset_top = 264.0
-offset_right = 206.0
+offset_right = 233.0
 offset_bottom = 292.0
 text = "funkin"
 flat = false
@@ -287,7 +386,19 @@ script = ExtResource("3_nkmqi")
 dir_to_look = "data/notestyles"
 metadata/_custom_type_script = "uid://cvvli26q7wviq"
 
-[node name="Event" type="Panel" parent="TabContainer"]
+[node name="SplashStyle" type="MenuButton" parent="TabContainer/Note"]
+layout_mode = 0
+offset_left = 124.0
+offset_top = 298.0
+offset_right = 273.0
+offset_bottom = 326.0
+text = "NoteSplashes"
+flat = false
+script = ExtResource("3_nkmqi")
+dir_to_look = "data/splashstyles"
+metadata/_custom_type_script = "uid://cvvli26q7wviq"
+
+[node name="Event" type="Control" parent="TabContainer"]
 visible = false
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
@@ -389,8 +500,7 @@ limit_min = true
 limit_max = true
 int_value = true
 
-[node name="Song" type="Panel" parent="TabContainer"]
-visible = false
+[node name="Song" type="Control" parent="TabContainer"]
 self_modulate = Color(1, 1, 1, 0)
 clip_contents = true
 layout_mode = 2
@@ -453,8 +563,13 @@ offset_left = 40.0
 offset_top = 270.0
 offset_right = 166.0
 offset_bottom = 301.0
+text = "bf"
 flat = false
 clip_text = true
+script = ExtResource("3_nkmqi")
+dir_to_look = "characters"
+filters = PackedStringArray("json")
+metadata/_custom_type_script = "uid://cvvli26q7wviq"
 
 [node name="dadCharacters" type="MenuButton" parent="TabContainer/Song"]
 layout_mode = 0
@@ -462,8 +577,13 @@ offset_left = 385.0
 offset_top = 271.0
 offset_right = 511.0
 offset_bottom = 302.0
+text = "bf"
 flat = false
 clip_text = true
+script = ExtResource("3_nkmqi")
+dir_to_look = "characters"
+filters = PackedStringArray("json")
+metadata/_custom_type_script = "uid://cvvli26q7wviq"
 
 [node name="gfCharacters" type="MenuButton" parent="TabContainer/Song"]
 layout_mode = 0
@@ -471,8 +591,13 @@ offset_left = 213.0
 offset_top = 271.0
 offset_right = 339.0
 offset_bottom = 302.0
+text = "bf"
 flat = false
 clip_text = true
+script = ExtResource("3_nkmqi")
+dir_to_look = "characters"
+filters = PackedStringArray("json")
+metadata/_custom_type_script = "uid://cvvli26q7wviq"
 
 [node name="SaveToChart" type="Button" parent="TabContainer/Song"]
 layout_mode = 0
@@ -509,11 +634,15 @@ offset_left = 68.0
 offset_top = 323.0
 offset_right = 199.0
 offset_bottom = 354.0
+text = "bf"
 flat = false
 clip_text = true
-script = SubResource("GDScript_4ubu6")
+script = ExtResource("3_nkmqi")
+dir_to_look = "characters"
+filters = PackedStringArray("json")
+metadata/_custom_type_script = "uid://cvvli26q7wviq"
 
-[node name="Editor" type="Panel" parent="TabContainer"]
+[node name="Editor" type="Control" parent="TabContainer"]
 visible = false
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
@@ -611,80 +740,6 @@ offset_bottom = 68.0
 focus_mode = 0
 text = "Reload Chart"
 
-[node name="CreateChart" type="Panel" parent="TabContainer/Editor"]
-visible = false
-layout_mode = 0
-offset_left = -196.0
-offset_top = -19.0
-offset_right = 168.0
-offset_bottom = 288.0
-
-[node name="ColorRect" type="ColorRect" parent="TabContainer/Editor/CreateChart"]
-self_modulate = Color(0, 0, 0, 0.533333)
-show_behind_parent = true
-layout_mode = 0
-offset_left = -541.0
-offset_top = -150.0
-offset_right = 736.0
-offset_bottom = 570.0
-color = Color(0.0588235, 0.0588235, 0.0588235, 0.701961)
-
-[node name="Label" type="Label" parent="TabContainer/Editor/CreateChart"]
-layout_mode = 0
-offset_left = 4.0
-offset_top = 5.0
-offset_right = 313.0
-offset_bottom = 222.0
-text = "                                Create Chart
-
-
-Song:
-
-BPM:"
-
-[node name="Load Song Chart" type="Button" parent="TabContainer/Editor/CreateChart"]
-layout_mode = 0
-offset_left = 204.0
-offset_top = 84.0
-offset_right = 292.0
-offset_bottom = 115.0
-focus_mode = 0
-text = "Load Song"
-
-[node name="SongChart" type="LineEdit" parent="TabContainer/Editor/CreateChart"]
-layout_mode = 0
-offset_left = 49.0
-offset_top = 84.0
-offset_right = 193.0
-offset_bottom = 115.0
-
-[node name="NewBpm" parent="TabContainer/Editor/CreateChart" instance=ExtResource("2_p8wo6")]
-layout_mode = 0
-anchors_preset = 0
-anchor_bottom = 0.0
-offset_left = 44.0
-offset_top = 127.0
-offset_right = 275.0
-offset_bottom = 176.0
-
-[node name="CreateChart" type="Button" parent="TabContainer/Editor/CreateChart"]
-layout_mode = 0
-offset_left = 72.0
-offset_top = 270.0
-offset_right = 132.0
-offset_bottom = 301.0
-focus_mode = 0
-text = "Create"
-
-[node name="CancelChart" type="Button" parent="TabContainer/Editor/CreateChart"]
-layout_mode = 0
-offset_left = 221.0
-offset_top = 268.0
-offset_right = 281.0
-offset_bottom = 299.0
-focus_mode = 0
-text = "Cancel"
-
 [node name="WaveformMenu" type="MenuButton" parent="TabContainer/Editor"]
 layout_mode = 0
 offset_left = 95.0
@@ -720,6 +775,7 @@ offset_left = -1.0
 offset_top = 15.0
 offset_right = 535.0
 offset_bottom = 107.0
+script = SubResource("GDScript_qvgc3")
 
 [node name="Shortcuts" type="TabBar" parent="Editor Info"]
 visible = false
@@ -729,13 +785,86 @@ metadata/_tab_index = 1
 
 [node name="Label" type="Label" parent="Editor Info/Shortcuts"]
 layout_mode = 0
-offset_left = 8.0
-offset_top = 32.0
-offset_right = 121.0
-offset_bottom = 87.0
+offset_left = 1.0
+offset_top = -1.0
+offset_right = 536.0
+offset_bottom = 118.0
 text = "X : Zoom In
-
 Z : Zoom Out"
+
+[node name="CreateChart" type="Label" parent="."]
+visible = false
+offset_left = 481.0
+offset_top = 266.0
+offset_right = 842.0
+offset_bottom = 468.0
+text = "              Create Chart
+
+
+Song:
+
+BPM:"
+
+[node name="Panel" type="Panel" parent="CreateChart"]
+show_behind_parent = true
+layout_mode = 0
+offset_left = -4.0
+offset_top = -5.0
+offset_right = 360.0
+offset_bottom = 203.0
+
+[node name="ColorRect" type="ColorRect" parent="CreateChart"]
+self_modulate = Color(0, 0, 0, 0.533333)
+show_behind_parent = true
+layout_mode = 0
+offset_left = -484.0
+offset_top = -268.0
+offset_right = 798.0
+offset_bottom = 452.0
+color = Color(0.0588235, 0.0588235, 0.0588235, 0.701961)
+
+[node name="Load Song Chart" type="Button" parent="CreateChart"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 39.0
+offset_right = 293.0
+offset_bottom = 70.0
+focus_mode = 0
+text = "Load Song"
+
+[node name="SongChart" type="LineEdit" parent="CreateChart"]
+layout_mode = 0
+offset_left = 45.0
+offset_top = 39.0
+offset_right = 189.0
+offset_bottom = 70.0
+
+[node name="NewBpm" parent="CreateChart" instance=ExtResource("2_p8wo6")]
+layout_mode = 0
+anchors_preset = 0
+anchor_bottom = 0.0
+offset_left = 38.0
+offset_top = 80.0
+offset_right = 269.0
+offset_bottom = 129.0
+
+[node name="CreateChart2" type="Button" parent="CreateChart"]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 156.0
+offset_right = 127.0
+offset_bottom = 187.0
+focus_mode = 0
+text = "Create"
+
+[node name="CancelChart" type="Button" parent="CreateChart"]
+layout_mode = 0
+offset_left = 211.0
+offset_top = 154.0
+offset_right = 276.0
+offset_bottom = 185.0
+focus_mode = 0
+text = "Cancel"
 
 [node name="PopupMenu" type="PopupMenu" parent="."]
 
@@ -761,10 +890,10 @@ Z : Zoom Out"
 [connection signal="button_down" from="TabContainer/Song/Save Chart" to="." method="_on_save_chart_button_down"]
 [connection signal="value_changed" from="TabContainer/Song/Speed" to="." method="changeSongSpeed"]
 [connection signal="toggled" from="TabContainer/Editor/AutoChangeSection" to="." method="_on_auto_change_section_toggled"]
-[connection signal="button_down" from="TabContainer/Editor/NewChart" to="." method="_on_new_chart_button_down"]
+[connection signal="button_down" from="TabContainer/Editor/NewChart" to="CreateChart/Panel" method="show"]
 [connection signal="button_down" from="TabContainer/Editor/LoadChart" to="." method="_on_load_chart_button_down"]
 [connection signal="button_down" from="TabContainer/Editor/ReloadChart" to="." method="_load_song_data"]
-[connection signal="button_down" from="TabContainer/Editor/CreateChart/Load Song Chart" to="." method="_on_load_song_chart_button_down"]
-[connection signal="button_down" from="TabContainer/Editor/CreateChart/CreateChart" to="." method="createChart"]
-[connection signal="button_down" from="TabContainer/Editor/CreateChart/CreateChart" to="TabContainer/Editor" method="hide"]
-[connection signal="button_down" from="TabContainer/Editor/CreateChart/CancelChart" to="TabContainer/Editor/CreateChart" method="hide"]
+[connection signal="button_down" from="CreateChart/Load Song Chart" to="." method="_on_load_song_chart_button_down"]
+[connection signal="button_down" from="CreateChart/CreateChart2" to="." method="createChart"]
+[connection signal="button_down" from="CreateChart/CreateChart2" to="CreateChart" method="hide"]
+[connection signal="button_down" from="CreateChart/CancelChart" to="CreateChart" method="hide"]

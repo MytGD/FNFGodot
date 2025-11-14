@@ -1,7 +1,7 @@
 
 ##A script to help with Event Notes.
 static func _get_events_data(events: Array) -> Array[Dictionary]:
-	var new_events: Array[Dictionary] = []
+	var new_events: Array[Dictionary]
 	var event_base = _get_event_base()
 	for data in events:
 		if data is Array: new_events.append_array(_convert_event_to_new(data))
@@ -25,7 +25,6 @@ static func _convert_event_to_new(data: Array) -> Array[Dictionary]:
 		
 		var first_val = vars_keys[0]
 		for v in variables: event.v[v] = variables[v].default_value
-		
 		
 		event.v[first_val] = _convert_event_value_type(i[1],variables[first_val].type,event.v[first_val])
 		if i.size() > 2: 

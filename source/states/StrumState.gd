@@ -298,7 +298,7 @@ func startSong() -> void:
 ##Seek the Song Position to [param time] in miliseconds.[br]
 ##If [param kill_notes] is [code]true[/code], the notes above the [param time] will be removed.
 func seek_to(time: float, kill_notes: bool = true):
-	Conductor.setSongPosition(time)
+	Conductor.seek(time)
 	if !kill_notes: return
 	
 	var time_offset: float = time + 1000

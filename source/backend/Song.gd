@@ -20,14 +20,14 @@ const EventNoteUtils = preload("uid://dqymf0mowy0dt")
 ##    },
 ##}
 ##[/codeblock]
-static var songs_dir: Dictionary[String,Dictionary] = {}
+static var songs_dir: Dictionary[StringName,Dictionary]
 
-static var songName: String = ''
-static var songJsonName: String = ''
-static var audioSuffix: String = ''
-static var audioFolder: String = ''
-static var folder: String = ''
-static var difficulty: String = ''
+static var songName: String = &''
+static var songJsonName: String = &''
+static var audioSuffix: String = &''
+static var audioFolder: String = &''
+static var folder: String = &''
+static var difficulty: String = &''
 static var keyCount: int = 4: set = set_key_count
 
 static func loadJson(json_name: String, _difficulty: String = '') -> Dictionary:
@@ -38,15 +38,14 @@ static func loadJson(json_name: String, _difficulty: String = '') -> Dictionary:
 	if song_dir: song_dir = song_dir.get(_difficulty)
 	
 	if song_dir:
-		var custom_folder = song_dir.get('folder',folder)
-		json_name = song_dir.get('json',json_name)
-		audioSuffix = song_dir.get('audioSuffix','')
-		audioFolder = custom_folder
+		var custom_folder = song_dir.get(&'folder',folder)
+		json_name = song_dir.get(&'json',json_name)
+		audioSuffix = song_dir.get(&'audio_suffix','')
 		json_path = Paths.data(json_name,'',custom_folder)
 	else:
 		audioSuffix = ''
 		json_path = Paths.data(json_name,_difficulty)
-		
+	
 	folder = Paths.getPath(json_path,false).get_base_dir()
 	audioFolder = folder.get_slice('/',folder.get_slice_count('/')-1)
 	
@@ -57,10 +56,10 @@ static func loadJson(json_name: String, _difficulty: String = '') -> Dictionary:
 	
 	if !json: return json
 	
-	if !json.get('audioSuffix'): json.audioSuffix = audioSuffix
-	if !json.get('audioFolder'): json.audioFolder = audioFolder
+	if !json.get(&'audioSuffix'): json.audioSuffix = audioSuffix
+	if !json.get(&'audioFolder'): json.audioFolder = audioFolder
 	
-	songName = json.get('song','')
+	songName = json.get(&'song','')
 	if !songName: songName = songJsonName.get_basename()
 	
 	return json
@@ -179,13 +178,13 @@ static func sort_song_notes(song_notes: Array) -> void:
 
 static func getSectionBase() -> Dictionary:
 	return {
-		'sectionNotes': [],
-		'mustHitSection': false,
-		'gfSection': false,
-		'sectionBeats': 4,
-		'sectionTime': 0,
-		'changeBPM': false,
-		'bpm': 0
+		&'sectionNotes': [],
+		&'mustHitSection': false,
+		&'gfSection': false,
+		&'sectionBeats': 4,
+		&'sectionTime': 0,
+		&'changeBPM': false,
+		&'bpm': 0
 	}
 
 static func getChartBase(bpm: float = 0) -> Dictionary: ##Returns a base [Dictionary] of the Song.
@@ -209,8 +208,18 @@ static func getChartBase(bpm: float = 0) -> Dictionary: ##Returns a base [Dictio
 
 static func _clear():
 	songs_dir.clear()
-	audioSuffix = ''
-	folder = ''
+	audioSuffix = &''
+	folder = &''
 
+
+static func set_song_directory(songName: StringName, difficulty: StringName, folder: StringName, json: StringName, audio_suffix: StringName):
+	if !songName or !difficulty: return
+	if !songs_dir.has(songName): songs_dir[songName] = DictionaryUtils.getDictsTyped({},TYPE_STRING_NAME)
+	var data: Dictionary[StringName, Variant] = songs_dir[songName]
+	data[difficulty] = {
+		&'folder': folder,
+		&'json': json,
+		&'audio_suffix': audio_suffix
+	}
 #region Setters
 static func set_key_count(count: int) -> void: keyCount = count; FunkinGD.keyCount = count

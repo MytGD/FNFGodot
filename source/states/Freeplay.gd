@@ -232,18 +232,17 @@ func setSongSelected(selected: int = 0, play_sound: bool = true):
 	
 	if play_sound: FunkinGD.playSound(Paths.sound('scrollMenu'))
 	
-func load_game(song_name: String, difficulty: String, songFolder: String = '', json_name: String = '', audio_suffix: String = ''):
+func load_game(
+	song_name: StringName, 
+	difficulty: StringName, 
+	songFolder: StringName = &'', 
+	json_name: StringName = &'', 
+	audio_suffix: StringName = &''
+):
 	Global.swapTree(PlayState.new(song_name,difficulty),true)
 	tweenStarted = true
 	if !songFolder: return
-	Song.songs_dir[song_name] = {
-		difficulty: {
-			'folder': songFolder,
-			'json': json_name,
-			'audioSuffix': audio_suffix
-		}
-	}
-
+	Song.set_song_directory(song_name,difficulty,songFolder,json_name,audio_suffix)
 	
 func exit():
 	set_process_input(false)

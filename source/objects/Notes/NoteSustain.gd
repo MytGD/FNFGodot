@@ -117,7 +117,7 @@ func resetNote() -> void:
 	isBeingDestroyed = false
 
 func killNote() -> void: 
-	canBeHit = false; isBeingDestroyed = true; updateNote()
+	canBeHit = false; isBeingDestroyed = true; updateSustain()
 
 ##Update the Note position from the his [param strumNote].
 func followStrum(strum: StrumNote = strumNote) -> void:
